@@ -6,7 +6,7 @@
 #    By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/03/10 10:21:00 by rgohrig           #+#    #+#              #
-#    Updated: 2026/06/29 14:49:27 by rgohrig          ###   ########.fr        #
+#    Updated: 2026/07/03 16:17:13 by rgohrig          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -16,35 +16,29 @@
 
 # ----------------------------- GENERAL ----------------------------------------
 
-NAME :=			webserv
+NAME :=				webserv
 
-COMPILER :=		c++
-DEBUG_FLAGS :=	-Wshadow -g -fsanitize=address,undefined
-PROFILE_FLAGS :=	-pg
+COMPILER :=			c++
+DEBUG_FLAGS :=		-Wshadow -g -fsanitize=address,undefined
+PROFILE_FLAGS :=	-pg -g
 FAST_FLAGS :=		-O2 #-march=native -O3 -flto # O2 should be enough
 LINKER_FLAGS :=		
 COMPILE_FLAGS :=	-MMD -MP # MMD & MD for dependencies
-LIBMLX_FLAGS :=		-ldl -lglfw -pthread -lm
+
+CFLAGS :=			-Wall -Werror -Wextra -std=c++17 $(FAST_FLAGS) $(LINKER_FLAGS) $(COMPILE_FLAGS)
+
+DIR_SRC :=			src
+SRC :=				main.cpp
+
+DIR_OBJ :=			obj
+OBJ :=				$(SRC:%.cpp=$(DIR_OBJ)/%.o)
 
 
+HEADERS :=			-I ./include
 
-CFLAGS :=		-Wall -Werror -Wextra -std=c++17
-CFLAGS :=			-Wall -Werror -Wextra $(FAST_FLAGS) $(LINKER_FLAGS) $(COMPILE_FLAGS)
+LIBS :=				
 
-HEADERS :=		-I include 
-
-DIR_SRC :=		src
-SRC :=			main.cpp
-
-DIR_OBJ :=		obj
-OBJ :=			$(SRC:%.cpp=$(DIR_OBJ)/%.o)
-
-
-
-HEADERS :=		-I $(LIBFT_DIR)/include -I $(LIBMLX_DIR)/include/MLX42 -I ./include
-LIBS :=			
-
-DEPENDENCIES := $(OBJ:.o=.d)
+DEPENDENCIES := 	$(OBJ:.o=.d)
 
 
 
