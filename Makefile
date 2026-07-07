@@ -6,7 +6,7 @@
 #    By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/03/10 10:21:00 by rgohrig           #+#    #+#              #
-#    Updated: 2026/07/03 16:17:13 by rgohrig          ###   ########.fr        #
+#    Updated: 2026/07/07 15:45:14 by rgohrig          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -25,10 +25,10 @@ FAST_FLAGS :=		-O2 #-march=native -O3 -flto # O2 should be enough
 LINKER_FLAGS :=		
 COMPILE_FLAGS :=	-MMD -MP # MMD & MD for dependencies
 
-CFLAGS :=			-Wall -Werror -Wextra -std=c++17 $(FAST_FLAGS) $(LINKER_FLAGS) $(COMPILE_FLAGS)
+CFLAGS :=			-Wall -Werror -Wextra -std=c++17 $(FAST_FLAGS) $(LINKER_FLAGS) $(COMPILE_FLAGS) -D LOG_LVL=15
 
 DIR_SRC :=			src
-SRC :=				main.cpp
+SRC :=				logging.cpp main.cpp
 
 DIR_OBJ :=			obj
 OBJ :=				$(SRC:%.cpp=$(DIR_OBJ)/%.o)

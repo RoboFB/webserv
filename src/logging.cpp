@@ -1,0 +1,38 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   logging.cpp                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/07/07 12:34:10 by rgohrig           #+#    #+#             */
+/*   Updated: 2026/07/07 15:54:20 by rgohrig          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+# include "logging.hpp"
+# include <iostream>
+
+void log_impl(LogLevel level, const std::string& message,
+	const char* file, int line, const char* func)
+{
+	if ((level & LOG_LVL) == 0)
+	{
+		return;
+	}
+	
+	std::ostream& output = (level == LOG_ERROR)? std::cerr : std::cout;
+	
+	switch (level)
+	{
+		case LOG_ERROR: output << RED    << "[ERROR] " << RESET ; break;
+		case LOG_WARN:  output << YELLOW << "[WARN]  " << RESET ; break;
+		case LOG_INFO:  output << GREEN  << "[INFO]  " << RESET ; break;
+		case LOG_DEBUG: output << CYAN   << "[DEBUG] " << RESET ; break;
+	}
+	if (LOG_LVL & LOG_DEBUG )
+	{
+		output << file << ":" << line << " (" << func << ")\n          ";
+	}
+	output << message << "\n";
+}
