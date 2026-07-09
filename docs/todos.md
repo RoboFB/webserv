@@ -71,7 +71,7 @@ you are allowed to implement it if you want
 - [ ] fcntl() only for macOS and only F_SETFL, O_NONBLOCK and, FD_CLOEXEC as Flags.
 
 - [ ] nginx: my be used to compare headers+answers
-- [ ] fork only for CGI (php, pzthon)
+- [ ] fork only for CGI (php, python)
 - [ ] HTTP Status codes must be correct
 - [ ] GET, POST, DELETE implemented
 - [ ] Stress test server for availability

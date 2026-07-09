@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/07 12:34:27 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/07 16:09:01 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/09 15:23:45 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,4 +30,4 @@ enum LogLevel {
 #define LOG(level, msg) \
     log_impl(level, msg, __FILE__, __LINE__, __func__)
 
-void log_impl(const LogLevel level, const char *message, const char *file, const int line, const char *func);
+void log_impl(const LogLevel level, const std::string &message, const char *file, const int line, const char *func);

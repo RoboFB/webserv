@@ -12,5 +12,6 @@ An “**Instructions**” section containing any relevant information about comp
 A “**Resources**” section listing classic references related to the topic (documentation, articles, tutorials, etc.), as well as a description of how AI was used — specifying for which tasks and which parts of the project.
 
 - optional: [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/), Robin's preffered formatting of commit messages
+- [nginx config file keywords](https://nginx.org/en/docs/dirindex.html)
 
 ### AI Usage

@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/07 12:34:10 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/07 16:10:13 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/09 15:23:10 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 # include <iostream>
 
 // Logging implementation: errors on 2, has coloring, and uses file, line, fuction on debugging
-void log_impl(const LogLevel level, const char *message,
+void log_impl(const LogLevel level, const std::string &message,
 	const char* file, const int line, const char* func)
 {
 	if ((level & LOG_LVL) == 0)
