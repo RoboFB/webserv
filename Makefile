@@ -28,7 +28,7 @@ COMPILE_FLAGS :=	-MMD -MP # MMD & MD for dependencies
 CFLAGS :=			-Wall -Werror -Wextra -std=c++17 $(FAST_FLAGS) $(LINKER_FLAGS) $(COMPILE_FLAGS) -D LOG_LVL=15
 
 DIR_SRC :=			src
-SRC :=				logging.cpp main.cpp
+SRC :=				$(shell find $(DIR_SRC) -type f -name '*.cpp' | sed 's|^$(DIR_SRC)/||')
 
 DIR_OBJ :=			obj
 OBJ :=				$(SRC:%.cpp=$(DIR_OBJ)/%.o)
