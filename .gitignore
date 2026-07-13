@@ -1,2 +1,18 @@
-.o
-.DS_Store
+# option for the end of project
+#*.gitignore
+#docs
+
+# IDE settings
+.vscode
+
+# MacOS
+*.DS_Store
+
+# Compiled Object files
+*.o
+*.out
+*.d
+
+
+# executable files
+webserv
