@@ -1,20 +1,18 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.hpp                                           :+:      :+:    :+:   */
+/*   testing.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/07/07 12:35:56 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/13 13:41:17 by rgohrig          ###   ########.fr       */
+/*   Created: 2026/07/13 13:42:08 by rgohrig           #+#    #+#             */
+/*   Updated: 2026/07/13 13:42:43 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-// big part headers
-#include "config.hpp"
+void test_logging(void);
+void test_lexer(void);
 
-// utils headers
-#include "logging.hpp"
 

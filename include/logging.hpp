@@ -6,15 +6,13 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/07 12:34:27 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/09 15:23:45 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/13 13:38:08 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-#include "colors.hpp"
 #include <string>
-
 
 enum LogLevel {
 	LOG_ERROR 	= 0b0001,

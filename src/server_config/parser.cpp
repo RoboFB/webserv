@@ -1,20 +1,20 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.hpp                                           :+:      :+:    :+:   */
+/*   parser.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/07/07 12:35:56 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/13 13:41:17 by rgohrig          ###   ########.fr       */
+/*   Created: 2026/07/13 16:19:19 by rgohrig           #+#    #+#             */
+/*   Updated: 2026/07/13 16:47:03 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
-
-// big part headers
 #include "config.hpp"
 
-// utils headers
-#include "logging.hpp"
+MainContext tokens_to_config(std::vector<Token> tokens)
+{
+	MainContext config;
 
+
+}
