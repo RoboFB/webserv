@@ -14,5 +14,9 @@
 *.d
 
 
+#the officel testers
+cgi_tester
+tester
+
 # executable files
 webserv
