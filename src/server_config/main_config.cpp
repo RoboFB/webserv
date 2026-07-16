@@ -6,16 +6,11 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/13 10:48:31 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/13 16:47:03 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/16 13:45:11 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "config.hpp"
-
-#include "testing.hpp"
-
-#include <iostream>
-#include <filesystem>
 
 int parsing_start(int argc, const char *argv[])
 {
@@ -36,14 +31,29 @@ int parsing_start(int argc, const char *argv[])
 
 
 
-int main_parsing(const std::string &config_file_path_name)
-{
-	std::filesystem::path config_file_path = config_file_path_name;
-	
-	std::string source = file_to_string(config_file_path);
-	std::vector<Token> tokens = string_to_tokens(source, config_file_path.string());
-	
-	MainContext config = tokens_to_config(tokens);
 
+int main_parsing(const std::filesystem::path &config_file_path)
+{
+	try
+	{
+		std::string source = file_to_string(config_file_path);
+		std::vector<Token> tokens = string_to_tokens(source);
+	
+		debug_print_tokens(tokens);
+
+		if (tokens.empty())
+			throw ConfigParseException("Empty configuration file.");
+
+
+		MainContext config;
+		fill_main_context(config, tokens.cbegin());
+	
+	
+		
+	}
+	catch(const ConfigParseException& e)
+	{
+		throw ConfigParseException(config_file_path.string() + ":" + e.what());
+	}
 	return (0);
 }

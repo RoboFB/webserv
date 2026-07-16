@@ -6,13 +6,14 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/29 14:58:02 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/13 13:40:33 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/16 15:08:21 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "main.hpp"
 
 #include <iostream>
+
 
 
 int main(int argc, const char *argv[])
@@ -25,13 +26,13 @@ int main(int argc, const char *argv[])
 	}
 	catch (const std::exception& e) 
 	{
-		std::cerr << "Exception: " << e.what() << std::endl;
-		return 1;
+		LOG(LOG_ERROR, e.what());
+		return EXIT_FAILURE;
 	}
 	catch (...) 
 	{
-		std::cerr << "Unknown exception occurred." << std::endl;
-		return 1;
+		LOG(LOG_ERROR, "Unknown exception occurred that is not derived from std::exception.");
+		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
 }

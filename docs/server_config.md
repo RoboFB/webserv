@@ -22,6 +22,25 @@ ConfigMain 1x
 - ignore for example: events, other contexts, don't jain locations
 
 
+# Parsing characters
+special characters:
+	- # comments
+	- { and } block
+	- ; end of line
+
+
+path characters:
+	- / path separator
+	- . current directory
+	- .. parent directory
+	- ~ home directory?
+
+whitespace characters:
+	- space
+	- tab
+	- newline
+
+
 # Subject todos:
 - [~] Get inspiration from the `server` section of NGINX.
 - [~] Define interface:port pairs on which your server will listen (multiple websites served by your program).

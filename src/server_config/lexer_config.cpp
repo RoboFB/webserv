@@ -6,19 +6,11 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 17:42:37 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/13 13:36:13 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/16 12:37:15 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "config.hpp"
-
-#include "logging.hpp"
-
-
-#include <filesystem>
-#include <iostream>
-#include <fstream>
-#include <vector>
 
 // gets on char out of iterator but dos not check for end of string;
 char get_next(std::string::const_iterator &head, size_t &line, size_t &column)
@@ -45,7 +37,7 @@ std::string file_to_string(const std::filesystem::path &config_file_path)
 {
 	std::ifstream file(config_file_path);
 	if (!file)
-		throw std::runtime_error("Could not open file");
+		throw std::runtime_error("Could not open file: " + config_file_path.string());
 	std::string source{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
 
 	return source;
@@ -53,7 +45,7 @@ std::string file_to_string(const std::filesystem::path &config_file_path)
 
 
 // R: config object?
-std::vector<Token> string_to_tokens(const std::string &source, const std::string &config_file_path_name)
+std::vector<Token> string_to_tokens(const std::string &source)
 {
 	std::vector<Token> config_lines;
 
@@ -87,7 +79,7 @@ std::vector<Token> string_to_tokens(const std::string &source, const std::string
 			--brace_level;
 			config_lines.push_back({TokenType::CLOSE_BRACE, "}", line, column});
 			if (brace_level < 0)
-				print_parsing_error(config_lines.back(), config_file_path_name);
+				throw ConfigParseException("Unexpected closing brace", config_lines.back());
 		}
 		else if (c == ';')
 		{
@@ -107,23 +99,15 @@ std::vector<Token> string_to_tokens(const std::string &source, const std::string
 		else
 		{
 			if (is_word)
-				config_lines.back().value += c;
+				config_lines.back().word += c;
 			else
 				config_lines.push_back({TokenType::WORD, std::string{c}, line, column});
 			is_word = true;
 		}
 	}
-	if (brace_level != 0)
-		print_parsing_error((Token){TokenType::CLOSE_BRACE, "}", line, column}, config_file_path_name);
+	if (brace_level > 0)
+		throw ConfigParseException("Missing closing brace", (Token){TokenType::CLOSE_BRACE, "}", line, column});
 
-
-	// print all tokens for debugging
-	std::stringstream log_all_tokens;
-	for (const auto &token : config_lines)
-	{
-		log_all_tokens << token << std::endl;
-	}
-	LOG(LOG_DEBUG, log_all_tokens.str());
 
 
 
@@ -131,43 +115,3 @@ std::vector<Token> string_to_tokens(const std::string &source, const std::string
 }
 
 
-std::ostream &operator<<(std::ostream &os, const TokenType &token)
-{
-	switch (token)
-	{
-	case TokenType::WORD:			os << "WORD       "; return os;
-	case TokenType::OPEN_BRACE:		os << "OPEN_BRACE "; return os;
-	case TokenType::CLOSE_BRACE:	os << "CLOSE_BRACE"; return os;
-	case TokenType::SEMICOLON:		os << "SEMICOLON  "; return os;
-	default: 						os << "UNKNOWN    "; return os;
-	}
-}
-
-std::ostream &operator<<(std::ostream &os, const Token &token)
-{
-	os	<< token.type
-		<< " "
-    	<< token.line
-        << ":"
-        << token.column
-		<< " \t"
-		<< token.value;
-		return os;
-}
-
-
-void print_parsing_error(const Token &token, const std::string &filename)
-{
-    std::stringstream error_message;
-
-    error_message << filename
-        << ":"
-        << token.line
-        << ":"
-        << token.column
-        << ": parsing error at: '"
-        << token.value
-		<< "'\n";
-
-    LOG(LOG_ERROR, error_message.str());
-}
