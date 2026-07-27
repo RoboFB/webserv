@@ -6,12 +6,27 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/15 13:59:22 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/16 12:37:15 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/27 15:04:42 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "config.hpp"
 
+void print_parsing_error(const Token &token, const std::string &filename)
+{
+	std::stringstream error_message;
+
+	error_message << filename
+		<< ":"
+		<< token.line
+		<< ":"
+		<< token.column
+		<< ": parsing error at: '"
+		<< token.word
+		<< "'\n";
+
+	LOG(LOG_ERROR, error_message.str());
+}
 
 // print all tokens for debugging
 void debug_print_tokens(const std::vector<Token> &tokens)
@@ -27,6 +42,15 @@ void debug_print_tokens(const std::vector<Token> &tokens)
 	LOG(LOG_DEBUG, log_all_tokens.str());
 }
 
+// print complete config for debugging
+void debug_print_config(const MainContext &config)
+{
+	if (!(LOG_LVL & LOG_DEBUG))
+		return;
+	std::stringstream config_stream;
+	config_stream << config;
+	LOG(LOG_DEBUG, config_stream.str());
+}
 
 std::ostream &operator<<(std::ostream &os, const TokenType &token)
 {
@@ -53,18 +77,22 @@ std::ostream &operator<<(std::ostream &os, const Token &token)
 }
 
 
-void print_parsing_error(const Token &token, const std::string &filename)
+
+// TODO: implement printing for all contexts of the config completely at the moment the acutal data is missing.
+std::ostream &operator<<(std::ostream &os, const DefaultContext &config)
 {
-    std::stringstream error_message;
+	return os << "DefaultContext: "
+		<< "error page with " << config.error_page.error_codes.size() << " error codes, ";
+}
 
-    error_message << filename
-        << ":"
-        << token.line
-        << ":"
-        << token.column
-        << ": parsing error at: '"
-        << token.word
-		<< "'\n";
+std::ostream &operator<<(std::ostream &os, const HttpContext &config)
+{
+	return os << "HttpContext: "
+		<< dynamic_cast<const DefaultContext&>(config);
+}
 
-    LOG(LOG_ERROR, error_message.str());
+std::ostream &operator<<(std::ostream &os, const MainContext &config)
+{
+	return os << "MainContext: "
+		<< config.http_context;
 }

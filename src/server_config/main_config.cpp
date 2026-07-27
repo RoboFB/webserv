@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/13 10:48:31 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/16 13:45:11 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/27 14:52:06 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,13 @@ int main_parsing(const std::filesystem::path &config_file_path)
 
 
 		MainContext config;
-		fill_main_context(config, tokens.cbegin());
+		LOG(LOG_DEBUG, "before fill_main_context");
+		debug_print_config(config);
+		std::vector<Token>::const_iterator head_token = tokens.cbegin();
+		fill_main_context(config, head_token);
+		LOG(LOG_DEBUG, "after  fill_main_context");
+		
+
 	
 	
 		

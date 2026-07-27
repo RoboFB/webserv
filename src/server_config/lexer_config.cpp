@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 17:42:37 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/16 12:37:15 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/17 14:06:39 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -108,7 +108,7 @@ std::vector<Token> string_to_tokens(const std::string &source)
 	if (brace_level > 0)
 		throw ConfigParseException("Missing closing brace", (Token){TokenType::CLOSE_BRACE, "}", line, column});
 
-
+	config_lines.push_back({TokenType::END_OF_FILE, "END_OF_FILE", line, column}); // 
 
 
 	return config_lines;

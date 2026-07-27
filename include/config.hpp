@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/16 15:46:34 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/27 14:55:17 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,15 +81,35 @@ struct DefaultContext
 
 };
 
+/* class DefaultContext
+{
+	// static constexpr ConfigContext	context = ConfigContext::DEFAULT;
+	public:
+		ErrorPageContext					error_page;
+		size_t								client_max_body_size;
+		bool								autoindex;
+		std::filesystem::path				root;
+		std::vector<std::filesystem::path>	index;
+
+		DefaultContext();
+		virtual ~DefaultContext();
+		DefaultContext(const DefaultContext &other) = delete;
+		DefaultContext& operator=(const DefaultContext &other) = delete;
+
+}; */
 
 struct LocationContext : public DefaultContext
 {
-    int								return_code;
+	// static constexpr ConfigContext	context = ConfigContext::LOCATION;
+
+    int	return_code;
 
 };
 
 struct ServerContext : public DefaultContext
 {
+	// static constexpr ConfigContext	context = ConfigContext::SERVER;
+
     std::vector<LocationContext>	location_context;
     std::vector<int>				listen; // address:port
     std::string						server_name;
@@ -100,33 +120,40 @@ struct ServerContext : public DefaultContext
 
 struct HttpContext : public DefaultContext
 {
+	// static constexpr ConfigContext	context = ConfigContext::HTTP;
+
     std::vector<ServerContext>		server_context;
 };
 
 struct MainContext
 {
+	// static constexpr ConfigContext	context = ConfigContext::MAIN;
+
     HttpContext http_context;
 };
 
 
 
 
-using HandlerContext = void (*)(MainContext& config, std::vector<Token>::const_iterator& head);
+// using HandlerContext = void (*)(MainContext& config, std::vector<Token>::const_iterator& head);
 
 // parser
-void fill_main_context(MainContext &config, std::vector<Token>::const_iterator head);
-void fill_http_context(HttpContext &config, std::vector<Token>::const_iterator head);
-void fill_location_context(LocationContext &config, std::vector<Token>::const_iterator head);
-void fill_limit_except_context(std::vector<std::string> &config, std::vector<Token>::const_iterator head);
+// void fill_main_context(MainContext &config, std::vector<Token>::const_iterator head);
+// void fill_http_context(HttpContext &config, std::vector<Token>::const_iterator head);
+// void fill_location_context(LocationContext &config, std::vector<Token>::const_iterator head);
+// void fill_limit_except_context(std::vector<std::string> &config, std::vector<Token>::const_iterator head);
 
-void fill_error_page_context(std::string &config, std::vector<Token>::const_iterator head);
-void fill_client_max_body_size_context(size_t &config, std::vector<Token>::const_iterator head);
-void fill_autoindex_context(HttpContext &config, std::vector<Token>::const_iterator head);
-void fill_root_context(HttpContext &config, std::vector<Token>::const_iterator head);
-void fill_index_context(HttpContext &config, std::vector<Token>::const_iterator head);
-void fill_listen_context(HttpContext &config, std::vector<Token>::const_iterator head);
-void fill_server_name_context(HttpContext &config, std::vector<Token>::const_iterator head);
-void fill_return_context(HttpContext &config, std::vector<Token>::const_iterator head);
+// void fill_error_page_context(std::string &config, std::vector<Token>::const_iterator head);
+// void fill_client_max_body_size_context(size_t &config, std::vector<Token>::const_iterator head);
+// void fill_autoindex_context(HttpContext &config, std::vector<Token>::const_iterator head);
+// void fill_root_context(HttpContext &config, std::vector<Token>::const_iterator head);
+// void fill_index_context(HttpContext &config, std::vector<Token>::const_iterator head);
+// void fill_listen_context(HttpContext &config, std::vector<Token>::const_iterator head);
+// void fill_server_name_context(HttpContext &config, std::vector<Token>::const_iterator head);
+// void fill_return_context(HttpContext &config, std::vector<Token>::const_iterator head);
+
+
+
 
 struct DirectiveLookup
 {
@@ -137,15 +164,15 @@ struct DirectiveLookup
 };
 
 static constexpr std::array<DirectiveLookup, 12> g_directive_lookup = {
-        DirectiveLookup{ConfigContext::MAIN,      "http",                       TokenType::OPEN_BRACE}, // fill_main_context,
-        DirectiveLookup{ConfigContext::HTTP,      "server",                     TokenType::OPEN_BRACE}, // fill_http_context,
+        DirectiveLookup{ConfigContext::MAIN,      "http",                     TokenType::OPEN_BRACE}, // fill_main_context,
+        DirectiveLookup{ConfigContext::HTTP,      "server",                   TokenType::OPEN_BRACE}, // fill_http_context,
         DirectiveLookup{ConfigContext::SERVER,    "location",                 TokenType::OPEN_BRACE}, // fill_location_context,
-        DirectiveLookup{ConfigContext::LOCATION,  "limit_except",           TokenType::OPEN_BRACE}, // fill_limit_except_context,
-        DirectiveLookup{ConfigContext::DEFAULT,   "error_page",              TokenType::SEMICOLON}, // fill_error_page_context,
-        DirectiveLookup{ConfigContext::DEFAULT,   "client_max_body_size",    TokenType::SEMICOLON}, // fill_client_max_body_size_context,
-        DirectiveLookup{ConfigContext::DEFAULT,   "autoindex",               TokenType::SEMICOLON}, // fill_autoindex_context,
-        DirectiveLookup{ConfigContext::DEFAULT,   "root",                    TokenType::SEMICOLON}, // fill_root_context,
-        DirectiveLookup{ConfigContext::DEFAULT,   "index",                   TokenType::SEMICOLON}, // fill_index_context,
+        DirectiveLookup{ConfigContext::LOCATION,  "limit_except",             TokenType::OPEN_BRACE}, // fill_limit_except_context,
+        DirectiveLookup{ConfigContext::DEFAULT,   "error_page",               TokenType::SEMICOLON}, // fill_error_page_context,
+        DirectiveLookup{ConfigContext::DEFAULT,   "client_max_body_size",     TokenType::SEMICOLON}, // fill_client_max_body_size_context,
+        DirectiveLookup{ConfigContext::DEFAULT,   "autoindex",                TokenType::SEMICOLON}, // fill_autoindex_context,
+        DirectiveLookup{ConfigContext::DEFAULT,   "root",                     TokenType::SEMICOLON}, // fill_root_context,
+        DirectiveLookup{ConfigContext::DEFAULT,   "index",                    TokenType::SEMICOLON}, // fill_index_context,
         DirectiveLookup{ConfigContext::SERVER,    "listen",                   TokenType::SEMICOLON}, // fill_listen_context,
         DirectiveLookup{ConfigContext::SERVER,    "server_name",              TokenType::SEMICOLON}, // fill_server_name_context,
         DirectiveLookup{ConfigContext::SERVER,    "return",                   TokenType::SEMICOLON}, // fill_return_context,
@@ -174,11 +201,30 @@ std::vector<Token> string_to_tokens(const std::string &source);
 
 
 // printing functions
+void print_parsing_error(const Token &token, const std::string &filename);
+
+void debug_print_tokens(const std::vector<Token> &tokens);
+void debug_print_config(const MainContext &config);
+
 std::ostream &operator<<(std::ostream &os, const TokenType &token);
 std::ostream &operator<<(std::ostream &os, const Token &token);
-void print_parsing_error(const Token &token, const std::string &filename);
-void debug_print_tokens(const std::vector<Token> &tokens);
+
+std::ostream &operator<<(std::ostream &os, const DefaultContext &config);
+std::ostream &operator<<(std::ostream &os, const HttpContext &config);
+std::ostream &operator<<(std::ostream &os, const MainContext &config);
 
 
 
+
+void fill_location_context(MainContext &fill_config,
+					std::vector<Token>::const_iterator &head_token);
+
+void fill_server_context(MainContext &fill_config,
+					std::vector<Token>::const_iterator &head_token);
+
+void fill_http_context(MainContext &fill_config,
+					std::vector<Token>::const_iterator &head_token);
+
+void fill_main_context(	MainContext &fill_config,
+					std::vector<Token>::const_iterator &head_token);
 
