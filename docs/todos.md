@@ -22,12 +22,12 @@
 - [ ] no Crash (even out of memory or terminated unexpectedly (signals))
 - [ ] Makefile ($(Name), all, clean, fclean, re)
 
-- [ ] compile: c++ -Wall -Wextra -Werror -std=c++17
+- [~] compile: c++ -Wall -Wextra -Werror -std=c++17
 
-- [ ] use fucking c++ (use the c++ version mostly)
-- [ ] no libraries
-- [ ] HTTP version 1.0 is suggested as reference point, but not enforced.
-- [ ] no execve of another webserver
+- [~] use fucking c++ (use the c++ version mostly)
+- [~] no libraries
+- [~] HTTP version 1.0 is suggested as reference point, but not enforced.
+- [~] no execve of another webserver
 - [ ] Checking the value of errno to adjust the server behaviour is strictly forbidden after performing a read or write operation
 
 - [ ] Resilience is key. Your server must remain operational at all times.
@@ -45,7 +45,7 @@ you are allowed to implement it if you want
 
 ### Retirements
 - [ ] Config file:
-  - [ ] location: 1. param or has a default path
+  - [~] location: 1. param or has a default path
 
 - [ ] non-blocking!
   - [ ] *1* poll()/epoll() for all I/O
@@ -89,6 +89,21 @@ you are allowed to implement it if you want
 ### Readme
 ### Bonus
 
+
+
+
+
+
+
+
+
+
+
+# legend
+
+- [ ] not done
+- [~] at the moment done (needs final check) 
+- [x] completely done
 
 
 
