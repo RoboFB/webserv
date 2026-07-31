@@ -6,13 +6,13 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 12:03:20 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/31 13:33:19 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/31 18:46:07 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-# include "config.hpp"
+# include "Config.hpp"
 
 // printing functions
 void print_parsing_error(const Token &token, const std::string &filename);

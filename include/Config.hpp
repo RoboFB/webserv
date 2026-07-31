@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   config.hpp                                         :+:      :+:    :+:   */
+/*   Config.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/31 18:12:54 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/31 18:46:07 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,7 +136,6 @@ class Config
 		
 		HttpConfig &http_conf;
 		std::vector<ServerConfig> &server_confs;
-		// std::vector<LocationContext> &default_contexts_;
 		
 
 		DirectiveLookup find_directive_lookup(const Token & token, ConfigContext context);

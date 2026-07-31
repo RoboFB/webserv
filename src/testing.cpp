@@ -6,15 +6,14 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/13 13:39:09 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/31 18:13:47 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/31 18:46:07 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "testing.hpp"
-#include "config.hpp"
+#include "Config.hpp"
 #include "logging.hpp"
 #include <err.h>
-#include <filesystem>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
