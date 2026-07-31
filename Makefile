@@ -6,7 +6,7 @@
 #    By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/03/10 10:21:00 by rgohrig           #+#    #+#              #
-#    Updated: 2026/07/15 14:50:35 by rgohrig          ###   ########.fr        #
+#    Updated: 2026/07/31 12:11:56 by rgohrig          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -45,7 +45,7 @@ DEPENDENCIES := 	$(OBJ:.o=.d)
 # ----------------------------- NORMAL -----------------------------------------
 
 # default Rule
-all: $(NAME)
+all: compile_commands $(NAME)
 
 $(DIR_OBJ):
 	@mkdir -p $(DIR_OBJ)
@@ -112,4 +112,12 @@ profile:
 	@echo "\n   📊📊📊 PROFILE $(NAME)   ($(CFLAGS))\n"
 
 
-.PHONY: all clean fclean re debug profile stop run
+
+# ----------------------------- Clangd -----------------------------------------
+
+compile_commands:
+	@(compiledb -n make && echo "👀 compile_commands.json updated") || echo "👀 compiledb failed"
+
+# ----------------------------- Phony ------------------------------------------
+
+.PHONY: all clean fclean re debug profile stop run compile_commands
