@@ -6,24 +6,31 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/13 10:48:31 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/27 14:52:06 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/31 12:07:48 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "config.hpp"
+#include "logging.hpp"
+#include "testing.hpp"
+#include "printing.hpp"
+
+#include <iostream>
 
 int parsing_start(int argc, const char *argv[])
 {
-	if (argc == 2 && argv[1] == std::string("-t"))
-	{
-		test_lexer();
-		return 0;
-	}
 	if (argc != 2)
 	{
 		std::cerr << "wrong number of arguments.\n"
-			"try as argument (char, int, float or double)\n";
+			"./webserv [configuration file]\n"
+			"./webserv -t"
+			"./webserv --test\n";
 		return 1;
+	}
+	if (argv[1] == std::string_view("-t") || (argv[1] == std::string_view("--test")))
+	{
+		test_lexer();
+		return 0;
 	}
 
 	return (main_parsing(argv[1]));

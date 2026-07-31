@@ -6,11 +6,59 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/15 13:59:22 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/27 15:04:42 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/31 12:07:08 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "printing.hpp"
 #include "config.hpp"
+#include "logging.hpp"
+#include <netdb.h>
+#include <arpa/inet.h>
+
+namespace
+{
+
+const char *addr_family_to_string(int family)
+{
+	switch (family)
+	{
+	case AF_UNSPEC: return "AF_UNSPEC";
+	case AF_INET: return "AF_INET";
+	case AF_INET6: return "AF_INET6";
+	default: return "AF_UNKNOWN";
+	}
+}
+
+const char *socket_type_to_string(int socktype)
+{
+	switch (socktype)
+	{
+	case 0: return "ANY";
+	case SOCK_STREAM: return "SOCK_STREAM";
+	case SOCK_DGRAM: return "SOCK_DGRAM";
+	case SOCK_RAW: return "SOCK_RAW";
+	default: return "SOCK_UNKNOWN";
+	}
+}
+
+std::string addr_to_string(const struct addrinfo *info)
+{
+	if (!info || !info->ai_addr)
+		return "(none)";
+
+	char host[NI_MAXHOST];
+	char service[NI_MAXSERV];
+	int result = getnameinfo(info->ai_addr, info->ai_addrlen,
+		host, sizeof(host), service, sizeof(service),
+		NI_NUMERICHOST | NI_NUMERICSERV);
+	if (result != 0)
+		return gai_strerror(result);
+
+	return std::string(host) + ":" + service;
+}
+
+}
 
 void print_parsing_error(const Token &token, const std::string &filename)
 {
@@ -77,12 +125,53 @@ std::ostream &operator<<(std::ostream &os, const Token &token)
 }
 
 
+std::ostream &operator<<(std::ostream &os, const struct addrinfo *servinfo)
+{
+	if (!servinfo)
+		return os << "addrinfo: null";
+
+	return os << *servinfo;
+}
+
+std::ostream &operator<<(std::ostream &os, const struct addrinfo &servinfo)
+
+{
+	os << "addrinfo:";
+	for (const struct addrinfo *current = &servinfo; current != nullptr; current = current->ai_next)
+	{
+		os << '\n'
+		   << "  family:    " << addr_family_to_string(current->ai_family)
+		   << '\n'
+		   << "  socktype:  " << socket_type_to_string(current->ai_socktype)
+		   << '\n'
+		   << "  protocol:  " << current->ai_protocol
+		   << '\n'
+		   << "  flags:     " << current->ai_flags
+		   << '\n'
+		   << "  addrlen:   " << current->ai_addrlen
+		   << '\n'
+		   << "  address:   " << addr_to_string(current)
+		   << '\n'
+		   << "  canonname: ";
+		if (current->ai_canonname)
+			os << current->ai_canonname;
+		else
+			os << "null";
+		if (current->ai_next)
+			os << '\n' << "  next:      more entries follow:";
+		else
+			os << '\n' << "  next:      end";
+	}
+	return os;
+}
+
+
 
 // TODO: implement printing for all contexts of the config completely at the moment the acutal data is missing.
 std::ostream &operator<<(std::ostream &os, const DefaultContext &config)
 {
 	return os << "DefaultContext: "
-		<< "error page with " << config.error_page.error_codes.size() << " error codes, ";
+		<< "error page with " << config.error_codes.size() << " error codes, ";
 }
 
 std::ostream &operator<<(std::ostream &os, const HttpContext &config)
@@ -96,3 +185,7 @@ std::ostream &operator<<(std::ostream &os, const MainContext &config)
 	return os << "MainContext: "
 		<< config.http_context;
 }
+
+
+
+

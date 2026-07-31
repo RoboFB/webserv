@@ -6,18 +6,19 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/29 14:58:02 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/16 15:08:21 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/30 15:18:33 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "main.hpp"
-
-#include <iostream>
-
+#include "config.hpp"
+#include "logging.hpp"
+#include "testing.hpp"
 
 
 int main(int argc, const char *argv[])
 {
+	// first_website_copy_of_internet();
+	first_website();
 	try
 	{
 		parsing_start(argc, argv);

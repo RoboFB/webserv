@@ -6,11 +6,12 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/13 16:19:19 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/17 18:33:37 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/31 12:06:18 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "config.hpp"
+
 
 constexpr bool has_flag(ConfigContext value, ConfigContext flag)
 {
@@ -116,13 +117,13 @@ void fill_error_page_context(DefaultContext &fill_config,
 	{
 		try
 		{
-			fill_config.error_page.error_codes.push_back(std::stoi(current_token.word));
+			fill_config.error_codes.push_back(std::stoi(current_token.word));
 		}
 		catch(const std::exception& e)
 		{
 			try
 			{
-				fill_config.error_page.error_page_path = current_token.word;
+				fill_config.error_page_path = current_token.word;
 			}
 			catch(const std::exception& e)
 			{
@@ -251,7 +252,7 @@ void fill_http_context(MainContext &fill_config,
 					std::vector<Token>::const_iterator &head_token)
 {
 	Token current_token = get_next_word(head_token);
-	auto current_lookup = get_directive_lookup(current_token, ConfigContext::HTTP);
+	DirectiveLookup current_lookup = get_directive_lookup(current_token, ConfigContext::HTTP);
 
 	if (current_lookup.terminator == TokenType::OPEN_BRACE)
 	{

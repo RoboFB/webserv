@@ -6,14 +6,13 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/16 15:10:40 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/16 15:16:15 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/30 15:19:28 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 #include <stdexcept>
-#include <string>
 
 struct Token;
 

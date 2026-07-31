@@ -6,32 +6,24 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/27 14:55:17 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/31 12:08:30 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-#include "testing.hpp"
-#include "logging.hpp"
 
 #include "ConfigParseException.hpp"
 
-# include <stdexcept>
 
 # include <string>
 # include <string_view>
-# include <sstream>
 
-# include <iostream>
-# include <fstream>
+# include <iostream> // IWYU pragma: export
 # include <filesystem>
 
-# include <initializer_list>
-# include <unordered_map>
 # include <vector>
 # include <array>
-# include <functional>
 
 
 
@@ -65,70 +57,45 @@ enum class ConfigContext
     DEFAULT =  0b01110
 };
 
-struct ErrorPageContext
-{
-    std::vector<int> error_codes;
-    std::string error_page_path;
-};
 
 struct DefaultContext
 {
-    ErrorPageContext				error_page;
+	std::vector<int>				error_codes;
+	std::filesystem::path			error_page_path;
     size_t							client_max_body_size;
     bool							autoindex;
     std::filesystem::path			root;
     std::vector<std::filesystem::path>	index;
+	int								return_code;
 
+	DefaultContext() : client_max_body_size(0), autoindex(false) {};
 };
 
-/* class DefaultContext
-{
-	// static constexpr ConfigContext	context = ConfigContext::DEFAULT;
-	public:
-		ErrorPageContext					error_page;
-		size_t								client_max_body_size;
-		bool								autoindex;
-		std::filesystem::path				root;
-		std::vector<std::filesystem::path>	index;
-
-		DefaultContext();
-		virtual ~DefaultContext();
-		DefaultContext(const DefaultContext &other) = delete;
-		DefaultContext& operator=(const DefaultContext &other) = delete;
-
-}; */
 
 struct LocationContext : public DefaultContext
 {
-	// static constexpr ConfigContext	context = ConfigContext::LOCATION;
-
-    int	return_code;
-
+	LocationContext() : DefaultContext() {};
 };
 
 struct ServerContext : public DefaultContext
 {
-	// static constexpr ConfigContext	context = ConfigContext::SERVER;
-
     std::vector<LocationContext>	location_context;
     std::vector<int>				listen; // address:port
     std::string						server_name;
-    int								return_code;
     std::vector<std::string>		limit_except;
 
+	ServerContext() : DefaultContext() {};
 };
 
 struct HttpContext : public DefaultContext
 {
-	// static constexpr ConfigContext	context = ConfigContext::HTTP;
-
     std::vector<ServerContext>		server_context;
+
+	HttpContext() : DefaultContext() {};
 };
 
 struct MainContext
 {
-	// static constexpr ConfigContext	context = ConfigContext::MAIN;
-
     HttpContext http_context;
 };
 
@@ -200,18 +167,7 @@ std::vector<Token> string_to_tokens(const std::string &source);
 
 
 
-// printing functions
-void print_parsing_error(const Token &token, const std::string &filename);
 
-void debug_print_tokens(const std::vector<Token> &tokens);
-void debug_print_config(const MainContext &config);
-
-std::ostream &operator<<(std::ostream &os, const TokenType &token);
-std::ostream &operator<<(std::ostream &os, const Token &token);
-
-std::ostream &operator<<(std::ostream &os, const DefaultContext &config);
-std::ostream &operator<<(std::ostream &os, const HttpContext &config);
-std::ostream &operator<<(std::ostream &os, const MainContext &config);
 
 
 
