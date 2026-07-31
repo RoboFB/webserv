@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/13 13:39:09 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/30 15:04:08 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/31 18:13:47 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,11 +30,7 @@ void test_logging(void)
 	LOG(LOG_ERROR, "An error occurred while starting the server.");
 }
 
-void test_lexer(void)
-{
-	std::filesystem::path config_path = "./config/hard_tests.conf";
-	main_parsing(config_path);
-}
+
 
 
 

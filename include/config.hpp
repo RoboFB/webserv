@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/31 12:08:30 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/31 18:12:54 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@
 # include <vector>
 # include <array>
 
-
+using TokenIterator = std::vector<Token>::const_iterator;
 
 enum class TokenType
 {
@@ -58,7 +58,7 @@ enum class ConfigContext
 };
 
 
-struct DefaultContext
+struct DefaultConfig
 {
 	std::vector<int>				error_codes;
 	std::filesystem::path			error_page_path;
@@ -67,82 +67,50 @@ struct DefaultContext
     std::filesystem::path			root;
     std::vector<std::filesystem::path>	index;
 	int								return_code;
-
-	DefaultContext() : client_max_body_size(0), autoindex(false) {};
+	std::vector<std::string>		limit_except;
+	
+	DefaultConfig() : client_max_body_size(0), autoindex(false) {};
 };
 
 
-struct LocationContext : public DefaultContext
+struct LocationConfig : public DefaultConfig
 {
-	LocationContext() : DefaultContext() {};
+
+
+	LocationConfig() : DefaultConfig() {};
 };
 
-struct ServerContext : public DefaultContext
+struct ServerConfig : public DefaultConfig
 {
-    std::vector<LocationContext>	location_context;
+    std::vector<LocationConfig>	sub_confs;
+
     std::vector<int>				listen; // address:port
     std::string						server_name;
-    std::vector<std::string>		limit_except;
 
-	ServerContext() : DefaultContext() {};
+	ServerConfig() : DefaultConfig() {};
 };
 
-struct HttpContext : public DefaultContext
+struct HttpConfig : public DefaultConfig
 {
-    std::vector<ServerContext>		server_context;
+    std::vector<ServerConfig>		sub_confs;
 
-	HttpContext() : DefaultContext() {};
+	HttpConfig() : DefaultConfig() {};
 };
 
-struct MainContext
+struct MainConfig
 {
-    HttpContext http_context;
+    HttpConfig sub_conf;
 };
 
-
-
-
-// using HandlerContext = void (*)(MainContext& config, std::vector<Token>::const_iterator& head);
-
-// parser
-// void fill_main_context(MainContext &config, std::vector<Token>::const_iterator head);
-// void fill_http_context(HttpContext &config, std::vector<Token>::const_iterator head);
-// void fill_location_context(LocationContext &config, std::vector<Token>::const_iterator head);
-// void fill_limit_except_context(std::vector<std::string> &config, std::vector<Token>::const_iterator head);
-
-// void fill_error_page_context(std::string &config, std::vector<Token>::const_iterator head);
-// void fill_client_max_body_size_context(size_t &config, std::vector<Token>::const_iterator head);
-// void fill_autoindex_context(HttpContext &config, std::vector<Token>::const_iterator head);
-// void fill_root_context(HttpContext &config, std::vector<Token>::const_iterator head);
-// void fill_index_context(HttpContext &config, std::vector<Token>::const_iterator head);
-// void fill_listen_context(HttpContext &config, std::vector<Token>::const_iterator head);
-// void fill_server_name_context(HttpContext &config, std::vector<Token>::const_iterator head);
-// void fill_return_context(HttpContext &config, std::vector<Token>::const_iterator head);
-
+class Config;
 
 
 
 struct DirectiveLookup
 {
-    ConfigContext allowed_contexts;
-    std::string_view word;
-	// std::function<void(MainContext&, std::vector<Token>::const_iterator&)> function;
-    TokenType terminator;
-};
-
-static constexpr std::array<DirectiveLookup, 12> g_directive_lookup = {
-        DirectiveLookup{ConfigContext::MAIN,      "http",                     TokenType::OPEN_BRACE}, // fill_main_context,
-        DirectiveLookup{ConfigContext::HTTP,      "server",                   TokenType::OPEN_BRACE}, // fill_http_context,
-        DirectiveLookup{ConfigContext::SERVER,    "location",                 TokenType::OPEN_BRACE}, // fill_location_context,
-        DirectiveLookup{ConfigContext::LOCATION,  "limit_except",             TokenType::OPEN_BRACE}, // fill_limit_except_context,
-        DirectiveLookup{ConfigContext::DEFAULT,   "error_page",               TokenType::SEMICOLON}, // fill_error_page_context,
-        DirectiveLookup{ConfigContext::DEFAULT,   "client_max_body_size",     TokenType::SEMICOLON}, // fill_client_max_body_size_context,
-        DirectiveLookup{ConfigContext::DEFAULT,   "autoindex",                TokenType::SEMICOLON}, // fill_autoindex_context,
-        DirectiveLookup{ConfigContext::DEFAULT,   "root",                     TokenType::SEMICOLON}, // fill_root_context,
-        DirectiveLookup{ConfigContext::DEFAULT,   "index",                    TokenType::SEMICOLON}, // fill_index_context,
-        DirectiveLookup{ConfigContext::SERVER,    "listen",                   TokenType::SEMICOLON}, // fill_listen_context,
-        DirectiveLookup{ConfigContext::SERVER,    "server_name",              TokenType::SEMICOLON}, // fill_server_name_context,
-        DirectiveLookup{ConfigContext::SERVER,    "return",                   TokenType::SEMICOLON}, // fill_return_context,
+    ConfigContext		allowed_contexts;
+    std::string_view	word;
+	void				(Config::*fill_context)(TokenIterator &, DefaultConfig &, const DirectiveLookup &);
 };
 
 
@@ -150,6 +118,97 @@ static constexpr std::array<DirectiveLookup, 12> g_directive_lookup = {
 
 
 
+class Config
+{
+	public:
+		Config(const Config &) = delete;
+		Config(Config &&) = default;
+		Config &operator=(const Config &) = delete;
+		Config &operator=(Config &&) = delete;
+
+		Config(const std::filesystem::path &config_file_path);
+
+		const ServerConfig &get_server_context(size_t index) const;
+
+	private:
+		std::filesystem::path config_file_path_;
+		MainConfig main_conf;
+		
+		HttpConfig &http_conf;
+		std::vector<ServerConfig> &server_confs;
+		// std::vector<LocationContext> &default_contexts_;
+		
+
+		DirectiveLookup find_directive_lookup(const Token & token, ConfigContext context);
+
+		constexpr bool has_flag(ConfigContext value, ConfigContext flag);
+
+		Token get_next_token(std::vector<Token>::const_iterator &head_token);
+		Token get_next_word(std::vector<Token>::const_iterator &head_token);
+		void skip_next(std::vector<Token>::const_iterator &head_token, TokenType expected_type);
+
+		
+		void fill_main_context( TokenIterator &head_token);
+		void fill_http_context( TokenIterator &head_token);
+		void fill_server_context( TokenIterator &head_token);
+		void fill_location_context(TokenIterator &head_token, std::vector<LocationConfig> &fill_config);
+		void fill_listen_context(
+			TokenIterator &head_token,
+			DefaultConfig &fill_config,
+			const DirectiveLookup &current_lookup);
+		void fill_server_name_context(
+			TokenIterator &head_token,
+			DefaultConfig &fill_config,
+			const DirectiveLookup &current_lookup);
+		void fill_limit_except_context(
+			TokenIterator &head_token,
+			DefaultConfig &fill_config,
+			const DirectiveLookup &current_lookup);
+		void fill_error_page_context(
+			TokenIterator &head_token,
+			DefaultConfig &fill_config,
+			const DirectiveLookup &current_lookup);
+		void fill_client_max_body_size_context(
+			TokenIterator &head_token,
+			DefaultConfig &fill_config,
+			const DirectiveLookup &current_lookup);
+		void fill_autoindex_context(
+			TokenIterator &head_token,
+			DefaultConfig &fill_config,
+			const DirectiveLookup &current_lookup);
+		void fill_root_context(
+			TokenIterator &head_token,
+			DefaultConfig &fill_config,
+			const DirectiveLookup &current_lookup);
+		void fill_return_context(
+			TokenIterator &head_token,
+			DefaultConfig &fill_config,
+			const DirectiveLookup &current_lookup);
+		void fill_index_context(
+			TokenIterator &head_token,
+			DefaultConfig &fill_config,
+			const DirectiveLookup &current_lookup);
+				
+		static constexpr std::array<DirectiveLookup, 12> directive_lookup = {
+				// sub_conf directives
+				DirectiveLookup{ConfigContext::MAIN,      "http",                     nullptr}, // fill_main_context,
+				DirectiveLookup{ConfigContext::HTTP,      "server",                   nullptr}, // fill_http_context,
+				DirectiveLookup{ConfigContext::SERVER,    "location",                 nullptr}, // fill_location_context,
+		
+				// Server only
+				DirectiveLookup{ConfigContext::SERVER,    "listen",                   &Config::fill_listen_context}, // fill_listen_context,
+				DirectiveLookup{ConfigContext::SERVER,    "server_name",              &Config::fill_server_name_context}, // fill_server_name_context,
+		
+				// Default
+				DirectiveLookup{ConfigContext::DEFAULT,  "limit_except",              &Config::fill_limit_except_context}, // fill_limit_except_context,
+				DirectiveLookup{ConfigContext::DEFAULT,  "error_page",                &Config::fill_error_page_context}, // fill_error_page_context,
+				DirectiveLookup{ConfigContext::DEFAULT,  "client_max_body_size",      &Config::fill_client_max_body_size_context}, // fill_client_max_body_size_context,
+				DirectiveLookup{ConfigContext::DEFAULT,  "autoindex",                 &Config::fill_autoindex_context}, // fill_autoindex_context,
+				DirectiveLookup{ConfigContext::DEFAULT,  "root",                      &Config::fill_root_context}, // fill_root_context,
+				DirectiveLookup{ConfigContext::DEFAULT,  "index",                     &Config::fill_index_context}, // fill_index_context,
+				DirectiveLookup{ConfigContext::DEFAULT,  "return",                    &Config::fill_return_context},
+		};
+};
 
 
 
@@ -157,30 +216,19 @@ static constexpr std::array<DirectiveLookup, 12> g_directive_lookup = {
 
 
 // main parsing functions
-int parsing_start(int argc, const char *argv[]);
-int main_parsing(const std::filesystem::path &config_file_path);
+const std::filesystem::path check_input_args(int argc, const char *argv[]);
+
+
+
+
+
+
+
+
+
 
 // lexer functions
 char get_next(std::string::const_iterator &head, size_t &line, size_t &column);
 std::string file_to_string(const std::filesystem::path &config_file_path);
 std::vector<Token> string_to_tokens(const std::string &source);
-
-
-
-
-
-
-
-
-void fill_location_context(MainContext &fill_config,
-					std::vector<Token>::const_iterator &head_token);
-
-void fill_server_context(MainContext &fill_config,
-					std::vector<Token>::const_iterator &head_token);
-
-void fill_http_context(MainContext &fill_config,
-					std::vector<Token>::const_iterator &head_token);
-
-void fill_main_context(	MainContext &fill_config,
-					std::vector<Token>::const_iterator &head_token);
 

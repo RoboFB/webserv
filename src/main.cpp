@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/29 14:58:02 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/30 15:18:33 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/31 12:43:43 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,9 @@ int main(int argc, const char *argv[])
 	first_website();
 	try
 	{
-		parsing_start(argc, argv);
+		const std::filesystem::path config_file = check_input_args(argc, argv);
+		
+
 		//TODO: make good webserver loop and system calls etc. 
 		// first_website_copy_of_internet();
 	}

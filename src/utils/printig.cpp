@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/15 13:59:22 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/31 12:07:08 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/31 13:33:19 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -91,7 +91,7 @@ void debug_print_tokens(const std::vector<Token> &tokens)
 }
 
 // print complete config for debugging
-void debug_print_config(const MainContext &config)
+void debug_print_config(const MainConfig &config)
 {
 	if (!(LOG_LVL & LOG_DEBUG))
 		return;
@@ -168,22 +168,22 @@ std::ostream &operator<<(std::ostream &os, const struct addrinfo &servinfo)
 
 
 // TODO: implement printing for all contexts of the config completely at the moment the acutal data is missing.
-std::ostream &operator<<(std::ostream &os, const DefaultContext &config)
+std::ostream &operator<<(std::ostream &os, const DefaultConfig &config)
 {
 	return os << "DefaultContext: "
 		<< "error page with " << config.error_codes.size() << " error codes, ";
 }
 
-std::ostream &operator<<(std::ostream &os, const HttpContext &config)
+std::ostream &operator<<(std::ostream &os, const HttpConfig &config)
 {
 	return os << "HttpContext: "
-		<< dynamic_cast<const DefaultContext&>(config);
+		<< dynamic_cast<const DefaultConfig&>(config);
 }
 
-std::ostream &operator<<(std::ostream &os, const MainContext &config)
+std::ostream &operator<<(std::ostream &os, const MainConfig &config)
 {
 	return os << "MainContext: "
-		<< config.http_context;
+		<< config.sub_conf;
 }
 
 
