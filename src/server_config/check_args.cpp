@@ -1,43 +1,30 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.cpp                                           :+:      :+:    :+:   */
+/*   check_args.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/06/29 14:58:02 by rgohrig           #+#    #+#             */
+/*   Created: 2026/07/13 10:48:31 by rgohrig           #+#    #+#             */
 /*   Updated: 2026/07/31 18:46:07 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
-#include "logging.hpp"
-#include "testing.hpp"
 
-
-int main(int argc, const char *argv[])
+const std::filesystem::path check_input_args(int argc, const char *argv[])
 {
-	// first_website_copy_of_internet();
-	// first_website();
-	try
+	if (argc != 2)
 	{
-		const std::filesystem::path config_file = check_input_args(argc, argv);
-		Config config(config_file);
-		
-
-		//TODO: make good webserver loop and system calls etc. 
-		// first_website_copy_of_internet();
+		throw std::runtime_error("wrong number of arguments.\n"
+									"./webserv [configuration file]\n"
+									"./webserv -t\n"
+									"./webserv --test\n");
 	}
-	catch (const std::exception& e) 
+	if (argv[1] == std::string_view("-t")
+		|| (argv[1] == std::string_view("--test")))
 	{
-		LOG(LOG_ERROR, e.what());
-		return EXIT_FAILURE;
+		return ("./config/hard_tests.conf");
 	}
-	catch (...) 
-	{
-		LOG(LOG_ERROR, "Unknown exception occurred that is not derived from std::exception.");
-		return EXIT_FAILURE;
-	}
-	return EXIT_SUCCESS;
+	return (argv[1]);
 }
-

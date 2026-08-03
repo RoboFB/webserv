@@ -6,7 +6,7 @@
 #    By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/03/10 10:21:00 by rgohrig           #+#    #+#              #
-#    Updated: 2026/07/07 15:45:14 by rgohrig          ###   ########.fr        #
+#    Updated: 2026/07/31 12:11:56 by rgohrig          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -19,13 +19,13 @@
 NAME :=				webserv
 
 COMPILER :=			c++
-DEBUG_FLAGS :=		-Wshadow -g -fsanitize=address,undefined
+DEBUG_FLAGS :=		-Wshadow -g -fsanitize=address,undefined -D LOG_LVL=15
 PROFILE_FLAGS :=	-pg -g
 FAST_FLAGS :=		-O2 #-march=native -O3 -flto # O2 should be enough
 LINKER_FLAGS :=		
 COMPILE_FLAGS :=	-MMD -MP # MMD & MD for dependencies
 
-CFLAGS :=			-Wall -Werror -Wextra -std=c++17 $(FAST_FLAGS) $(LINKER_FLAGS) $(COMPILE_FLAGS) -D LOG_LVL=15
+CFLAGS :=			-Wall -Werror -Wextra -std=c++17 $(FAST_FLAGS) $(LINKER_FLAGS) $(COMPILE_FLAGS)
 
 DIR_SRC :=			src
 SRC :=				$(shell find $(DIR_SRC) -type f -name '*.cpp' | sed 's|^$(DIR_SRC)/||')
@@ -45,7 +45,7 @@ DEPENDENCIES := 	$(OBJ:.o=.d)
 # ----------------------------- NORMAL -----------------------------------------
 
 # default Rule
-all: $(NAME)
+all: compile_commands $(NAME)
 
 $(DIR_OBJ):
 	@mkdir -p $(DIR_OBJ)
@@ -112,4 +112,12 @@ profile:
 	@echo "\n   📊📊📊 PROFILE $(NAME)   ($(CFLAGS))\n"
 
 
-.PHONY: all clean fclean re debug profile stop run
+
+# ----------------------------- Clangd -----------------------------------------
+
+compile_commands:
+	@(compiledb -n make && echo "👀 compile_commands.json updated") || echo "👀 compiledb failed"
+
+# ----------------------------- Phony ------------------------------------------
+
+.PHONY: all clean fclean re debug profile stop run compile_commands

@@ -5,6 +5,9 @@
 # IDE settings
 .vscode
 
+# clangd
+compile_commands.json
+
 # MacOS
 *.DS_Store
 
@@ -13,6 +16,10 @@
 *.out
 *.d
 
+
+#the officel testers
+cgi_tester
+tester
 
 # executable files
 webserv

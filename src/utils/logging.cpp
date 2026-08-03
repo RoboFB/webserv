@@ -6,11 +6,13 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/07 12:34:10 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/09 15:23:10 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/07/13 13:38:22 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 # include "logging.hpp"
+
+# include "colors.hpp"
 # include <iostream>
 
 // Logging implementation: errors on 2, has coloring, and uses file, line, fuction on debugging
@@ -33,7 +35,7 @@ void log_impl(const LogLevel level, const std::string &message,
 	}
 	if (LOG_LVL & LOG_DEBUG )
 	{
-		output << file << ":" << line << " (" << func << ")\n          ";
+		output << file << ":" << line << " (" << func << "):\n";
 	}
 	output << message << "\n";
 }
