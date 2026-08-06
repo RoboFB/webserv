@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/31 18:46:07 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/04 22:02:03 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,11 @@
 
 
 #include "ConfigParseException.hpp"
+#include "IpAddress.hpp"
 
 
+#include <netdb.h>
+#include <memory>
 # include <string>
 # include <string_view>
 
@@ -80,14 +83,23 @@ struct LocationConfig : public DefaultConfig
 	LocationConfig() : DefaultConfig() {};
 };
 
+struct AddrInfoDeleter
+{
+    void operator()(addrinfo* p) const { 
+		if (p) freeaddrinfo(p);
+    }
+};
+
+using AddrInfoPtr = std::unique_ptr<addrinfo, AddrInfoDeleter>;
+
 struct ServerConfig : public DefaultConfig
 {
     std::vector<LocationConfig>	sub_confs;
 
-    std::vector<int>				listen; // address:port
-    std::string						server_name;
+	AddrInfoPtr					listen; // address:port linked list of listen addresses
+    std::string					server_name;
 
-	ServerConfig() : DefaultConfig() {};
+	ServerConfig() : DefaultConfig() , listen(nullptr) {};
 };
 
 struct HttpConfig : public DefaultConfig
@@ -145,6 +157,8 @@ class Config
 		Token get_next_token(std::vector<Token>::const_iterator &head_token);
 		Token get_next_word(std::vector<Token>::const_iterator &head_token);
 		void skip_next(std::vector<Token>::const_iterator &head_token, TokenType expected_type);
+		void is_at_end_of_file(std::vector<Token>::const_iterator &head_token);
+
 
 		
 		void fill_main_context( TokenIterator &head_token);
@@ -218,7 +232,9 @@ class Config
 const std::filesystem::path check_input_args(int argc, const char *argv[]);
 
 
-
+// helper fuctions
+int validate_port(const std::string &str);
+int validate_octet_address_part(const std::string &str);
 
 
 

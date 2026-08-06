@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/13 16:19:19 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/31 18:46:07 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/06 15:07:08 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,15 @@ Token Config::get_next_token(std::vector<Token>::const_iterator &head_token)
 		throw ConfigParseException("unexpected end of file", current_token);
 	++head_token;
     return current_token;
+}
+
+// gets on token and move head, returns at the end eof if it is a  second time callet i thros a error
+void Config::is_at_end_of_file(std::vector<Token>::const_iterator &head_token)
+{
+	Token current_token = *head_token;
+
+	if (current_token.type != TokenType::END_OF_FILE)
+		throw ConfigParseException("no end of file reached", current_token);
 }
 
 // gets on token and move head
@@ -63,3 +72,49 @@ DirectiveLookup Config::find_directive_lookup(const Token & token, ConfigContext
 	throw ConfigParseException("unknown word, not found in list", token);
 }
 
+
+
+
+/* 
+if number -> valid -> return number
+if number -> out of range -> -1
+if not number -> -2
+if not used all of the string -> -3
+
+*/
+int validate_port(const std::string &str)
+{
+	try
+	{
+		size_t index = 0;
+		int port = std::stoi(str, &index);
+		if (index != str.size())
+			return -3;
+		if (port < 0 || port > 65535)
+			return -1;
+		return port;
+	}
+	catch (const std::exception &e)
+	{
+		return -2;
+	}
+}
+
+// deprecated, not used anymore, but kept for reference
+int validate_octet_address_part(const std::string &str)
+{
+	try
+	{
+		size_t index = 0;
+		int port = std::stoi(str, &index);
+		if (index != str.size())
+			return -1;
+		if (port < 0 || port > 255)
+			return -1;
+		return port;
+	}
+	catch (const std::exception &e)
+	{
+		return -1;
+	}
+}

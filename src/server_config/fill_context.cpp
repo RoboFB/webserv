@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:43:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/31 18:46:07 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/04 22:02:23 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,7 +64,7 @@ void Config::fill_server_context(TokenIterator &head_token)
 			(this->*current_lookup.fill_context)(head_token, new_conf, current_lookup);
 
 	}
-	server_confs.push_back(new_conf);
+	server_confs.push_back(std::move(new_conf));
 	return;
 }
 
@@ -96,7 +96,7 @@ void Config::fill_main_context(TokenIterator &head_token)
 	find_directive_lookup(current_token, ConfigContext::MAIN);
 
 	fill_http_context(head_token);
-	skip_next(head_token, TokenType::END_OF_FILE);
-	
+	is_at_end_of_file(head_token);
+
 	return;
 }
