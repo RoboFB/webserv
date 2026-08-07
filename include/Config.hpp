@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/04 22:02:03 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/07 21:27:19 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,14 @@
 
 # include <vector>
 # include <array>
+
+
+# define BODY_SIZE_FACTOR 1024 // ein bytes steep
+# define BODY_SIZE_K (BODY_SIZE_FACTOR) // ein bytes steep
+# define BODY_SIZE_M (BODY_SIZE_FACTOR * BODY_SIZE_K) // ein bytes steep
+# define BODY_SIZE_G (BODY_SIZE_FACTOR * BODY_SIZE_M) // ein bytes steep
+# define DEFAULT_CLIENT_MAX_BODY_SIZE (1 * BODY_SIZE_M) // 1MB
+
 
 using TokenIterator = std::vector<Token>::const_iterator;
 
@@ -61,6 +69,19 @@ enum class ConfigContext
 };
 
 
+enum class AllowedMethods
+{
+	NONE =    0b00000, // "NONE" or if not specified
+	GET =    0b00001, // "GET"
+	POST =   0b00010, // "POST"
+	DELETE = 0b00100  // "DELETE"
+	
+};
+// no throw, if not found return NONE
+AllowedMethods string_to_allowed_methods(const std::string& methods);
+std::string allowed_methods_to_string(AllowedMethods methods);
+
+
 struct DefaultConfig
 {
 	std::vector<int>				error_codes;
@@ -70,9 +91,9 @@ struct DefaultConfig
     std::filesystem::path			root;
     std::vector<std::filesystem::path>	index;
 	int								return_code;
-	std::vector<std::string>		limit_except;
+	std::vector<AllowedMethods>		limit_except;
 	
-	DefaultConfig() : client_max_body_size(0), autoindex(false) {};
+	DefaultConfig() : client_max_body_size(DEFAULT_CLIENT_MAX_BODY_SIZE), autoindex(false) {};
 };
 
 
@@ -97,7 +118,7 @@ struct ServerConfig : public DefaultConfig
     std::vector<LocationConfig>	sub_confs;
 
 	AddrInfoPtr					listen; // address:port linked list of listen addresses
-    std::string					server_name;
+    // std::string					server_name; // later need to be implemented on header level (www.example.com, example.com, etc.)
 
 	ServerConfig() : DefaultConfig() , listen(nullptr) {};
 };
@@ -122,7 +143,7 @@ struct DirectiveLookup
 {
     ConfigContext		allowed_contexts;
     std::string_view	word;
-	void				(Config::*fill_context)(TokenIterator &, DefaultConfig &, const DirectiveLookup &);
+	void				(Config::*fill_context)(TokenIterator &, DefaultConfig &);
 };
 
 
@@ -160,47 +181,41 @@ class Config
 		void is_at_end_of_file(std::vector<Token>::const_iterator &head_token);
 
 
+		void append_addrinfo(AddrInfoPtr &addr_list, const std::string &address_str, const std::string &port_str, const Token &token);
 		
-		void fill_main_context( TokenIterator &head_token);
-		void fill_http_context( TokenIterator &head_token);
-		void fill_server_context( TokenIterator &head_token);
-		void fill_location_context(TokenIterator &head_token, std::vector<LocationConfig> &fill_config);
-		void fill_listen_context(
+		size_t parse_max_body_size(const std::string& value_str, const Token &token);
+		
+		void fill_main( TokenIterator &head_token);
+		void fill_http( TokenIterator &head_token);
+		void fill_server( TokenIterator &head_token);
+		void fill_location(TokenIterator &head_token, std::vector<LocationConfig> &fill_config);
+		void fill_listen(
 			TokenIterator &head_token,
-			DefaultConfig &fill_config,
-			const DirectiveLookup &current_lookup);
-		void fill_server_name_context(
+			DefaultConfig &fill_config);
+		void fill_server_name(
 			TokenIterator &head_token,
-			DefaultConfig &fill_config,
-			const DirectiveLookup &current_lookup);
-		void fill_limit_except_context(
+			DefaultConfig &fill_config);
+		void fill_limit_except(
 			TokenIterator &head_token,
-			DefaultConfig &fill_config,
-			const DirectiveLookup &current_lookup);
-		void fill_error_page_context(
+			DefaultConfig &fill_config);
+		void fill_error_page(
 			TokenIterator &head_token,
-			DefaultConfig &fill_config,
-			const DirectiveLookup &current_lookup);
-		void fill_client_max_body_size_context(
+			DefaultConfig &fill_config);
+		void fill_client_max_body_size(
 			TokenIterator &head_token,
-			DefaultConfig &fill_config,
-			const DirectiveLookup &current_lookup);
-		void fill_autoindex_context(
+			DefaultConfig &fill_config);
+		void fill_autoindex(
 			TokenIterator &head_token,
-			DefaultConfig &fill_config,
-			const DirectiveLookup &current_lookup);
-		void fill_root_context(
+			DefaultConfig &fill_config);
+		void fill_root(
 			TokenIterator &head_token,
-			DefaultConfig &fill_config,
-			const DirectiveLookup &current_lookup);
-		void fill_return_context(
+			DefaultConfig &fill_config);
+		void fill_return(
 			TokenIterator &head_token,
-			DefaultConfig &fill_config,
-			const DirectiveLookup &current_lookup);
-		void fill_index_context(
+			DefaultConfig &fill_config);
+		void fill_index(
 			TokenIterator &head_token,
-			DefaultConfig &fill_config,
-			const DirectiveLookup &current_lookup);
+			DefaultConfig &fill_config);
 				
 		static constexpr std::array<DirectiveLookup, 12> directive_lookup = {
 				// sub_conf directives
@@ -209,17 +224,17 @@ class Config
 				DirectiveLookup{ConfigContext::SERVER,    "location",                 nullptr}, // fill_location_context,
 		
 				// Server only
-				DirectiveLookup{ConfigContext::SERVER,    "listen",                   &Config::fill_listen_context}, // fill_listen_context,
-				DirectiveLookup{ConfigContext::SERVER,    "server_name",              &Config::fill_server_name_context}, // fill_server_name_context,
+				DirectiveLookup{ConfigContext::SERVER,    "listen",                   &Config::fill_listen}, // fill_listen_context,
+				// DirectiveLookup{ConfigContext::SERVER,    "server_name",              &Config::fill_server_name}, // fill_server_name_context,
 		
 				// Default
-				DirectiveLookup{ConfigContext::DEFAULT,  "limit_except",              &Config::fill_limit_except_context}, // fill_limit_except_context,
-				DirectiveLookup{ConfigContext::DEFAULT,  "error_page",                &Config::fill_error_page_context}, // fill_error_page_context,
-				DirectiveLookup{ConfigContext::DEFAULT,  "client_max_body_size",      &Config::fill_client_max_body_size_context}, // fill_client_max_body_size_context,
-				DirectiveLookup{ConfigContext::DEFAULT,  "autoindex",                 &Config::fill_autoindex_context}, // fill_autoindex_context,
-				DirectiveLookup{ConfigContext::DEFAULT,  "root",                      &Config::fill_root_context}, // fill_root_context,
-				DirectiveLookup{ConfigContext::DEFAULT,  "index",                     &Config::fill_index_context}, // fill_index_context,
-				DirectiveLookup{ConfigContext::DEFAULT,  "return",                    &Config::fill_return_context},
+				DirectiveLookup{ConfigContext::DEFAULT,  "limit_except",              &Config::fill_limit_except}, // fill_limit_except_context,
+				DirectiveLookup{ConfigContext::DEFAULT,  "error_page",                &Config::fill_error_page}, // fill_error_page_context,
+				DirectiveLookup{ConfigContext::DEFAULT,  "client_max_body_size",      &Config::fill_client_max_body_size}, // fill_client_max_body_size_context,
+				DirectiveLookup{ConfigContext::DEFAULT,  "autoindex",                 &Config::fill_autoindex}, // fill_autoindex_context,
+				DirectiveLookup{ConfigContext::DEFAULT,  "root",                      &Config::fill_root}, // fill_root_context,
+				DirectiveLookup{ConfigContext::DEFAULT,  "index",                     &Config::fill_index}, // fill_index_context,
+				DirectiveLookup{ConfigContext::DEFAULT,  "return",                    &Config::fill_return},
 		};
 };
 

@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 12:29:08 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/03 14:02:37 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/07 20:28:33 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ Config::Config(const std::filesystem::path &config_file_path) : config_file_path
 		
 	
 		std::vector<Token>::const_iterator head_token = tokens.cbegin();
-		fill_main_context(head_token);
+		fill_main(head_token);
 		LOG(LOG_DEBUG, "after  fill_main_context");
 		
 

@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:38:24 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/06 15:07:43 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/07 21:29:59 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,11 +16,32 @@
 
 #include "printing.hpp"
 
-/* 
-BIG TODO:
-- fix and implement all the fill_context functions for the directives
 
-*/
+void Config::append_addrinfo(AddrInfoPtr &addr_list, const std::string &address_str, const std::string &port_str, const Token &token)
+{
+	addrinfo hints{};
+	hints.ai_flags = AI_PASSIVE;		// fill in my IP for me
+	hints.ai_family = AF_UNSPEC;		// don't care IPv4 or IPv6
+	hints.ai_socktype = SOCK_STREAM;	// TCP stream sockets
+
+	addrinfo* new_list = nullptr;
+	
+	int status = getaddrinfo(address_str.c_str(), port_str.c_str(), &hints, &new_list);
+	if (status != 0)
+		throw ConfigParseException("getaddrinfo error: " + std::string(gai_strerror(status)), token);
+	
+	if (addr_list.get() == nullptr)
+	{
+		addr_list.reset(new_list);
+	}
+	else
+	{
+		addrinfo* current = addr_list.get();
+		while (current->ai_next)
+			current = current->ai_next;
+		current->ai_next = new_list;
+	}
+}
 
 
 /* 
@@ -35,59 +56,36 @@ ipv6 not supported yet, but should be in the future
 
 default: 0.0.0.0:8000; and 0.0.0.0:80;
 */
-void Config::fill_listen_context(TokenIterator &head_token,
-					DefaultConfig &fill_config,
-					const DirectiveLookup &current_lookup)
+void Config::fill_listen(TokenIterator &head_token,
+					DefaultConfig &fill_config)
 {
-	(void)current_lookup;
 	Token token = get_next_word(head_token);
+
 	std::string port_str(token.word);
-	
-	
 	std::string address_str = "0.0.0.0";// default
-	if (std::count(port_str.begin(), port_str.end(), ':') == 1)
+
+	size_t count_colon = std::count(port_str.begin(), port_str.end(), ':');
+	if (count_colon > 1)
+	{
+		throw ConfigParseException("invalid listen format to many colons", token);
+    }
+	else if (count_colon == 1)
 	{
 		std::getline(std::istringstream(port_str), address_str, ':');
 		port_str = port_str.substr(address_str.length() + 1);
     }
-
 	if (validate_port(port_str) == -1)
 		throw ConfigParseException("invalid port number", token);
 	
 	
+	append_addrinfo(reinterpret_cast<ServerConfig&>(fill_config).listen, address_str, port_str, token);
 
-	ServerConfig *server_conf = static_cast<ServerConfig *>(&fill_config);
 
-	int status;
-	addrinfo hints{};
-	hints.ai_flags = AI_PASSIVE;		// fill in my IP for me
-	hints.ai_family = AF_UNSPEC;		// don't care IPv4 or IPv6
-	hints.ai_socktype = SOCK_STREAM;	// TCP stream sockets
-
-	
-	addrinfo* new_list = nullptr;
-	status = getaddrinfo(address_str.c_str(), port_str.c_str(), &hints, &new_list);
-
-	if (status != 0)
-	{
-		throw ConfigParseException("getaddrinfo error: " + std::string(gai_strerror(status)), token);
-	}
-	if (server_conf->listen == nullptr)
-	{
-		server_conf->listen.reset(new_list);
-	}
-	else
-	{
-		addrinfo* current = server_conf->listen.get();
-		while (current->ai_next)
-			current = current->ai_next;
-		current->ai_next = new_list;
-	}
 	
 	// debug print
 	std::cout << "address_str:" << address_str << "%" << std::endl;
 	std::cout << "port_str:" << port_str << "%" << std::endl;
-	std::cout << "server_conf->listen:" << *server_conf->listen << std::endl;
+	std::cout << "server_conf->listen:" << *reinterpret_cast<ServerConfig&>(fill_config).listen << std::endl;
 
 	skip_next(head_token, TokenType::SEMICOLON);
 	return;
@@ -97,13 +95,234 @@ void Config::fill_listen_context(TokenIterator &head_token,
 
 
 
-
-void Config::fill_error_page_context(
-			TokenIterator &head_token,
-			DefaultConfig &fill_config,
-			const DirectiveLookup &current_lookup)
+/* 
+default: off
+*/
+void Config::fill_autoindex(TokenIterator &head_token,
+					DefaultConfig &fill_config)
 {
-	(void)current_lookup;
+	Token token = get_next_word(head_token);
+
+	if (token.word == "on")
+	{
+		fill_config.autoindex = true;
+	}
+	else if (token.word == "off")
+	{
+		fill_config.autoindex = false;
+	}
+	else
+	{
+		throw ConfigParseException("invalid autoindex value, expected 'on' or 'off'", token);
+	}
+
+	skip_next(head_token, TokenType::SEMICOLON);
+	return;
+}
+
+
+
+/* 
+Default: root html;
+*/
+void Config::fill_root(TokenIterator &head_token,
+					DefaultConfig &fill_config)
+{
+	Token token = get_next_word(head_token);
+
+	fill_config.root = token.word;
+	// todo: maybe more error handling
+
+
+	skip_next(head_token, TokenType::SEMICOLON);
+	return;
+}
+
+/* 
+converts "3G" "20M" "1024k" "10" in Bytes (size_t)
+*/
+size_t Config::parse_max_body_size(const std::string& value_str, const Token &token)
+{
+    if (value_str.empty())
+        throw ConfigParseException("Empty client_max_body_size value", token);
+
+    char unit = value_str[value_str.length() - 1];
+	
+	std::string number_str;
+	size_t multiplier = 1;
+	if (std::isdigit(unit))
+	{
+		number_str = value_str;
+		multiplier = 1;
+	} 
+	else 
+	{
+		number_str = value_str.substr(0, value_str.length() - 1);
+		if (number_str.length() == 0)
+			throw ConfigParseException("invalid client_max_body_size value, no number before unit", token);
+		switch (std::tolower(unit)) {
+			case 'k': multiplier = BODY_SIZE_K; break;
+			case 'm': multiplier = BODY_SIZE_M; break;
+			case 'g': multiplier = BODY_SIZE_G; break;
+			default: throw ConfigParseException("wrong modifier client_max_body_size value", token);
+		}
+	}
+
+
+	size_t index = 0;
+	int result;
+	try {
+		result = std::stoi(number_str, &index);
+	} 
+	catch (const std::exception& e) {
+		throw ConfigParseException("invalid number format", token);
+	}
+
+	if (index != number_str.length())
+		throw ConfigParseException("invalid number format at position " + std::to_string(index), token);
+	else if (result < 0)
+		throw ConfigParseException("invalid no negative numbers allowed ", token);
+	else if (SIZE_MAX / multiplier < static_cast<size_t>(result))
+		throw ConfigParseException("Size value overflow", token);
+	
+	return result * multiplier;	
+}
+
+/* 
+Default:	
+client_max_body_size 1m
+*/
+void Config::fill_client_max_body_size(TokenIterator &head_token,
+					DefaultConfig &fill_config)
+{
+	Token token = get_next_word(head_token);
+	fill_config.client_max_body_size = parse_max_body_size(token.word, token);
+	skip_next(head_token, TokenType::SEMICOLON);
+	return;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+void Config::fill_index(TokenIterator &head_token,
+					DefaultConfig &fill_config)
+{
+	Token token = get_next_word(head_token);
+
+	// todo: maybe more error handling
+	fill_config.index.push_back(token.word);
+
+	skip_next(head_token, TokenType::SEMICOLON);
+	return;
+}
+
+// void Config::fill_server_name(TokenIterator &head_token,
+// 					DefaultConfig &fill_config)
+// {
+// 	Token token = get_next_word(head_token);
+
+// 	if (token.word.empty()) // todo: maybe more error handling
+// 		throw ConfigParseException("empty server name", token);
+// 	fill_config.server_names.push_back(token.word);
+
+// 	skip_next(head_token, TokenType::SEMICOLON);
+// 	return;
+// }
+
+
+
+AllowedMethods string_to_get_allowed_methods(const std::string& methods)
+{
+	if (methods == "GET")
+		return AllowedMethods::GET;
+	else if (methods == "POST")
+		return AllowedMethods::POST;
+	else if (methods == "DELETE")
+		return AllowedMethods::DELETE;
+	else
+		return AllowedMethods::NONE;
+}
+
+std::string allowed_methods_to_string(AllowedMethods methods)
+{
+	if (methods == AllowedMethods::GET)
+		return "GET";
+	else if (methods == AllowedMethods::POST)
+		return "POST";
+	else if (methods == AllowedMethods::DELETE)
+		return "DELETE";
+	else if (methods == AllowedMethods::NONE)
+		return "NONE";
+	else
+		return "NONE";
+}
+
+
+/* 
+
+limit_except GET POST DELETE;
+limit_except GET;
+limit_except POST;
+limit_except DELETE;
+
+*/
+void Config::fill_limit_except(TokenIterator &head_token,
+					DefaultConfig &fill_config)
+{
+	Token token = get_next_word(head_token);
+	while (true)
+	{
+		AllowedMethods method = string_to_get_allowed_methods(token.word);
+		if (method == AllowedMethods::NONE)
+			throw ConfigParseException("invalid limit_except needs 'GET', 'POST' or 'DELETE'", token);
+		fill_config.limit_except.push_back(method);
+
+		token = get_next_token(head_token);
+		if (token.type == TokenType::SEMICOLON)
+			break;
+		if (token.type != TokenType::WORD)
+			throw ConfigParseException("expected a word", token);
+	}
+	return;
+}
+
+
+
+/* 
+BIG TODO:
+- fix and implement all the fill_context functions for the directives
+
+*/
+
+
+void Config::fill_return(TokenIterator &head_token,
+					DefaultConfig &fill_config)
+{
+	Token token = get_next_word(head_token);
+
+	fill_config.index.push_back(token.word);
+
+	skip_next(head_token, TokenType::SEMICOLON);
+	return;
+}
+
+
+
+
+
+void Config::fill_error_page(
+			TokenIterator &head_token,
+			DefaultConfig &fill_config)
+{
+
 	// LOG(LOG_DEBUG, "NOICE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
 	Token current_token = get_next_word(head_token);
@@ -129,90 +348,6 @@ void Config::fill_error_page_context(
 	}
 	
 	
-	skip_next(head_token, TokenType::SEMICOLON);
-	return;
-}
-
-void Config::fill_client_max_body_size_context(TokenIterator &head_token,
-					DefaultConfig &fill_config,
-					const DirectiveLookup &current_lookup)
-{
-	(void)current_lookup;
-	Token current_token = get_next_word(head_token);
-	(void)current_token; (void)fill_config;
-	// fill_config.client_max_body_size = std::stoul(current_token.word);
-	skip_next(head_token, TokenType::SEMICOLON);
-	return;
-}
-
-void Config::fill_autoindex_context(TokenIterator &head_token,
-					DefaultConfig &fill_config,
-					const DirectiveLookup &current_lookup)
-{
-	(void)current_lookup;
-	Token current_token = get_next_word(head_token);
-	(void)current_token; (void)fill_config;
-	// fill_config.autoindex = (current_token.word == "on");
-	skip_next(head_token, TokenType::SEMICOLON);
-	return;
-}
-
-void Config::fill_root_context(TokenIterator &head_token,
-					DefaultConfig &fill_config,
-					const DirectiveLookup &current_lookup)
-{
-	(void)current_lookup;
-	Token current_token = get_next_word(head_token);
-	(void)current_token; (void)fill_config;
-	// fill_config.root = current_token.word;
-	skip_next(head_token, TokenType::SEMICOLON);
-	return;
-}
-
-void Config::fill_index_context(TokenIterator &head_token,
-					DefaultConfig &fill_config,
-					const DirectiveLookup &current_lookup)
-{
-	(void)current_lookup;
-	Token current_token = get_next_word(head_token);
-	(void)current_token; (void)fill_config;
-	// fill_config.index.push_back(current_token.word);
-	skip_next(head_token, TokenType::SEMICOLON);
-	return;
-}
-
-void Config::fill_server_name_context(TokenIterator &head_token,
-					DefaultConfig &fill_config,
-					const DirectiveLookup &current_lookup)
-{
-	(void)current_lookup;
-	Token current_token = get_next_word(head_token);
-	(void)current_token; (void)fill_config;
-	// fill_config.server_name = current_token.word;
-	skip_next(head_token, TokenType::SEMICOLON);
-	return;
-}
-
-void Config::fill_limit_except_context(TokenIterator &head_token,
-					DefaultConfig &fill_config,
-					const DirectiveLookup &current_lookup)
-{
-	(void)current_lookup;
-	Token current_token = get_next_word(head_token);
-	(void)current_token; (void)fill_config;
-	// fill_config.limit_except = current_token.word;
-	skip_next(head_token, TokenType::SEMICOLON);
-	return;
-}
-
-void Config::fill_return_context(TokenIterator &head_token,
-					DefaultConfig &fill_config,
-					const DirectiveLookup &current_lookup)
-{
-	(void)current_lookup;
-	Token current_token = get_next_word(head_token);
-	(void)current_token; (void)fill_config;
-	// fill_config.return = current_token.word;
 	skip_next(head_token, TokenType::SEMICOLON);
 	return;
 }
