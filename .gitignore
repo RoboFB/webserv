@@ -7,6 +7,7 @@
 
 # clangd
 compile_commands.json
+.clang-format
 
 # MacOS
 *.DS_Store

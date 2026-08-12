@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/16 15:10:40 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/31 18:46:07 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/06 15:09:02 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,6 @@ ConfigParseException::ConfigParseException(const std::string& error_message, con
     : std::runtime_error(
         std::to_string(error_token.line) + ":" +
         std::to_string(error_token.column) + ": " +
-        error_message + " at: '" +
+        error_message + " at token: '" +
         error_token.word + "'")
 {}
