@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:38:24 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/07 21:29:59 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/12 17:35:51 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -130,7 +130,7 @@ void Config::fill_root(TokenIterator &head_token,
 {
 	Token token = get_next_word(head_token);
 
-	fill_config.root = token.word;
+	fill_config.root_path = token.word;
 	// todo: maybe more error handling
 
 
@@ -141,26 +141,22 @@ void Config::fill_root(TokenIterator &head_token,
 /* 
 converts "3G" "20M" "1024k" "10" in Bytes (size_t)
 */
-size_t Config::parse_max_body_size(const std::string& value_str, const Token &token)
+size_t Config::parse_max_body_size(std::string number_str, const Token &token)
 {
-    if (value_str.empty())
-        throw ConfigParseException("Empty client_max_body_size value", token);
+	size_t x = number_str.rfind("iB");
+	if (x != std::string::npos)
+		number_str.erase(x, 2);
 
-    char unit = value_str[value_str.length() - 1];
+    char unit_letter = number_str.back();
 	
-	std::string number_str;
 	size_t multiplier = 1;
-	if (std::isdigit(unit))
+	if (!std::isdigit(unit_letter))
 	{
-		number_str = value_str;
-		multiplier = 1;
-	} 
-	else 
-	{
-		number_str = value_str.substr(0, value_str.length() - 1);
+		number_str.pop_back();
 		if (number_str.length() == 0)
 			throw ConfigParseException("invalid client_max_body_size value, no number before unit", token);
-		switch (std::tolower(unit)) {
+		switch (std::tolower(unit_letter)) {
+			case 'b': multiplier = BODY_SIZE_B; break;
 			case 'k': multiplier = BODY_SIZE_K; break;
 			case 'm': multiplier = BODY_SIZE_M; break;
 			case 'g': multiplier = BODY_SIZE_G; break;
@@ -175,15 +171,14 @@ size_t Config::parse_max_body_size(const std::string& value_str, const Token &to
 		result = std::stoi(number_str, &index);
 	} 
 	catch (const std::exception& e) {
-		throw ConfigParseException("invalid number format", token);
+		throw ConfigParseException("invalid number", token);
 	}
-
 	if (index != number_str.length())
-		throw ConfigParseException("invalid number format at position " + std::to_string(index), token);
+		throw ConfigParseException("invalid number" , token);
 	else if (result < 0)
-		throw ConfigParseException("invalid no negative numbers allowed ", token);
+		throw ConfigParseException("invalid negative number", token);
 	else if (SIZE_MAX / multiplier < static_cast<size_t>(result))
-		throw ConfigParseException("Size value overflow", token);
+		throw ConfigParseException("invalid big number", token);
 	
 	return result * multiplier;	
 }
@@ -218,7 +213,7 @@ void Config::fill_index(TokenIterator &head_token,
 	Token token = get_next_word(head_token);
 
 	// todo: maybe more error handling
-	fill_config.index.push_back(token.word);
+	fill_config.indexs_paths.push_back(token.word);
 
 	skip_next(head_token, TokenType::SEMICOLON);
 	return;
@@ -268,6 +263,9 @@ std::string allowed_methods_to_string(AllowedMethods methods)
 
 /* 
 
+default: limit_except NONE; Breaking to nginx but the easiest to implement and make a little sense. maby remane it to allowd methods.
+        so the config needa at least one methet. 
+		can be difficult to inhert it kouse it only adds and not overwrite values prevuslie set.
 limit_except GET POST DELETE;
 limit_except GET;
 limit_except POST;
@@ -283,7 +281,7 @@ void Config::fill_limit_except(TokenIterator &head_token,
 		AllowedMethods method = string_to_get_allowed_methods(token.word);
 		if (method == AllowedMethods::NONE)
 			throw ConfigParseException("invalid limit_except needs 'GET', 'POST' or 'DELETE'", token);
-		fill_config.limit_except.push_back(method);
+		fill_config.limit_except = fill_config.limit_except | method;
 
 		token = get_next_token(head_token);
 		if (token.type == TokenType::SEMICOLON)
@@ -303,21 +301,36 @@ BIG TODO:
 */
 
 
+// TODO: implement return directive
 void Config::fill_return(TokenIterator &head_token,
 					DefaultConfig &fill_config)
 {
 	Token token = get_next_word(head_token);
 
-	fill_config.index.push_back(token.word);
+	fill_config.return_code = std::stoi(token.word);
 
-	skip_next(head_token, TokenType::SEMICOLON);
+	token = get_next_token(head_token); // get next token, should be a word or a semicolon
+
+	if (token.type == TokenType::WORD)
+	{
+		fill_config.return_path = token.word;
+		skip_next(head_token, TokenType::SEMICOLON);
+		return;
+	}
+	else if (token.type == TokenType::SEMICOLON)
+	{
+		return;
+	}
+	else 
+		throw ConfigParseException("expected a word or a semicolon", token);
+
 	return;
 }
 
 
 
 
-
+// TODO: implement error_page directive
 void Config::fill_error_page(
 			TokenIterator &head_token,
 			DefaultConfig &fill_config)
@@ -334,14 +347,7 @@ void Config::fill_error_page(
 		}
 		catch(const std::exception& e)
 		{
-			try
-			{
-				fill_config.error_page_path = current_token.word;
-			}
-			catch(const std::exception& e)
-			{
-				std::cerr << e.what() << '\n';
-			}
+			fill_config.error_page_path = current_token.word;
 		}
 		
 		current_token = get_next_word(head_token);

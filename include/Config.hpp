@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/07 21:27:19 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/12 16:32:31 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,11 +29,13 @@
 # include <array>
 
 
+
 # define BODY_SIZE_FACTOR 1024 // ein bytes steep
-# define BODY_SIZE_K (BODY_SIZE_FACTOR) // ein bytes steep
-# define BODY_SIZE_M (BODY_SIZE_FACTOR * BODY_SIZE_K) // ein bytes steep
-# define BODY_SIZE_G (BODY_SIZE_FACTOR * BODY_SIZE_M) // ein bytes steep
-# define DEFAULT_CLIENT_MAX_BODY_SIZE (1 * BODY_SIZE_M) // 1MB
+# define BODY_SIZE_B 1 // byte
+# define BODY_SIZE_K (BODY_SIZE_FACTOR * BODY_SIZE_B) // kilobyte
+# define BODY_SIZE_M (BODY_SIZE_FACTOR * BODY_SIZE_K) // megabyte
+# define BODY_SIZE_G (BODY_SIZE_FACTOR * BODY_SIZE_M) // gigabyte
+# define BODY_SIZE_DEFAULT (1 * BODY_SIZE_M) // 1MB
 
 
 using TokenIterator = std::vector<Token>::const_iterator;
@@ -74,9 +76,20 @@ enum class AllowedMethods
 	NONE =    0b00000, // "NONE" or if not specified
 	GET =    0b00001, // "GET"
 	POST =   0b00010, // "POST"
-	DELETE = 0b00100  // "DELETE"
-	
+	DELETE = 0b00100  // "DELETE"	
 };
+
+inline AllowedMethods operator|(AllowedMethods a, AllowedMethods b) {
+    return static_cast<AllowedMethods>(
+        static_cast<int>(a) | static_cast<int>(b)
+    );
+}
+
+// does not work with NONE, because NONE is 0, so it will always return false
+inline bool is_allowed_method(AllowedMethods combined_methods, AllowedMethods one_method) {
+	return (static_cast<int>(combined_methods) & static_cast<int>(one_method)) != 0;
+}
+
 // no throw, if not found return NONE
 AllowedMethods string_to_allowed_methods(const std::string& methods);
 std::string allowed_methods_to_string(AllowedMethods methods);
@@ -84,22 +97,23 @@ std::string allowed_methods_to_string(AllowedMethods methods);
 
 struct DefaultConfig
 {
-	std::vector<int>				error_codes;
-	std::filesystem::path			error_page_path;
+	std::vector<int>				error_codes; //todo
+	std::filesystem::path			error_page_path; //todo
     size_t							client_max_body_size;
     bool							autoindex;
-    std::filesystem::path			root;
-    std::vector<std::filesystem::path>	index;
-	int								return_code;
-	std::vector<AllowedMethods>		limit_except;
+    std::filesystem::path			root_path;
+    std::vector<std::filesystem::path>	indexs_paths;
+	int								return_code; //todo
+	std::filesystem::path			return_path; //todo
+	AllowedMethods					limit_except;
 	
-	DefaultConfig() : client_max_body_size(DEFAULT_CLIENT_MAX_BODY_SIZE), autoindex(false) {};
+	DefaultConfig() : client_max_body_size(BODY_SIZE_DEFAULT), autoindex(false) {};
 };
 
 
 struct LocationConfig : public DefaultConfig
 {
-
+	std::filesystem::path					location_path;
 
 	LocationConfig() : DefaultConfig() {};
 };
@@ -183,7 +197,7 @@ class Config
 
 		void append_addrinfo(AddrInfoPtr &addr_list, const std::string &address_str, const std::string &port_str, const Token &token);
 		
-		size_t parse_max_body_size(const std::string& value_str, const Token &token);
+		size_t parse_max_body_size(std::string number_str, const Token &token);
 		
 		void fill_main( TokenIterator &head_token);
 		void fill_http( TokenIterator &head_token);

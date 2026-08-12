@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:43:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/07 20:28:33 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/12 16:30:25 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,9 +18,11 @@
 void Config::fill_location(TokenIterator &head_token,
 	std::vector<LocationConfig> &fill_config)
 {
-	skip_next(head_token, TokenType::OPEN_BRACE);
-
 	LocationConfig new_conf;
+
+	new_conf.location_path = get_next_word(head_token).word;
+
+	skip_next(head_token, TokenType::OPEN_BRACE);
 
 	while (true)
 	{
@@ -59,7 +61,7 @@ void Config::fill_server(TokenIterator &head_token)
 		DirectiveLookup current_lookup = find_directive_lookup(current_token, ConfigContext::SERVER);
 		
 		if (current_lookup.fill_context == nullptr)
-			throw ConfigParseException("programming error : 201", current_token);
+			fill_location(head_token, new_conf.sub_confs);
 		else
 			(this->*current_lookup.fill_context)(head_token, new_conf);
 
