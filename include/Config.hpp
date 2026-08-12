@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/12 16:32:31 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/12 18:30:17 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,8 @@
 
 #include "ConfigParseException.hpp"
 #include "IpAddress.hpp"
+
+#include "Methods.hpp"
 
 
 #include <netdb.h>
@@ -71,28 +73,6 @@ enum class ConfigContext
 };
 
 
-enum class AllowedMethods
-{
-	NONE =    0b00000, // "NONE" or if not specified
-	GET =    0b00001, // "GET"
-	POST =   0b00010, // "POST"
-	DELETE = 0b00100  // "DELETE"	
-};
-
-inline AllowedMethods operator|(AllowedMethods a, AllowedMethods b) {
-    return static_cast<AllowedMethods>(
-        static_cast<int>(a) | static_cast<int>(b)
-    );
-}
-
-// does not work with NONE, because NONE is 0, so it will always return false
-inline bool is_allowed_method(AllowedMethods combined_methods, AllowedMethods one_method) {
-	return (static_cast<int>(combined_methods) & static_cast<int>(one_method)) != 0;
-}
-
-// no throw, if not found return NONE
-AllowedMethods string_to_allowed_methods(const std::string& methods);
-std::string allowed_methods_to_string(AllowedMethods methods);
 
 
 struct DefaultConfig
@@ -105,7 +85,7 @@ struct DefaultConfig
     std::vector<std::filesystem::path>	indexs_paths;
 	int								return_code; //todo
 	std::filesystem::path			return_path; //todo
-	AllowedMethods					limit_except;
+	Methods					limit_except;
 	
 	DefaultConfig() : client_max_body_size(BODY_SIZE_DEFAULT), autoindex(false) {};
 };

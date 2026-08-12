@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Message.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
+/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/08/12 18:11:03 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/08/12 18:32:27 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,9 @@
 #include <map>
 #include <vector>
 #include <filesystem>
+
+#include "Methods.hpp"
+
 
 /*	required:
 	- response header (create)
@@ -43,24 +46,14 @@
 
 #define LINE "\r\n"
 
-enum	method_e {
-	GET,
-	HEAD,
-	POST,
-	PUT,
-	DELETE,
-	CONNECT,
-	OPTIONS,
-	TRACE,
-	PATCH
-};
+
 
 class Message
 {
 	protected:
-		std::string version = "HTTP/1.0";
-		std::map<std::string, std::vector<std::string>> headers;
-		std::string body;
+		std::string version_ = "HTTP/1.0";
+		std::map<std::string, std::vector<std::string>> headers_;
+		std::string body_;
 		std::string serializeHeaders() const;
 	public:
 		Message(/* args */);
@@ -77,15 +70,15 @@ class Message
 class Request : public Message
 {
 	private:
-		method_e				method;
-		std::filesystem::path	target; //path
+		Methods				method_;
+		std::filesystem::path	target_; //path
 	public:
 		Request();
-		Request(method_e method, const std::string &target);
-		void 		setMethod(method_e method);
-		method_e	getMethod() const;
+		Request(Methods method, const std::string &target);
+		void 		setMethod(Methods method);
+		Methods	getMethod() const;
 		void 		setTarget(const std::string &target);
-		const std::string &getTarget() const;
+		std::filesystem::path getTarget() const;
 		std::string serialize() const;
 };
 
@@ -101,7 +94,7 @@ class Response : public Message
 			{501, "Not Implemented"}, {502, "Bad Gateway"},
 			{503, "Service Unavailable"}, {504, "Gateway Timeout"},
 			{505, "HTTP Version Not Supported"}};
-		int status = 200;
+		int status_ = 200;
 	public:
 		Response();
 		Response(int status);

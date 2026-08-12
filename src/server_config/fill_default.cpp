@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:38:24 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/12 17:35:51 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/12 18:34:30 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -234,27 +234,27 @@ void Config::fill_index(TokenIterator &head_token,
 
 
 
-AllowedMethods string_to_get_allowed_methods(const std::string& methods)
+Methods string_to_get_allowed_methods(const std::string& methods)
 {
 	if (methods == "GET")
-		return AllowedMethods::GET;
+		return Methods::GET;
 	else if (methods == "POST")
-		return AllowedMethods::POST;
+		return Methods::POST;
 	else if (methods == "DELETE")
-		return AllowedMethods::DELETE;
+		return Methods::DELETE;
 	else
-		return AllowedMethods::NONE;
+		return Methods::NONE;
 }
 
-std::string allowed_methods_to_string(AllowedMethods methods)
+std::string methods_to_string(Methods methods)
 {
-	if (methods == AllowedMethods::GET)
+	if (methods == Methods::GET)
 		return "GET";
-	else if (methods == AllowedMethods::POST)
+	else if (methods == Methods::POST)
 		return "POST";
-	else if (methods == AllowedMethods::DELETE)
+	else if (methods == Methods::DELETE)
 		return "DELETE";
-	else if (methods == AllowedMethods::NONE)
+	else if (methods == Methods::NONE)
 		return "NONE";
 	else
 		return "NONE";
@@ -278,8 +278,8 @@ void Config::fill_limit_except(TokenIterator &head_token,
 	Token token = get_next_word(head_token);
 	while (true)
 	{
-		AllowedMethods method = string_to_get_allowed_methods(token.word);
-		if (method == AllowedMethods::NONE)
+		Methods method = string_to_get_allowed_methods(token.word);
+		if (method == Methods::NONE)
 			throw ConfigParseException("invalid limit_except needs 'GET', 'POST' or 'DELETE'", token);
 		fill_config.limit_except = fill_config.limit_except | method;
 

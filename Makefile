@@ -6,7 +6,7 @@
 #    By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/03/10 10:21:00 by rgohrig           #+#    #+#              #
-#    Updated: 2026/07/31 12:11:56 by rgohrig          ###   ########.fr        #
+#    Updated: 2026/08/12 18:26:35 by rgohrig          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -101,7 +101,7 @@ debug: CFLAGS := $(filter-out $(FAST_FLAGS),$(CFLAGS))
 debug:
 	@$(COMPILER) $(CFLAGS) $(HEADERS) -o $(NAME) $(addprefix $(DIR_SRC)/,$(SRC)) $(LIBS)
 	@echo "\n   🐞🐞🐞 DEBUG $(NAME)   ($(CFLAGS))\n"
-	@./$(NAME)
+	@./$(NAME) -t
 
 # ----------------------------- Profile ----------------------------------------
 
