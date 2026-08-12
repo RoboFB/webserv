@@ -1,4 +1,4 @@
-_This project has been created as part of the 42 curriculum by rgohrig, mpoplow and modiepge._
+_This project has been created as part of the 42 curriculum by rgohrig and modiepge._
 
 # webserv
 
