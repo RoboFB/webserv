@@ -22,5 +22,9 @@ compile_commands.json
 cgi_tester
 tester
 
+
 # executable files
 webserv
+
+#debug executable files
+webserv_debug
