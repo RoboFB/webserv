@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/18 16:25:27 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/18 19:01:59 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,10 +16,8 @@
 #include "ConfigParseException.hpp"
 #include "AddrInfoPtr.hpp"
 
-#include "Methods.hpp"
+#include "ConfigStructs.hpp"
 
-
-// #include <netdb.h>
 # include <string>
 # include <string_view>
 
@@ -30,16 +28,6 @@
 # include <array>
 
 
-
-# define BODY_SIZE_FACTOR 1024 // ein bytes steep
-# define BODY_SIZE_B 1 // byte
-# define BODY_SIZE_K (BODY_SIZE_FACTOR * BODY_SIZE_B) // kilobyte
-# define BODY_SIZE_M (BODY_SIZE_FACTOR * BODY_SIZE_K) // megabyte
-# define BODY_SIZE_G (BODY_SIZE_FACTOR * BODY_SIZE_M) // gigabyte
-# define BODY_SIZE_DEFAULT (1 * BODY_SIZE_M) // 1MB
-
-
-using TokenIterator = std::vector<Token>::const_iterator;
 
 enum class TokenType
 {
@@ -73,60 +61,8 @@ enum class ConfigContext
 
 
 
-
-struct DefaultConfig
-{
-	std::vector<int>				error_codes; //todo
-	std::filesystem::path			error_page_path; //todo
-    size_t							client_max_body_size;
-    bool							autoindex;
-    std::filesystem::path			root_path;
-    std::vector<std::filesystem::path>	indexs_paths;
-	int								return_code; //todo
-	std::filesystem::path			return_path; //todo
-	Methods					limit_except;
-	
-	DefaultConfig() : client_max_body_size(BODY_SIZE_DEFAULT), autoindex(false) {};
-};
-
-
-struct LocationConfig : public DefaultConfig
-{
-	std::filesystem::path					location_path;
-
-	LocationConfig() : DefaultConfig() {};
-};
-
-
-
-struct ServerConfig : public DefaultConfig
-{
-    std::vector<LocationConfig>	sub_confs;
-
-	AddrInfoPtr					listen; // address:port linked list of listen addresses
-    // std::string					server_name; // later need to be implemented on header level (www.example.com, example.com, etc.)
-
-
-
-
-	ServerConfig() : DefaultConfig() , listen(nullptr) {};
-};
-
-struct HttpConfig : public DefaultConfig
-{
-    std::vector<ServerConfig>		sub_confs;
-
-	HttpConfig() : DefaultConfig() {};
-};
-
-struct MainConfig
-{
-    HttpConfig sub_conf;
-};
-
 class Config;
-
-
+using TokenIterator = std::vector<Token>::const_iterator;
 
 struct DirectiveLookup
 {
@@ -134,10 +70,6 @@ struct DirectiveLookup
     std::string_view	word;
 	void				(Config::*fill_context)(TokenIterator &, DefaultConfig &);
 };
-
-
-
-
 
 
 class Config
@@ -151,6 +83,7 @@ class Config
 		Config(const std::filesystem::path &config_file_path);
 
 		const ServerConfig &get_server_context(size_t index) const;
+		
 
 	private:
 		std::filesystem::path config_file_path_;
@@ -168,6 +101,7 @@ class Config
 		Token get_next_word(std::vector<Token>::const_iterator &head_token);
 		void skip_next(std::vector<Token>::const_iterator &head_token, TokenType expected_type);
 		void is_at_end_of_file(std::vector<Token>::const_iterator &head_token);
+		int validate_port(const std::string &str);
 
 
 		void append_addrinfo(AddrInfoPtr &addr_list, const std::string &address_str, const std::string &port_str, const Token &token);
@@ -226,20 +160,6 @@ class Config
 				DirectiveLookup{ConfigContext::DEFAULT,  "return",                    &Config::fill_return},
 		};
 };
-
-
-
-
-
-
-// main parsing functions
-const std::filesystem::path check_input_args(int argc, const char *argv[]);
-
-
-// helper fuctions
-int validate_port(const std::string &str);
-int validate_octet_address_part(const std::string &str);
-
 
 
 

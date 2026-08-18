@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/15 13:59:22 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/31 18:46:07 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/18 18:54:32 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,8 +16,6 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-namespace
-{
 
 const char *addr_family_to_string(int family)
 {
@@ -56,8 +54,6 @@ std::string addr_to_string(const struct addrinfo *info)
 		return gai_strerror(result);
 
 	return std::string(host) + ":" + service;
-}
-
 }
 
 void print_parsing_error(const Token &token, const std::string &filename)

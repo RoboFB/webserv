@@ -6,12 +6,13 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/29 14:58:02 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/18 18:19:31 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/18 18:52:21 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
 #include "logging.hpp"
+#include "normalFucntions.hpp"
 
 #include <SocketFd.hpp>
 
@@ -36,17 +37,12 @@ int main(int argc, const char *argv[])
 		SocketFd socket_fd(config.get_server_context(0).listen);
 		socket_fd.listen();
 
-
 		while (true)
 		{
 			int new_fd = socket_fd.accept();
-
-			
 			send(new_fd, response2, sizeof(response2) - 1, 0);
 		}
 		
-			
-
 
 		//TODO: make good webserver loop and system calls etc. 
 		// first_website_copy_of_internet();
