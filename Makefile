@@ -6,7 +6,7 @@
 #    By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/03/10 10:21:00 by rgohrig           #+#    #+#              #
-#    Updated: 2026/08/18 19:01:30 by rgohrig          ###   ########.fr        #
+#    Updated: 2026/08/18 19:31:19 by rgohrig          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -43,7 +43,7 @@ HEADERS :=			-I ./include -I ./include/utils -I ./include/server_config
 
 LIBS :=				
 
-DEPENDENCIES := 	$(OBJ:.o=.d)
+DEPENDENCIES := 	$(OBJ:.o=.d) $(DEBUG_OBJ:.o=.d)
 
 
 
@@ -115,7 +115,7 @@ $(DEBUG_NAME): $(DEBUG_OBJ)
 	@$(COMPILER) $(DEBUG_FLAGS) -o $@ $^ $(LIBS)
 	@echo "\n   🐞🐞🐞DEBUG   $@   ($(DEBUG_FLAGS))\n"
 
-debug_fclean:
+debug_fclean: clean
 	@rm -f $(DEBUG_NAME)
 	@echo 🧹 cleaned $(DEBUG_NAME)
 
