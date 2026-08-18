@@ -6,14 +6,16 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/29 14:58:02 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/12 19:16:37 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/18 18:19:31 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
 #include "logging.hpp"
-#include "testing.hpp"
-#include <unistd.h>
+
+#include <SocketFd.hpp>
+
+#include <sys/socket.h>
 
 char response2[] = "HTTP/1.1 200 OK\r\n"
 "Content-Type: text/html; charset=UTF-8\r\n\r\n"
@@ -26,34 +28,23 @@ char response2[] = "HTTP/1.1 200 OK\r\n"
 
 int main(int argc, const char *argv[])
 {
-	// first_website_copy_of_internet();
-	// first_website();
 	try
 	{
 		const std::filesystem::path config_file = check_input_args(argc, argv);
 		Config config(config_file);
 		
-		auto res = config.get_server_context(0).listen.get();
-		int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+		SocketFd socket_fd(config.get_server_context(0).listen);
+		socket_fd.listen();
 
-		int x = bind(sockfd, res->ai_addr, res->ai_addrlen);
-		(void)x; // suppress unused variable warning
-
-		int y = listen(sockfd, 10); 
-		(void)y; // suppress unused variable warning
-
-
-		struct sockaddr_storage their_addr;
-		socklen_t addr_size = sizeof(their_addr);
 
 		while (true)
 		{
+			int new_fd = socket_fd.accept();
 
-			int new_fd = accept(sockfd, (struct sockaddr *)&their_addr,
-			&addr_size);
 			
 			send(new_fd, response2, sizeof(response2) - 1, 0);
 		}
+		
 			
 
 

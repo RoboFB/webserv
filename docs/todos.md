@@ -91,6 +91,12 @@ you are allowed to implement it if you want
 
 
 
+### not sure if its a todo
+- [ ] make overwrite on already used bind mount:
+  - [ ] int yes=1;
+  - [ ] // lose the pesky "Address already in use" error message
+  - [ ] setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes);
+
 
 
 
