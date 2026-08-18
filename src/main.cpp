@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/29 14:58:02 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/18 18:52:21 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/18 19:34:50 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,9 @@ int main(int argc, const char *argv[])
 		const std::filesystem::path config_file = check_input_args(argc, argv);
 		Config config(config_file);
 		
+		LOG(LOG_DEBUG, config.to_string());
+
+
 		SocketFd socket_fd(config.get_server_context(0).listen);
 		socket_fd.listen();
 

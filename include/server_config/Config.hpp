@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/18 19:01:59 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/18 19:59:20 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,14 +14,13 @@
 
 
 #include "ConfigParseException.hpp"
-#include "AddrInfoPtr.hpp"
+// #include "AddrInfoPtr.hpp"
 
 #include "ConfigStructs.hpp"
 
 # include <string>
 # include <string_view>
 
-# include <iostream> // IWYU pragma: export
 # include <filesystem>
 
 # include <vector>
@@ -81,8 +80,14 @@ class Config
 		Config &operator=(Config &&) = delete;
 
 		Config(const std::filesystem::path &config_file_path);
+		~Config();
 
 		const ServerConfig &get_server_context(size_t index) const;
+
+		std::string to_string() const;
+
+		// walks directive_lookup below for the directive names, so they're written once, not duplicated in printig.cpp
+		static void print_default_directives(std::ostream &os, const DefaultConfig &config, size_t indent);
 		
 
 	private:

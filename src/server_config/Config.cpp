@@ -6,13 +6,12 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 12:29:08 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/07 20:28:33 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/18 19:43:11 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
 
-#include "logging.hpp"
 #include "printing.hpp"
 
 Config::Config(const std::filesystem::path &config_file_path) : config_file_path_(config_file_path),
@@ -32,11 +31,7 @@ Config::Config(const std::filesystem::path &config_file_path) : config_file_path
 	
 		std::vector<Token>::const_iterator head_token = tokens.cbegin();
 		fill_main(head_token);
-		LOG(LOG_DEBUG, "after  fill_main_context");
-		
 
-		debug_print_config(main_conf); // todo: remove debug print or clean it up to part of th e class
-		
 	}
 	catch(const ConfigParseException& e)
 	{
@@ -45,10 +40,16 @@ Config::Config(const std::filesystem::path &config_file_path) : config_file_path
 	return;
 }
 
+Config::~Config() {}
 
 
+std::string Config::to_string() const
+{
+	std::stringstream config_stream;
 
-
+	config_stream << "# " << config_file_path_.string() << "\n\n" << main_conf;
+	return config_stream.str();
+}
 
 
 

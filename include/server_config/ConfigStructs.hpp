@@ -37,7 +37,7 @@ struct DefaultConfig
 	std::filesystem::path			return_path; //todo
 	Methods					limit_except;
 	
-	DefaultConfig() : client_max_body_size(BODY_SIZE_DEFAULT), autoindex(false) {};
+	DefaultConfig() : client_max_body_size(BODY_SIZE_DEFAULT), autoindex(false), return_code(0), limit_except(Methods::NONE) {};
 };
 
 

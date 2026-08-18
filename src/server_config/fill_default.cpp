@@ -6,16 +6,13 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:38:24 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/12 18:34:30 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/18 19:06:58 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
 #include <algorithm>
 #include <cstring>
-
-#include "printing.hpp"
-
 
 void Config::append_addrinfo(AddrInfoPtr &addr_list, const std::string &address_str, const std::string &port_str, const Token &token)
 {
@@ -79,13 +76,6 @@ void Config::fill_listen(TokenIterator &head_token,
 	
 	
 	append_addrinfo(reinterpret_cast<ServerConfig&>(fill_config).listen, address_str, port_str, token);
-
-
-	
-	// debug print
-	std::cout << "address_str:" << address_str << "%" << std::endl;
-	std::cout << "port_str:" << port_str << "%" << std::endl;
-	std::cout << "server_conf->listen:" << *reinterpret_cast<ServerConfig&>(fill_config).listen << std::endl;
 
 	skip_next(head_token, TokenType::SEMICOLON);
 	return;
