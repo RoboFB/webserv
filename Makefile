@@ -6,7 +6,7 @@
 #    By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/03/10 10:21:00 by rgohrig           #+#    #+#              #
-#    Updated: 2026/08/17 15:41:35 by rgohrig          ###   ########.fr        #
+#    Updated: 2026/08/18 15:49:22 by rgohrig          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -100,6 +100,8 @@ re: fclean all
 
 # ----------------------------- Debug ------------------------------------------
 
+both: all debug_all
+
 debug_all: compile_commands $(DEBUG_NAME)
 
 # Compilation
@@ -125,7 +127,7 @@ debug_run: debug_stop debug_all
 debug_stop:
 	@pkill -x $(DEBUG_NAME) > /dev/null 2>&1 && echo "🛑 stopped $(DEBUG_NAME)" || true
 
-.PHONY: debug_all debug_fclean debug debug_run debug_stop 
+.PHONY: both debug_all debug_fclean debug debug_run debug_stop 
 
 # ----------------------------- Profile ----------------------------------------
 
