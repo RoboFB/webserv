@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/12 18:30:17 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/18 16:25:27 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,13 +14,12 @@
 
 
 #include "ConfigParseException.hpp"
-#include "IpAddress.hpp"
+#include "AddrInfoPtr.hpp"
 
 #include "Methods.hpp"
 
 
-#include <netdb.h>
-#include <memory>
+// #include <netdb.h>
 # include <string>
 # include <string_view>
 
@@ -98,14 +97,7 @@ struct LocationConfig : public DefaultConfig
 	LocationConfig() : DefaultConfig() {};
 };
 
-struct AddrInfoDeleter
-{
-    void operator()(addrinfo* p) const { 
-		if (p) freeaddrinfo(p);
-    }
-};
 
-using AddrInfoPtr = std::unique_ptr<addrinfo, AddrInfoDeleter>;
 
 struct ServerConfig : public DefaultConfig
 {
@@ -113,6 +105,9 @@ struct ServerConfig : public DefaultConfig
 
 	AddrInfoPtr					listen; // address:port linked list of listen addresses
     // std::string					server_name; // later need to be implemented on header level (www.example.com, example.com, etc.)
+
+
+
 
 	ServerConfig() : DefaultConfig() , listen(nullptr) {};
 };
