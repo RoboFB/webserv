@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/13 16:19:19 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/06 18:25:51 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/18 18:49:39 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -82,7 +82,7 @@ if not number -> -2
 if not used all of the string -> -3
 
 */
-int validate_port(const std::string &str)
+int Config::validate_port(const std::string &str)
 {
 	try
 	{
@@ -97,24 +97,5 @@ int validate_port(const std::string &str)
 	catch (const std::exception &e)
 	{
 		return -2;
-	}
-}
-
-// deprecated, not used anymore, but kept for reference
-int validate_octet_address_part(const std::string &str)
-{
-	try
-	{
-		size_t index = 0;
-		int port = std::stoi(str, &index);
-		if (index != str.size())
-			return -1;
-		if (port < 0 || port > 255)
-			return -1;
-		return port;
-	}
-	catch (const std::exception &e)
-	{
-		return -1;
 	}
 }

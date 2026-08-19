@@ -6,7 +6,7 @@
 #    By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/03/10 10:21:00 by rgohrig           #+#    #+#              #
-#    Updated: 2026/08/12 18:26:35 by rgohrig          ###   ########.fr        #
+#    Updated: 2026/08/18 19:31:19 by rgohrig          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -19,7 +19,6 @@
 NAME :=				webserv
 
 COMPILER :=			c++
-DEBUG_FLAGS :=		-Wshadow -g -fsanitize=address,undefined -D LOG_LVL=15
 PROFILE_FLAGS :=	-pg -g
 FAST_FLAGS :=		-O2 #-march=native -O3 -flto # O2 should be enough
 LINKER_FLAGS :=		
@@ -34,11 +33,17 @@ DIR_OBJ :=			obj
 OBJ :=				$(SRC:%.cpp=$(DIR_OBJ)/%.o)
 
 
-HEADERS :=			-I ./include
+DEBUG_NAME :=		$(NAME)_debug
+DEBUG_FLAGS :=		$(filter-out $(FAST_FLAGS),$(CFLAGS)) -Wshadow -g -fsanitize=address,undefined -D LOG_LVL=15
+DEBUG_OBJ :=		$(SRC:%.cpp=$(DIR_OBJ)/%_debug.o)
+
+
+
+HEADERS :=			-I ./include -I ./include/utils -I ./include/server_config
 
 LIBS :=				
 
-DEPENDENCIES := 	$(OBJ:.o=.d)
+DEPENDENCIES := 	$(OBJ:.o=.d) $(DEBUG_OBJ:.o=.d)
 
 
 
@@ -82,7 +87,7 @@ clean:
 	@rm -rf $(DIR_OBJ)
 	@echo 🧹 cleaned all objects
 
-fclean: clean
+fclean: clean debug_fclean
 	@rm -f $(NAME)
 	@echo 🧹🧹🧹 cleaned $(NAME)
 
@@ -95,13 +100,34 @@ re: fclean all
 
 # ----------------------------- Debug ------------------------------------------
 
-debug: fclean
-debug: CFLAGS += $(DEBUG_FLAGS)
-debug: CFLAGS := $(filter-out $(FAST_FLAGS),$(CFLAGS))
-debug:
-	@$(COMPILER) $(CFLAGS) $(HEADERS) -o $(NAME) $(addprefix $(DIR_SRC)/,$(SRC)) $(LIBS)
-	@echo "\n   🐞🐞🐞 DEBUG $(NAME)   ($(CFLAGS))\n"
-	@./$(NAME) -t
+both: all debug_all
+
+debug_all: compile_commands $(DEBUG_NAME)
+
+# Compilation
+$(DIR_OBJ)/%_debug.o: $(DIR_SRC)/%.cpp | $(DIR_OBJ)
+	@mkdir -p $(dir $@)
+	@$(COMPILER) $(DEBUG_FLAGS) $(HEADERS) -o $@ -c $<
+	@echo 🐞DEBUG $@
+
+# Linking
+$(DEBUG_NAME): $(DEBUG_OBJ)
+	@$(COMPILER) $(DEBUG_FLAGS) -o $@ $^ $(LIBS)
+	@echo "\n   🐞🐞🐞DEBUG   $@   ($(DEBUG_FLAGS))\n"
+
+debug_fclean: clean
+	@rm -f $(DEBUG_NAME)
+	@echo 🧹 cleaned $(DEBUG_NAME)
+
+
+debug: debug_run
+debug_run: debug_stop debug_all
+	@./$(DEBUG_NAME) -t
+
+debug_stop:
+	@pkill -x $(DEBUG_NAME) > /dev/null 2>&1 && echo "🛑 stopped $(DEBUG_NAME)" || true
+
+.PHONY: both debug_all debug_fclean debug debug_run debug_stop 
 
 # ----------------------------- Profile ----------------------------------------
 
@@ -120,4 +146,4 @@ compile_commands:
 
 # ----------------------------- Phony ------------------------------------------
 
-.PHONY: all clean fclean re debug profile stop run compile_commands
+.PHONY: all clean fclean re profile stop run compile_commands
