@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:43:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/12 16:30:25 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/19 16:40:04 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,12 +61,12 @@ void Config::fill_server(TokenIterator &head_token)
 		DirectiveLookup current_lookup = find_directive_lookup(current_token, ConfigContext::SERVER);
 		
 		if (current_lookup.fill_context == nullptr)
-			fill_location(head_token, new_conf.sub_confs);
+			fill_location(head_token, new_conf.locations_confs);
 		else
 			(this->*current_lookup.fill_context)(head_token, new_conf);
 
 	}
-	server_confs.push_back(std::move(new_conf));
+	main_conf_.http_conf.servers_confs.push_back(std::move(new_conf));
 	return;
 }
 
@@ -86,7 +86,7 @@ void Config::fill_http(TokenIterator &head_token)
 		if (current_lookup.fill_context == nullptr)
 			fill_server(head_token);
 		else
-			(this->*current_lookup.fill_context)(head_token, http_conf);
+			(this->*current_lookup.fill_context)(head_token, main_conf_.http_conf);
 	}
 	return;
 }
