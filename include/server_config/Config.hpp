@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/19 18:26:27 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/20 19:21:17 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,7 +79,7 @@ class Config
 		Config &operator=(const Config &) = delete;
 		Config &operator=(Config &&) = delete;
 
-		Config(const std::filesystem::path &config_file_path);
+		Config(const std::filesystem::path &config_file_path, MainConfig &main_conf);
 		~Config();
 
 		const ServerConfig &get_server_context(size_t index) const;
@@ -91,12 +91,10 @@ class Config
 		
 
 	private:
-		std::filesystem::path	file_path_;
-		std::string				complete_string_;
-		std::vector<Token>		complete_tokens_;
+		const std::filesystem::path	&config_file_path_;
 
 		// config structs
-		MainConfig main_conf_;
+		MainConfig &main_conf_;
 
 
 		DirectiveLookup find_directive_lookup(const Token & token, ConfigContext context);

@@ -6,11 +6,12 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/29 14:58:02 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/18 19:34:50 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/20 21:50:30 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
+#include "Server.hpp"
 #include "logging.hpp"
 #include "normalFucntions.hpp"
 
@@ -31,19 +32,24 @@ int main(int argc, const char *argv[])
 {
 	try
 	{
+		MainConfig main_config;
 		const std::filesystem::path config_file = check_input_args(argc, argv);
-		Config config(config_file);
+		{
+			Config config{config_file, main_config};
+			LOG(LOG_DEBUG, config.to_string());
+		}
+
+		AllServers all_servers(main_config);
 		
-		LOG(LOG_DEBUG, config.to_string());
-
-
-		SocketFd socket_fd(config.get_server_context(0).listen);
-		socket_fd.listen();
+		all_servers.listen();
 
 		while (true)
 		{
-			int new_fd = socket_fd.accept();
-			send(new_fd, response2, sizeof(response2) - 1, 0);
+			std::vector<int> new_fds = all_servers.accept();
+			for (int fd : new_fds)
+			{
+				send(fd, response2, sizeof(response2) - 1, 0);
+			}
 		}
 		
 

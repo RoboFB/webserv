@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 12:29:08 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/19 16:51:17 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/20 19:21:46 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,14 +14,14 @@
 
 #include "printing.hpp"
 
-Config::Config(const std::filesystem::path &config_file_path) : 
-	file_path_(config_file_path),
-	main_conf_()
+Config::Config(const std::filesystem::path &config_file_path, MainConfig &main_conf) : 
+	config_file_path_(config_file_path),
+	main_conf_(main_conf)
 {
 	try
 	{
-		complete_string_ = file_to_string(config_file_path);
-		complete_tokens_ = string_to_tokens(complete_string_);
+		std::string complete_string_ = file_to_string(config_file_path);
+		std::vector<Token> complete_tokens_ = string_to_tokens(complete_string_);
 		if (complete_tokens_.empty())
 			throw ConfigParseException("Empty configuration file.");
 		
@@ -35,7 +35,7 @@ Config::Config(const std::filesystem::path &config_file_path) :
 	}
 	catch(const ConfigParseException& e)
 	{
-		throw ConfigParseException(file_path_.string() + ":" + e.what());
+		throw ConfigParseException(config_file_path_.string() + ":" + e.what());
 	}
 	return;
 }
@@ -47,7 +47,7 @@ std::string Config::to_string() const
 {
 	std::stringstream config_stream;
 
-	config_stream << "# " << file_path_.string() << "\n\n" << main_conf_;
+	config_stream << "# " << config_file_path_.string() << "\n\n" << main_conf_;
 	return config_stream.str();
 }
 

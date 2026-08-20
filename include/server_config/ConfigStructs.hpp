@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 18:36:32 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/19 18:04:21 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/20 19:11:08 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,15 +18,6 @@
 #include <optional>
 #include <vector>
 
-# define BODY_SIZE_FACTOR 1024 // ein bytes steep
-# define BODY_SIZE_B 1 // byte
-# define BODY_SIZE_K (BODY_SIZE_FACTOR * BODY_SIZE_B) // kibibyte
-# define BODY_SIZE_M (BODY_SIZE_FACTOR * BODY_SIZE_K) // mebibyte
-# define BODY_SIZE_G (BODY_SIZE_FACTOR * BODY_SIZE_M) // gibibyte
-# define BODY_SIZE_DEFAULT (1 * BODY_SIZE_M) // 1MB
-
-# define MAX_CONFIG_FILE_SIZE (1 * BODY_SIZE_G) // 1GB
-# define MAX_TOKEN_LENGTH (1000) // 1000 characters
 
 
 struct DefaultConfig
