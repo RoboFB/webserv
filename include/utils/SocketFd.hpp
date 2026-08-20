@@ -6,14 +6,11 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/18 18:18:26 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/20 21:20:02 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
-
-#include "AddrInfoPtr.hpp"
-
 
 /*
 init:
@@ -30,17 +27,22 @@ deconstructs:
 class SocketFd
 {
 	public:
-		SocketFd(const AddrInfoPtr &res);
-		~SocketFd();
+		SocketFd(const SocketFd &) = delete;
+		SocketFd &operator=(const SocketFd &) = delete;
 
-		SocketFd(const SocketFd&) = delete;
-		SocketFd& operator=(const SocketFd&) = delete;
+		
+          SocketFd(SocketFd &&other) : socket_fd_(other.socket_fd_) { other.socket_fd_ = -1; }
+          SocketFd &operator=(SocketFd &&) = delete;
 
-		void listen(void);
+          SocketFd(const struct addrinfo *one_addr);
+          ~SocketFd();
 
-		int accept(void);
 
-		int get_fd() const;
+          void listen(void);
+
+          int accept(void);
+
+          int get_fd() const;
 
 	private:
 		int socket_fd_;
