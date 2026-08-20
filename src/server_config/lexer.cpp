@@ -6,13 +6,14 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 17:42:37 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/19 16:21:50 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/20 19:25:06 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
 #include <fstream>
 #include "ConfigParseException.hpp"
+#include "MagicValues.hpp"
 
 // gets on char out of iterator but dos not check for end of string;
 char get_next(std::string::const_iterator &head, size_t &line, size_t &column)

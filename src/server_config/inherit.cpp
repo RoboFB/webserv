@@ -6,11 +6,12 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/19 16:51:33 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/19 18:28:31 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/20 19:26:36 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
+#include "MagicValues.hpp"
 
 void Config::inherit_main_to_http(const MainConfig &parent, HttpConfig &child)
 {
