@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/15 13:59:22 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/18 20:02:02 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/19 18:03:34 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,8 +97,8 @@ static std::string listen_to_string(const AddrInfoPtr &listen)
 
 static void print_root(std::ostream &os, const DefaultConfig &config, size_t indent)
 {
-	if (!config.root_path.empty())
-		os << make_indent(indent) << "root " << config.root_path.string() << ";\n";
+	if (config.root_path)
+		os << make_indent(indent) << "root " << config.root_path->string() << ";\n";
 }
 
 static void print_index(std::ostream &os, const DefaultConfig &config, size_t indent)
@@ -114,13 +114,20 @@ static void print_index(std::ostream &os, const DefaultConfig &config, size_t in
 static void print_autoindex(std::ostream &os, const DefaultConfig &config, size_t indent)
 {
 	if (config.autoindex)
-		os << make_indent(indent) << "autoindex on;\n";
+	{
+		if (config.autoindex.value())
+			os << make_indent(indent) << "autoindex on;\n";
+		else
+			os << make_indent(indent) << "autoindex off;\n";
+	}
+	else
+		os << make_indent(indent) << "autoindex not set;\n";
 }
 
 static void print_client_max_body_size(std::ostream &os, const DefaultConfig &config, size_t indent)
 {
-	if (config.client_max_body_size != BODY_SIZE_DEFAULT)
-		os << make_indent(indent) << "client_max_body_size " << config.client_max_body_size << ";\n";
+	if (config.client_max_body_size)
+		os << make_indent(indent) << "client_max_body_size " << config.client_max_body_size.value() << ";\n";
 }
 
 static void print_limit_except(std::ostream &os, const DefaultConfig &config, size_t indent)
@@ -131,23 +138,23 @@ static void print_limit_except(std::ostream &os, const DefaultConfig &config, si
 
 static void print_error_page(std::ostream &os, const DefaultConfig &config, size_t indent)
 {
-	if (config.error_codes.empty() && config.error_page_path.empty())
+	if (config.error_codes.empty() && !config.error_page_path)
 		return;
 	os << make_indent(indent) << "error_page";
 	for (int code : config.error_codes)
 		os << ' ' << code;
-	if (!config.error_page_path.empty())
-		os << ' ' << config.error_page_path.string();
+	if (config.error_page_path)
+		os << ' ' << config.error_page_path->string();
 	os << ";\n";
 }
 
 static void print_return(std::ostream &os, const DefaultConfig &config, size_t indent)
 {
-	if (config.return_code == 0 && config.return_path.empty())
+	if (!config.return_code && !config.return_path)
 		return;
-	os << make_indent(indent) << "return " << config.return_code;
-	if (!config.return_path.empty())
-		os << ' ' << config.return_path.string();
+	os << make_indent(indent) << "return " << config.return_code.value_or(0);
+	if (config.return_path)
+		os << ' ' << config.return_path->string();
 	os << ";\n";
 }
 
@@ -193,7 +200,7 @@ static void print_server(std::ostream &os, const ServerConfig &config, size_t in
 	os << pad << "server {\n"
 	   << make_indent(indent + 1) << "listen " << listen_to_string(config.listen) << ";\n";
 	Config::print_default_directives(os, config, indent + 1);
-	for (const auto &location : config.sub_confs)
+	for (const auto &location : config.locations_confs)
 	{
 		os << '\n';
 		print_location(os, location, indent + 1);
@@ -207,7 +214,7 @@ static void print_http(std::ostream &os, const HttpConfig &config, size_t indent
 
 	os << pad << "http {\n";
 	Config::print_default_directives(os, config, indent + 1);
-	for (const auto &server : config.sub_confs)
+	for (const auto &server : config.servers_confs)
 	{
 		os << '\n';
 		print_server(os, server, indent + 1);
@@ -223,7 +230,7 @@ std::ostream &operator<<(std::ostream &os, const HttpConfig &config)
 
 std::ostream &operator<<(std::ostream &os, const MainConfig &config)
 {
-	return os << config.sub_conf;
+	return os << config.http_conf;
 }
 
 std::ostream &operator<<(std::ostream &os, const Config &config)

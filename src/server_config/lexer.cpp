@@ -6,13 +6,14 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 17:42:37 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/31 18:46:07 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/20 19:25:06 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
 #include <fstream>
 #include "ConfigParseException.hpp"
+#include "MagicValues.hpp"
 
 // gets on char out of iterator but dos not check for end of string;
 char get_next(std::string::const_iterator &head, size_t &line, size_t &column)
@@ -40,9 +41,17 @@ std::string file_to_string(const std::filesystem::path &config_file_path)
 	std::ifstream file(config_file_path);
 	if (!file)
 		throw std::runtime_error("Could not open file: " + config_file_path.string());
-	std::string source{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+	
+	try {
+		std::uintmax_t size = std::filesystem::file_size(config_file_path);
+		if (size > MAX_CONFIG_FILE_SIZE)
+			throw std::runtime_error("Config file too large: " + config_file_path.string());
+    }
+    catch (std::filesystem::filesystem_error& e) {
+		throw std::runtime_error("Could not get file size: " + config_file_path.string());
+    }
 
-	return source;
+	return std::string {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
 }
 
 
@@ -101,7 +110,12 @@ std::vector<Token> string_to_tokens(const std::string &source)
 		else
 		{
 			if (is_word)
-				config_lines.back().word += c;
+			{
+				auto &last_token = config_lines.back();
+				last_token.word += c;
+				if (last_token.word.length() > MAX_TOKEN_LENGTH)
+					throw ConfigParseException("Token too long", last_token);
+			}
 			else
 				config_lines.push_back({TokenType::WORD, std::string{c}, line, column});
 			is_word = true;
@@ -110,7 +124,7 @@ std::vector<Token> string_to_tokens(const std::string &source)
 	if (brace_level > 0)
 		throw ConfigParseException("Missing closing brace", (Token){TokenType::CLOSE_BRACE, "}", line, column});
 
-	config_lines.push_back({TokenType::END_OF_FILE, "END_OF_FILE", line, column}); // 
+	config_lines.push_back({TokenType::END_OF_FILE, "END_OF_FILE", line, column});
 
 
 	return config_lines;

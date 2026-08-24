@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 12:29:08 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/18 19:43:11 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/20 19:21:46 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,23 +14,23 @@
 
 #include "printing.hpp"
 
-Config::Config(const std::filesystem::path &config_file_path) : config_file_path_(config_file_path),
-	main_conf(),
-	http_conf(main_conf.sub_conf),
-	server_confs(http_conf.sub_confs)
+Config::Config(const std::filesystem::path &config_file_path, MainConfig &main_conf) : 
+	config_file_path_(config_file_path),
+	main_conf_(main_conf)
 {
 	try
 	{
-		std::string source = file_to_string(config_file_path);
-		std::vector<Token> tokens = string_to_tokens(source);
-		if (tokens.empty())
+		std::string complete_string_ = file_to_string(config_file_path);
+		std::vector<Token> complete_tokens_ = string_to_tokens(complete_string_);
+		if (complete_tokens_.empty())
 			throw ConfigParseException("Empty configuration file.");
 		
-		debug_print_tokens(tokens);
+		debug_print_tokens(complete_tokens_);
 		
 	
-		std::vector<Token>::const_iterator head_token = tokens.cbegin();
+		std::vector<Token>::const_iterator head_token = complete_tokens_.cbegin();
 		fill_main(head_token);
+		inherit_main_to_http(main_conf_, main_conf_.http_conf);
 
 	}
 	catch(const ConfigParseException& e)
@@ -47,7 +47,7 @@ std::string Config::to_string() const
 {
 	std::stringstream config_stream;
 
-	config_stream << "# " << config_file_path_.string() << "\n\n" << main_conf;
+	config_stream << "# " << config_file_path_.string() << "\n\n" << main_conf_;
 	return config_stream.str();
 }
 
@@ -56,5 +56,5 @@ std::string Config::to_string() const
 
 const ServerConfig & Config::get_server_context(size_t index) const
 {
-	return main_conf.sub_conf.sub_confs.at(index);
+	return main_conf_.http_conf.servers_confs.at(index);
 }

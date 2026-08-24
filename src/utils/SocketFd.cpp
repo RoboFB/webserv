@@ -6,31 +6,37 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/18 18:08:31 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/20 20:54:44 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "SocketFd.hpp"
 
+#include <netdb.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include <stdexcept>
 #include <cstring>
 #include <cerrno>
 
 
-SocketFd::SocketFd(const AddrInfoPtr &res) : socket_fd_(-1)
+SocketFd::SocketFd(const struct addrinfo *one_addr)
 {
-	socket_fd_ = ::socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-	if (socket_fd_ < 0) {
+	socket_fd_ = ::socket(one_addr->ai_family, one_addr->ai_socktype, one_addr->ai_protocol);
+	if (socket_fd_ < 0)
+	{
 		throw std::runtime_error(std::string("socket: ") + std::strerror(errno));
 	}
 
-	if (::bind(socket_fd_, res->ai_addr, res->ai_addrlen) < 0)
+	if (::bind(socket_fd_, one_addr->ai_addr, one_addr->ai_addrlen) < 0)
 	{
-		throw std::runtime_error(std::string("bind: ") + std::strerror(errno));
+		int bind_errno = errno;
+		char host[NI_MAXHOST];
+		char port[NI_MAXSERV];
+		::getnameinfo(one_addr->ai_addr, one_addr->ai_addrlen, host, sizeof(host),
+			port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV);
+		throw std::runtime_error("bind " + std::string(host) + ":" + port + ": " + std::strerror(bind_errno));
 	}
-
-	
 }
 
 SocketFd::~SocketFd()

@@ -6,11 +6,12 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:38:24 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/18 19:06:58 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/20 19:25:19 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
+#include "MagicValues.hpp"
 #include <algorithm>
 #include <cstring>
 

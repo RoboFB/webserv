@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/18 19:59:20 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/20 19:21:17 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,7 +79,7 @@ class Config
 		Config &operator=(const Config &) = delete;
 		Config &operator=(Config &&) = delete;
 
-		Config(const std::filesystem::path &config_file_path);
+		Config(const std::filesystem::path &config_file_path, MainConfig &main_conf);
 		~Config();
 
 		const ServerConfig &get_server_context(size_t index) const;
@@ -91,12 +91,11 @@ class Config
 		
 
 	private:
-		std::filesystem::path config_file_path_;
-		MainConfig main_conf;
-		
-		HttpConfig &http_conf;
-		std::vector<ServerConfig> &server_confs;
-		
+		const std::filesystem::path	&config_file_path_;
+
+		// config structs
+		MainConfig &main_conf_;
+
 
 		DirectiveLookup find_directive_lookup(const Token & token, ConfigContext context);
 
@@ -113,6 +112,14 @@ class Config
 		
 		size_t parse_max_body_size(std::string number_str, const Token &token);
 		
+		void inherit_main_to_http(const MainConfig &parent_config, HttpConfig &child_config);
+		void inherit_http_to_server(const HttpConfig &parent_config, ServerConfig &child_config);
+		void inherit_server_to_location(const ServerConfig &parent_config, LocationConfig &child_config);
+		void inherit_default_to_default(const DefaultConfig &parent_config, DefaultConfig &child_config);
+
+		void set_default_values(DefaultConfig &child);
+
+
 		void fill_main( TokenIterator &head_token);
 		void fill_http( TokenIterator &head_token);
 		void fill_server( TokenIterator &head_token);
