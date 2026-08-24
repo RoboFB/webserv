@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/24 17:19:02 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/24 17:59:05 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,13 +14,12 @@
 
 #include "AddrInfoPtr.hpp"
 #include "Methods.hpp"
-#include <filesystem>
-#include <vector>
-
 #include "CloseFd.hpp"
 #include "SocketFds.hpp"
-
 #include "ConfigStructs.hpp"
+
+#include <filesystem>
+#include <vector>
 
 class Location
 { // clang-format off
