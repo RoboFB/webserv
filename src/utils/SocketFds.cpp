@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 20:21:12 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/20 20:43:13 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/24 17:08:44 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,8 @@
 
 SocketFds::SocketFds(const AddrInfoPtr &start) : socket_fds_()
 {
-	for (const struct addrinfo *current = start.get(); current != nullptr; current = current->ai_next)
+	for (const struct addrinfo *current = start.get(); current != nullptr;
+		 current = current->ai_next)
 	{
 		socket_fds_.push_back(SocketFd(current));
 	}
@@ -36,6 +37,14 @@ std::vector<int> SocketFds::accept()
 		new_fds.push_back(socket_fd.accept());
 	}
 	return new_fds;
+}
+
+void SocketFds::add_to_epoll(const CloseFd &epoll_fd, void *server)
+{
+	for (SocketFd &socket_fd : socket_fds_)
+	{
+		socket_fd.add_to_epoll(epoll_fd, server);
+	}
 }
 
 SocketFd &SocketFds::at(size_t index)

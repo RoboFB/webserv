@@ -6,26 +6,32 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/20 20:54:44 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/24 17:39:50 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "SocketFd.hpp"
+#include "Server.hpp"
+#include "logging.hpp"
 
 #include <netdb.h>
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <stdexcept>
 #include <cstring>
 #include <cerrno>
 
-
+// makes the socket calls socket(), bind()
 SocketFd::SocketFd(const struct addrinfo *one_addr)
+	: socket_fd_(::socket(one_addr->ai_family,
+						  one_addr->ai_socktype | SOCK_NONBLOCK,
+						  one_addr->ai_protocol))
 {
-	socket_fd_ = ::socket(one_addr->ai_family, one_addr->ai_socktype, one_addr->ai_protocol);
 	if (socket_fd_ < 0)
 	{
-		throw std::runtime_error(std::string("socket: ") + std::strerror(errno));
+		throw std::runtime_error(std::string("socket: ") +
+								 std::strerror(errno));
 	}
 
 	if (::bind(socket_fd_, one_addr->ai_addr, one_addr->ai_addrlen) < 0)
@@ -33,26 +39,26 @@ SocketFd::SocketFd(const struct addrinfo *one_addr)
 		int bind_errno = errno;
 		char host[NI_MAXHOST];
 		char port[NI_MAXSERV];
-		::getnameinfo(one_addr->ai_addr, one_addr->ai_addrlen, host, sizeof(host),
-			port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV);
-		throw std::runtime_error("bind " + std::string(host) + ":" + port + ": " + std::strerror(bind_errno));
+		::getnameinfo(one_addr->ai_addr, one_addr->ai_addrlen, host,
+					  sizeof(host), port, sizeof(port),
+					  NI_NUMERICHOST | NI_NUMERICSERV);
+		throw std::runtime_error("bind " + std::string(host) + ":" + port +
+								 ": " + std::strerror(bind_errno));
 	}
 }
 
-SocketFd::~SocketFd()
+SocketFd::SocketFd(SocketFd &&other) : socket_fd_(std::move(other.socket_fd_))
 {
-	if (socket_fd_ >= 0)
-	{
-		::close(socket_fd_);
-	}
 }
 
+SocketFd::~SocketFd() {}
 
 void SocketFd::listen(void)
 {
 	if (::listen(socket_fd_, backlog_) < 0)
 	{
-		throw std::runtime_error(std::string("listen: ") + std::strerror(errno));
+		throw std::runtime_error(std::string("listen: ") +
+								 std::strerror(errno));
 	}
 }
 
@@ -63,16 +69,28 @@ int SocketFd::accept(void)
 	struct sockaddr_storage client_addr;
 	socklen_t addr_len = sizeof(client_addr);
 
-	int client_fd_ = ::accept(socket_fd_, reinterpret_cast<struct sockaddr *>(&client_addr), &addr_len);
+	int client_fd_ =
+		::accept(socket_fd_, reinterpret_cast<struct sockaddr *>(&client_addr),
+				 &addr_len);
 	if (client_fd_ < 0)
 	{
-		throw std::runtime_error(std::string("accept: ") + std::strerror(errno));
+		LOG(LOG_ERROR, "accept: " + std::string(std::strerror(errno)));
+		// throw std::runtime_error(std::string("accept: ") +
+		// std::strerror(errno));
 	}
 	return client_fd_;
 }
 
-
-int SocketFd::get_fd() const
+void SocketFd::add_to_epoll(const CloseFd &epoll_fd, void *server)
 {
-	return socket_fd_;
+	struct epoll_event ev;
+	ev.events = EPOLLIN;
+	ev.data.ptr = server;
+
+	if (::epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd_, &ev) < 0)
+	{
+		LOG(LOG_ERROR, "epoll_ctl: " + std::string(std::strerror(errno)));
+		// throw std::runtime_error(std::string("epoll_ctl: ") +
+		// 						 std::strerror(errno));
+	}
 }
