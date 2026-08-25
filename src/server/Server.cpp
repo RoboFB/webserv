@@ -6,11 +6,11 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/24 17:57:52 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/25 14:20:07 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Server.hpp"
+#include "AllServer.hpp"
 #include "MagicValues.hpp"
 
 #include <iostream>
@@ -70,27 +70,44 @@ Server &AllServers::at(size_t index)
 
 Server::Server(ServerConfig &server_config)
 	: locations_(), addr_listen_list_(std::move(server_config.listen)),
-	  socket_fds_(addr_listen_list_)
+	  socket_fds_()
 {
 	for (LocationConfig &location_config : server_config.locations_confs)
 	{
 		locations_.push_back(Location(location_config));
 	}
+
+	for (const struct addrinfo *current_addr = addr_listen_list_.get();
+		 current_addr != nullptr; current_addr = current_addr->ai_next)
+	{
+		socket_fds_.push_back(SocketFd(current_addr));
+	}
 }
 
 void Server::add_to_epoll(const CloseFd &epoll_fd)
 {
-	socket_fds_.add_to_epoll(epoll_fd, this);
+	for (SocketFd &fd : socket_fds_)
+	{
+		fd.add_to_epoll(epoll_fd, this);
+	}
 }
 
 void Server::listen(void)
 {
-	socket_fds_.listen();
+	for (SocketFd &fd : socket_fds_)
+	{
+		fd.listen();
+	}
 }
 
 std::vector<int> Server::accept(void)
 {
-	return socket_fds_.accept();
+	std::vector<int> new_fds;
+	for (SocketFd &socket_fd : socket_fds_)
+	{
+		new_fds.push_back(socket_fd.accept());
+	}
+	return new_fds;
 }
 
 char response2[] =
@@ -104,34 +121,31 @@ char response2[] =
 
 void AllServers::wait_epoll(void)
 {
-	struct epoll_event events_buffer_array[MAX_EVENTS];
+	static struct epoll_event events_buffer_array[MAX_EVENTS];
 
-	while (true)
+	int events_count =
+		epoll_wait(epoll_fd_, events_buffer_array, MAX_EVENTS, -1);
+	if (events_count == -1)
 	{
-		int events_count =
-			epoll_wait(epoll_fd_, events_buffer_array, MAX_EVENTS, -1);
-		if (events_count == -1)
-		{
-			throw std::runtime_error(std::string("epoll_wait: ") +
-									 std::strerror(errno));
-		}
+		throw std::runtime_error(std::string("epoll_wait: ") +
+								 std::strerror(errno));
+	}
 
-		for (int i = 0; i < events_count; ++i)
+	for (int i = 0; i < events_count; ++i)
+	{
+		Server *server = static_cast<Server *>(events_buffer_array[i].data.ptr);
+		std::cout << "server: " << (void *)server << std::endl;
+		std::vector<int> new_fds = server->accept();
+		for (int fd : new_fds)
 		{
-			Server *server =
-				static_cast<Server *>(events_buffer_array[i].data.ptr);
-			std::cout << "server: " << (void *)server << std::endl;
-			std::vector<int> new_fds = server->accept();
-			for (int fd : new_fds)
-			{
-				send(fd, response2, sizeof(response2) - 1, 0);
-			}
+			// add the new fd to monitoring with epoll
 			// server->add_to_epoll(epoll_fd_);
-
-			// else
-			// {
-			// 	do_use_fd(events_buffer_array[i].data.fd);
-			// }
+			send(fd, response2, sizeof(response2) - 1, 0);
 		}
+
+		// else
+		// {
+		// 	do_use_fd(events_buffer_array[i].data.fd);
+		// }
 	}
 }

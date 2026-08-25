@@ -1,41 +1,35 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   SocketFds.hpp                                      :+:      :+:    :+:   */
+/*   AllServer.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/08/20 20:21:16 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/24 17:08:14 by rgohrig          ###   ########.fr       */
+/*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
+/*   Updated: 2026/08/25 13:39:21 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-#include "AddrInfoPtr.hpp"
 #include "CloseFd.hpp"
-#include "SocketFd.hpp"
+#include "ConfigStructs.hpp"
+#include "Server.hpp"
+
 #include <vector>
 
-class SocketFds
+class AllServers
 {
 	public:
-		SocketFds(const SocketFds &) = delete;
-		SocketFds &operator=(const SocketFds &) = delete;
-
-		SocketFds(SocketFds &&) = default;
-		SocketFds &operator=(SocketFds &&) = delete;
-
-		SocketFds(const AddrInfoPtr &start);
+		AllServers(MainConfig &main_config);
+		void add_to_epoll(void);
+		void wait_epoll(void);
 
 		void listen(void);
-
 		std::vector<int> accept(void);
-
-		void add_to_epoll(const CloseFd &epoll_fd, void *server);
-
-		SocketFd &at(size_t index);
+		Server &at(size_t index);
 
 	private:
-		std::vector<SocketFd> socket_fds_;
+		std::vector<Server> all_servers_;
+		CloseFd epoll_fd_; // epoll file descriptor for all servers
 };

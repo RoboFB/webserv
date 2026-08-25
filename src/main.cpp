@@ -6,12 +6,12 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/29 14:58:02 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/24 18:02:26 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/25 13:52:16 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
-#include "Server.hpp"
+#include "AllServer.hpp"
 #include "logging.hpp"
 #include "normalFucntions.hpp"
 
@@ -25,14 +25,16 @@ int main(int argc, const char *argv[])
 		const std::filesystem::path config_file = check_input_args(argc, argv);
 		{
 			Config config{config_file, main_config};
-			LOG(LOG_DEBUG, config.to_string());
 		}
 
 		AllServers all_servers(main_config);
 
 		all_servers.listen();
 		all_servers.add_to_epoll();
-		all_servers.wait_epoll();
+		while (true)
+		{
+			all_servers.wait_epoll();
+		}
 	}
 	catch (const std::exception &e)
 	{
