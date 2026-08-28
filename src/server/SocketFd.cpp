@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/28 18:07:04 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/28 19:33:58 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,6 +46,8 @@ SocketFd::SocketFd(const struct addrinfo *one_addr)
 	}
 }
 
+SocketFd::SocketFd(CloseFd &&other_fd) : socket_fd_(std::move(other_fd)) {}
+
 SocketFd::SocketFd(SocketFd &&other) : socket_fd_(std::move(other.socket_fd_))
 {
 }
@@ -78,6 +80,14 @@ int SocketFd::accept(void) const
 		// std::strerror(errno));
 	}
 	return client_fd_;
+}
+
+void SocketFd::send(const std::string &message) const
+{
+	if (::send(socket_fd_, message.c_str(), message.length(), 0) < 0)
+	{
+		throw std::runtime_error(std::string("send: ") + std::strerror(errno));
+	}
 }
 
 void SocketFd::add_to_epoll(const CloseFd &epoll_fd) const

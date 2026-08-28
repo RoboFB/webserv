@@ -6,13 +6,14 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/28 18:39:53 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/28 19:32:39 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 #include "CloseFd.hpp"
+#include <string>
 
 /*
 init:
@@ -33,16 +34,16 @@ class SocketFd
 		SocketFd &operator=(const SocketFd &) = delete;
 
 		SocketFd(SocketFd &&other);
+		SocketFd(CloseFd &&other);
 		SocketFd &operator=(SocketFd &&) = delete;
 
 		SocketFd(const struct addrinfo *one_addr);
 		~SocketFd();
 
 		void listen(void) const;
-
-		int accept(void) const;
-
 		void add_to_epoll(const CloseFd &epoll_fd) const;
+		int accept(void) const;
+		void send(const std::string &message) const;
 
 		bool operator==(int compare_with_me) const;
 		bool operator<(const SocketFd &other) const;

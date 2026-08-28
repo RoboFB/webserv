@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/29 14:58:02 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/28 18:09:57 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/28 19:28:54 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,8 +29,6 @@ int main(int argc, const char *argv[])
 
 		AllServers all_servers(main_config);
 
-		all_servers.listen();
-		all_servers.add_to_epoll();
 		while (true)
 		{
 			all_servers.wait_epoll();
