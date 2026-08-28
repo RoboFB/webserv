@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/28 19:41:46 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/28 20:31:27 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,10 +23,10 @@ AllServers::AllServers(MainConfig &main_config) : epoll_fd_(-1)
 {
 	for (ServerConfig &other_server : main_config.http_conf.servers_confs)
 	{
-		all_servers_.push_back(Server(other_server, all_connection_fds_));
+		all_servers_.push_back(Server(other_server, listen_fds_));
 	}
 	init_epoll();
-	for (const SocketFd &connection_fd : all_connection_fds_)
+	for (const SocketFd &connection_fd : listen_fds_)
 	{
 		connection_fd.listen();
 		connection_fd.add_to_epoll(epoll_fd_);
@@ -66,13 +66,14 @@ void AllServers::wait_epoll(void)
 
 	for (int i = 0; i < events_count; ++i)
 	{
-		int socket_fd = events_buffer_array.at(i).data.fd;
-		LOG(LOG_DEBUG, "epoll_wait: socket_fd: " + std::to_string(socket_fd));
+		int event_fd = events_buffer_array.at(i).data.fd;
+		LOG(LOG_DEBUG, "epoll_wait: event_fd: " + std::to_string(event_fd));
 
-		if (smart_accept(socket_fd))
+		if (smart_accept(event_fd))
 		{
-			break;
+			continue;
 		}
+		// try_receive(event_fd);
 	}
 }
 
@@ -88,15 +89,33 @@ std::string response2 =
 // returns true if accept
 bool AllServers::smart_accept(const int compare_with_me)
 {
-	for (const SocketFd &connection_fd : all_connection_fds_)
+	for (const SocketFd &connection_fd : listen_fds_)
 	{
 		if (connection_fd == compare_with_me)
 		{
-			all_connection_fds_.push_back(CloseFd(connection_fd.accept()));
-			all_connection_fds_.back().send(
+			accepted_fds_.push_back(CloseFd(connection_fd.accept()));
+			accepted_fds_.back().add_to_epoll(epoll_fd_);
+			accepted_fds_.back().send(
 				response2); // todo: for testing only, remove later
 			return true;
 		}
 	}
 	return false;
 }
+
+// bool AllServers::try_receive(const int compare_with_me)
+// {
+// 	for (std::vector<Connection>::iterator it = accepted_fds_.begin();
+// 		 it != accepted_fds_.end(); ++it)
+// 	{
+// 		if (*it == compare_with_me)
+// 		{
+// 			if (it->receive() <= 0)
+// 			{
+// 				accepted_fds_.erase(it);
+// 			}
+// 			return true;
+// 		}
+// 	}
+// 	return false;
+// }

@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/28 19:28:41 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/28 20:07:52 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 
 #include "CloseFd.hpp"
 #include "ConfigStructs.hpp"
+#include "Connection.hpp"
 #include "Server.hpp"
 #include "SocketFd.hpp"
 
@@ -32,9 +33,11 @@ class AllServers
 	private:
 		void init_epoll(void);
 		bool smart_accept(const int compare_with_me);
+		bool try_receive(const int compare_with_me);
 
 		std::vector<Server> all_servers_;
 		CloseFd epoll_fd_; // epoll file descriptor for all servers
 
-		std::vector<SocketFd> all_connection_fds_;
+		std::vector<SocketFd> listen_fds_;
+		std::vector<Connection> accepted_fds_;
 };
