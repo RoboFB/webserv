@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 16:11:39 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/24 16:56:36 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/28 13:01:53 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,3 +23,4 @@
 #define MAX_TOKEN_LENGTH (1000) // 1000 characters
 
 #define MAX_EVENTS 10
+#define EPOLL_TIMEOUT -1 // -1 = infinite wait todo: set to better value

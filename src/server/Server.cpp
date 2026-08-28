@@ -6,67 +6,12 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/25 14:20:07 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/28 18:18:42 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "AllServer.hpp"
-#include "MagicValues.hpp"
-
-#include <iostream>
-#include <sys/epoll.h>
-#include <cstring>
-
-AllServers::AllServers(MainConfig &main_config) : epoll_fd_(-1)
-{
-	for (ServerConfig &other_server : main_config.http_conf.servers_confs)
-	{
-		all_servers_.push_back(Server(other_server));
-	}
-}
-
-// epoll_create(1) 1 = start size but Nowadays its dynamicly allocated, so 1 is
-// enough
-void AllServers::add_to_epoll(void)
-{
-	if (epoll_fd_ == -1)
-	{
-		epoll_fd_ = epoll_create(1);
-		if (epoll_fd_ < 0)
-			throw std::runtime_error(std::string("epoll_create: ") +
-									 std::strerror(errno));
-	}
-	for (Server &server : all_servers_)
-	{
-		server.add_to_epoll(epoll_fd_);
-	}
-}
-
-void AllServers::listen(void)
-{
-	for (Server &server : all_servers_)
-	{
-		server.listen();
-	}
-}
-
-std::vector<int> AllServers::accept(void)
-{
-	std::vector<int> new_fds;
-	for (Server &server : all_servers_)
-	{
-		for (auto fd : server.accept())
-		{
-			new_fds.push_back(fd);
-		}
-	}
-	return new_fds;
-}
-
-Server &AllServers::at(size_t index)
-{
-	return all_servers_.at(index);
-}
+#include "Server.hpp"
+#include <algorithm>
 
 Server::Server(ServerConfig &server_config)
 	: locations_(), addr_listen_list_(std::move(server_config.listen)),
@@ -80,30 +25,29 @@ Server::Server(ServerConfig &server_config)
 	for (const struct addrinfo *current_addr = addr_listen_list_.get();
 		 current_addr != nullptr; current_addr = current_addr->ai_next)
 	{
-		socket_fds_.push_back(SocketFd(current_addr));
+		socket_fds_.insert(SocketFd(current_addr));
 	}
 }
 
-void Server::add_to_epoll(const CloseFd &epoll_fd)
+void Server::add_to_epoll(const CloseFd &epoll_fd) const
 {
-	for (SocketFd &fd : socket_fds_)
+	for (const SocketFd &fd : socket_fds_)
 	{
-		fd.add_to_epoll(epoll_fd, this);
+		fd.add_to_epoll(epoll_fd);
 	}
 }
-
-void Server::listen(void)
+void Server::listen(void) const
 {
-	for (SocketFd &fd : socket_fds_)
+	for (const SocketFd &fd : socket_fds_)
 	{
 		fd.listen();
 	}
 }
 
-std::vector<int> Server::accept(void)
+std::vector<CloseFd> Server::accept() const
 {
-	std::vector<int> new_fds;
-	for (SocketFd &socket_fd : socket_fds_)
+	std::vector<CloseFd> new_fds;
+	for (const SocketFd &socket_fd : socket_fds_)
 	{
 		new_fds.push_back(socket_fd.accept());
 	}
@@ -119,33 +63,20 @@ char response2[] =
 	" text-shadow: 0 0 2mm red}</style></head>"
 	"<body><h1>Goodbye, world!</h1></body></html>\r\n\r\n";
 
-void AllServers::wait_epoll(void)
+// returns true if accept
+bool Server::smart_accept(const int compare_with_me)
 {
-	static struct epoll_event events_buffer_array[MAX_EVENTS];
-
-	int events_count =
-		epoll_wait(epoll_fd_, events_buffer_array, MAX_EVENTS, -1);
-	if (events_count == -1)
+	std::set<SocketFd>::const_iterator found =
+		std::find_if(socket_fds_.cbegin(), socket_fds_.cend(),
+					 [compare_with_me](const SocketFd &fd)
+					 { return fd == compare_with_me; });
+	if (found != socket_fds_.cend())
 	{
-		throw std::runtime_error(std::string("epoll_wait: ") +
-								 std::strerror(errno));
-	}
+		accepted_fds_.push_back(found->accept());
+		add_to_epoll(accepted_fds_.back());
+		send(accepted_fds_.back(), response2, sizeof(response2) - 1, 0);
 
-	for (int i = 0; i < events_count; ++i)
-	{
-		Server *server = static_cast<Server *>(events_buffer_array[i].data.ptr);
-		std::cout << "server: " << (void *)server << std::endl;
-		std::vector<int> new_fds = server->accept();
-		for (int fd : new_fds)
-		{
-			// add the new fd to monitoring with epoll
-			// server->add_to_epoll(epoll_fd_);
-			send(fd, response2, sizeof(response2) - 1, 0);
-		}
-
-		// else
-		// {
-		// 	do_use_fd(events_buffer_array[i].data.fd);
-		// }
+		return true;
 	}
+	return false;
 }

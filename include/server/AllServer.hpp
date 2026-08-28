@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/25 13:39:21 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/28 17:30:13 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,8 +25,8 @@ class AllServers
 		void add_to_epoll(void);
 		void wait_epoll(void);
 
-		void listen(void);
-		std::vector<int> accept(void);
+		void listen(void) const;
+		std::vector<CloseFd> accept(void) const;
 		Server &at(size_t index);
 
 	private:

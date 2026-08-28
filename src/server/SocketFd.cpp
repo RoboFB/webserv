@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/24 17:58:05 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/28 18:07:04 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,7 +52,7 @@ SocketFd::SocketFd(SocketFd &&other) : socket_fd_(std::move(other.socket_fd_))
 
 SocketFd::~SocketFd() {}
 
-void SocketFd::listen(void)
+void SocketFd::listen(void) const
 {
 	if (::listen(socket_fd_, backlog_) < 0)
 	{
@@ -63,7 +63,7 @@ void SocketFd::listen(void)
 
 // returns the new socket file descriptor for the accepted connection,
 // ignores the address of the connecting client.
-int SocketFd::accept(void)
+int SocketFd::accept(void) const
 {
 	struct sockaddr_storage client_addr;
 	socklen_t addr_len = sizeof(client_addr);
@@ -80,11 +80,11 @@ int SocketFd::accept(void)
 	return client_fd_;
 }
 
-void SocketFd::add_to_epoll(const CloseFd &epoll_fd, void *server)
+void SocketFd::add_to_epoll(const CloseFd &epoll_fd) const
 {
 	struct epoll_event ev;
 	ev.events = EPOLLIN;
-	ev.data.ptr = server;
+	ev.data.fd = socket_fd_;
 
 	if (::epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd_, &ev) < 0)
 	{
@@ -92,4 +92,16 @@ void SocketFd::add_to_epoll(const CloseFd &epoll_fd, void *server)
 		// throw std::runtime_error(std::string("epoll_ctl: ") +
 		// 						 std::strerror(errno));
 	}
+	LOG(LOG_DEBUG, "Added socket_fd_ " + std::to_string(socket_fd_) +
+					   " to epoll_fd_ " + std::to_string(epoll_fd));
+}
+
+bool SocketFd::operator==(int compare_with_me) const
+{
+	return socket_fd_ == compare_with_me;
+}
+
+bool SocketFd::operator<(const SocketFd &other) const
+{
+	return socket_fd_ < other.socket_fd_;
 }

@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/24 17:07:20 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/28 18:39:53 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,11 +38,14 @@ class SocketFd
 		SocketFd(const struct addrinfo *one_addr);
 		~SocketFd();
 
-		void listen(void);
+		void listen(void) const;
 
-		int accept(void);
+		int accept(void) const;
 
-		void add_to_epoll(const CloseFd &epoll_fd, void *server);
+		void add_to_epoll(const CloseFd &epoll_fd) const;
+
+		bool operator==(int compare_with_me) const;
+		bool operator<(const SocketFd &other) const;
 
 	private:
 		CloseFd socket_fd_;
