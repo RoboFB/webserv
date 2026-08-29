@@ -6,11 +6,12 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/28 20:03:26 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/29 11:11:03 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "SocketFd.hpp"
+#include "AllServer.hpp"
 #include "logging.hpp"
 
 #include <netdb.h>
@@ -22,8 +23,9 @@
 #include <cerrno>
 
 // makes the socket calls socket(), bind()
-SocketFd::SocketFd(const struct addrinfo *one_addr)
-	: socket_fd_(::socket(one_addr->ai_family,
+SocketFd::SocketFd(const struct addrinfo *one_addr, const Server *server)
+	: server_(server),
+	socket_fd_(::socket(one_addr->ai_family,
 						  one_addr->ai_socktype | SOCK_NONBLOCK,
 						  one_addr->ai_protocol))
 {
@@ -84,7 +86,7 @@ void SocketFd::add_to_epoll(const CloseFd &epoll_fd) const
 {
 	struct epoll_event ev;
 	ev.events = EPOLLIN;
-	ev.data.fd = socket_fd_;
+	ev.data.ptr = static_cast<EpollHandler *>(const_cast<SocketFd *>(this));
 
 	if (::epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd_, &ev) < 0)
 	{
@@ -94,6 +96,16 @@ void SocketFd::add_to_epoll(const CloseFd &epoll_fd) const
 	}
 	LOG(LOG_DEBUG, "Added socket_fd_ " + std::to_string(socket_fd_) +
 					   " to epoll_fd_ " + std::to_string(epoll_fd));
+}
+
+const Server *SocketFd::server(void) const
+{
+	return server_;
+}
+
+void SocketFd::on_epoll_event(AllServers &servers)
+{
+	servers.accept_connection(*this);
 }
 
 bool SocketFd::operator==(int compare_with_me) const

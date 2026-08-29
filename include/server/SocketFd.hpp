@@ -6,13 +6,16 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/28 20:03:38 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/29 11:04:43 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 #include "CloseFd.hpp"
+#include "EpollHandler.hpp"
+
+class Server;
 
 /*
 init:
@@ -26,7 +29,7 @@ needs to:
 deconstructs:
 	1. closes the socket file descriptor.
 */
-class SocketFd
+class SocketFd : public EpollHandler
 {
 	public:
 		SocketFd(const SocketFd &) = delete;
@@ -35,8 +38,8 @@ class SocketFd
 		SocketFd(SocketFd &&other);
 		SocketFd &operator=(SocketFd &&) = delete;
 
-		SocketFd(const struct addrinfo *one_addr);
-		~SocketFd();
+		SocketFd(const struct addrinfo *one_addr, const Server *server);
+		~SocketFd() override;
 
 		void listen(void) const;
 		void add_to_epoll(const CloseFd &epoll_fd) const;
@@ -45,7 +48,12 @@ class SocketFd
 		bool operator==(int compare_with_me) const;
 		bool operator<(const SocketFd &other) const;
 
+		const Server *server(void) const;
+
+		void on_epoll_event(AllServers &servers) override;
+
 	private:
+		const Server *server_;
 		CloseFd socket_fd_;
 		static constexpr int backlog_ = 10;
 };

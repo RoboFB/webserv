@@ -6,11 +6,12 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/28 20:31:27 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/29 11:11:58 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "AllServer.hpp"
+#include "EpollHandler.hpp"
 #include "MagicValues.hpp"
 #include "logging.hpp"
 
@@ -44,7 +45,6 @@ void AllServers::init_epoll()
 			throw std::runtime_error(std::string("epoll_create: ") +
 									 std::strerror(errno));
 	}
-	// connection_fd.add_to_epoll(epoll_fd_);
 }
 
 Server &AllServers::at(size_t index)
@@ -66,14 +66,12 @@ void AllServers::wait_epoll(void)
 
 	for (int i = 0; i < events_count; ++i)
 	{
-		int event_fd = events_buffer_array.at(i).data.fd;
-		LOG(LOG_DEBUG, "epoll_wait: event_fd: " + std::to_string(event_fd));
-
-		if (smart_accept(event_fd))
-		{
-			continue;
-		}
-		// try_receive(event_fd);
+		// data.ptr is either a SocketFd* (listener) or a Connection* (client);
+		// both derive from EpollHandler, so the vtable picks the right code
+		// path directly, no linear search over listen_fds_/accepted_fds_.
+		EpollHandler *handler =
+			static_cast<EpollHandler *>(events_buffer_array.at(i).data.ptr);
+		handler->on_epoll_event(*this);
 	}
 }
 
@@ -86,36 +84,21 @@ std::string response2 =
 	" text-shadow: 0 0 2mm red}</style></head>"
 	"<body><h1>Goodbye, world!</h1></body></html>\r\n\r\n";
 
-// returns true if accept
-bool AllServers::smart_accept(const int compare_with_me)
+void AllServers::accept_connection(SocketFd &listener)
 {
-	for (const SocketFd &connection_fd : listen_fds_)
-	{
-		if (connection_fd == compare_with_me)
-		{
-			accepted_fds_.push_back(CloseFd(connection_fd.accept()));
-			accepted_fds_.back().add_to_epoll(epoll_fd_);
-			accepted_fds_.back().send(
-				response2); // todo: for testing only, remove later
-			return true;
-		}
-	}
-	return false;
+	int new_fd = listener.accept();
+	if (new_fd < 0)
+		return; // error already logged in SocketFd::accept
+
+	auto insert_result = accepted_fds_.emplace(
+		new_fd, Connection(listener.server(), CloseFd(std::move(new_fd))));
+	Connection &connection = insert_result.first->second;
+
+	connection.add_to_epoll(epoll_fd_);
+	connection.send(response2); // todo: for testing only, remove later
 }
 
-// bool AllServers::try_receive(const int compare_with_me)
-// {
-// 	for (std::vector<Connection>::iterator it = accepted_fds_.begin();
-// 		 it != accepted_fds_.end(); ++it)
-// 	{
-// 		if (*it == compare_with_me)
-// 		{
-// 			if (it->receive() <= 0)
-// 			{
-// 				accepted_fds_.erase(it);
-// 			}
-// 			return true;
-// 		}
-// 	}
-// 	return false;
-// }
+void AllServers::close_connection(int fd)
+{
+	accepted_fds_.erase(fd);
+}
