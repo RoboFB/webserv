@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/28 19:29:52 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/31 20:21:56 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 
 #include "AddrInfoPtr.hpp"
 #include "ConfigStructs.hpp"
-#include "SocketFd.hpp"
+#include "EpollHandler.hpp"
 
 #include <vector>
 
@@ -24,11 +24,14 @@ class Server
 {
 	public:
 		Server(Server &&) = default;
-		Server(ServerConfig &server_config, std::vector<SocketFd> &all_fds);
+		Server(ServerConfig &server_config);
 
 		Server(const Server &) = delete;
 		Server &operator=(const Server &) = delete;
 		Server &operator=(Server &&) = delete;
+
+		void
+		add_sockets(std::vector<std::unique_ptr<EpollHandler>> &all_fds) const;
 
 	private:
 		std::vector<Location> locations_;

@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/29 11:00:27 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/31 20:38:04 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,34 +14,16 @@
 #include "AllServer.hpp"
 #include "logging.hpp"
 
-#include <sys/epoll.h>
-#include <sys/socket.h>
 #include <unistd.h>
 #include <array>
 #include <cstring>
-#include <cerrno>
-#include <stdexcept>
 
 Connection::Connection(const Server *server, CloseFd &&fd)
-	: server_(server), fd_(std::move(fd))
+	: EpollHandler(server, std::move(fd))
 {
 }
 
 Connection::~Connection() {}
-
-void Connection::add_to_epoll(const CloseFd &epoll_fd) const
-{
-	struct epoll_event ev;
-	ev.events = EPOLLIN;
-	ev.data.ptr = static_cast<EpollHandler *>(const_cast<Connection *>(this));
-
-	if (::epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd_, &ev) < 0)
-	{
-		LOG(LOG_ERROR, "epoll_ctl: " + std::string(std::strerror(errno)));
-	}
-	LOG(LOG_DEBUG, "Added client fd " + std::to_string(fd_) +
-					   " to epoll_fd_ " + std::to_string(epoll_fd));
-}
 
 void Connection::send(const std::string &message) const
 {
@@ -65,8 +47,8 @@ ssize_t Connection::receive(void) const
 	}
 	else if (bytes_read == 0)
 	{
-		LOG(LOG_DEBUG, "Connection::receive: peer closed fd " +
-						   std::to_string(fd_));
+		LOG(LOG_DEBUG,
+			"Connection::receive: peer closed fd " + std::to_string(fd_));
 	}
 	else
 	{
@@ -75,10 +57,24 @@ ssize_t Connection::receive(void) const
 	return bytes_read;
 }
 
+std::string response2 =
+	"HTTP/1.1 200 OK\r\n"
+	"Content-Type: text/html; charset=UTF-8\r\n\r\n"
+	"<!DOCTYPE html><html><head><title>Bye-bye baby bye-bye</title>"
+	"<style>body { background-color: #111 }"
+	"h1 { font-size:4cm; text-align: center; color: black;"
+	" text-shadow: 0 0 2mm red}</style></head>"
+	"<body><h1>Goodbye, world!</h1></body></html>\r\n\r\n";
+
 void Connection::on_epoll_event(AllServers &servers)
 {
+	// testing:
+	send(response2);
+
+	// todo:
 	if (receive() <= 0)
 	{
-		servers.close_connection(fd_);
+		// servers.close_connection(fd_);
+		(void)servers;
 	}
 }

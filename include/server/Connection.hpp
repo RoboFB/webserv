@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/29 11:00:36 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/31 19:39:08 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,17 +34,13 @@ class Connection : public EpollHandler
 		Connection(const Server *server, CloseFd &&fd);
 		~Connection() override;
 
-		void add_to_epoll(const CloseFd &epoll_fd) const;
-		void send(const std::string &message) const;
-
 		void on_epoll_event(AllServers &servers) override;
 
 	private:
-		const Server *server_; // pointer to the server that accepted this connection
-		CloseFd fd_; // the connection's fd, owned/closed here
-
 		// reads once into an internal buffer and logs it (placeholder until
 		// request parsing is wired in). returns what read() returned:
 		// >0 bytes read, 0 peer closed, <0 error.
 		ssize_t receive(void) const;
+
+		void send(const std::string &message) const;
 };

@@ -6,13 +6,15 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/29 11:11:03 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/31 20:23:32 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "SocketFd.hpp"
 #include "AllServer.hpp"
 #include "logging.hpp"
+
+#include "Connection.hpp"
 
 #include <netdb.h>
 #include <sys/epoll.h>
@@ -24,18 +26,9 @@
 
 // makes the socket calls socket(), bind()
 SocketFd::SocketFd(const struct addrinfo *one_addr, const Server *server)
-	: server_(server),
-	socket_fd_(::socket(one_addr->ai_family,
-						  one_addr->ai_socktype | SOCK_NONBLOCK,
-						  one_addr->ai_protocol))
+	: EpollHandler(server, init_socket(one_addr))
 {
-	if (socket_fd_ < 0)
-	{
-		throw std::runtime_error(std::string("socket: ") +
-								 std::strerror(errno));
-	}
-
-	if (::bind(socket_fd_, one_addr->ai_addr, one_addr->ai_addrlen) < 0)
+	if (::bind(fd_, one_addr->ai_addr, one_addr->ai_addrlen) < 0)
 	{
 		int bind_errno = errno;
 		char host[NI_MAXHOST];
@@ -48,15 +41,24 @@ SocketFd::SocketFd(const struct addrinfo *one_addr, const Server *server)
 	}
 }
 
-SocketFd::SocketFd(SocketFd &&other) : socket_fd_(std::move(other.socket_fd_))
+CloseFd SocketFd::init_socket(const struct addrinfo *one_addr) const
 {
+	CloseFd init_fd =
+		::socket(one_addr->ai_family, one_addr->ai_socktype | SOCK_NONBLOCK,
+				 one_addr->ai_protocol);
+	if (init_fd < 0)
+	{
+		throw std::runtime_error(std::string("socket: ") +
+								 std::strerror(errno));
+	}
+	return init_fd;
 }
 
 SocketFd::~SocketFd() {}
 
 void SocketFd::listen(void) const
 {
-	if (::listen(socket_fd_, backlog_) < 0)
+	if (::listen(fd_, backlog_) < 0)
 	{
 		throw std::runtime_error(std::string("listen: ") +
 								 std::strerror(errno));
@@ -70,9 +72,8 @@ int SocketFd::accept(void) const
 	struct sockaddr_storage client_addr;
 	socklen_t addr_len = sizeof(client_addr);
 
-	int client_fd_ =
-		::accept(socket_fd_, reinterpret_cast<struct sockaddr *>(&client_addr),
-				 &addr_len);
+	int client_fd_ = ::accept(
+		fd_, reinterpret_cast<struct sockaddr *>(&client_addr), &addr_len);
 	if (client_fd_ < 0)
 	{
 		LOG(LOG_ERROR, "accept: " + std::string(std::strerror(errno)));
@@ -82,38 +83,13 @@ int SocketFd::accept(void) const
 	return client_fd_;
 }
 
-void SocketFd::add_to_epoll(const CloseFd &epoll_fd) const
-{
-	struct epoll_event ev;
-	ev.events = EPOLLIN;
-	ev.data.ptr = static_cast<EpollHandler *>(const_cast<SocketFd *>(this));
-
-	if (::epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd_, &ev) < 0)
-	{
-		LOG(LOG_ERROR, "epoll_ctl: " + std::string(std::strerror(errno)));
-		// throw std::runtime_error(std::string("epoll_ctl: ") +
-		// 						 std::strerror(errno));
-	}
-	LOG(LOG_DEBUG, "Added socket_fd_ " + std::to_string(socket_fd_) +
-					   " to epoll_fd_ " + std::to_string(epoll_fd));
-}
-
-const Server *SocketFd::server(void) const
-{
-	return server_;
-}
-
 void SocketFd::on_epoll_event(AllServers &servers)
 {
-	servers.accept_connection(*this);
+	accept_connection(servers);
 }
 
-bool SocketFd::operator==(int compare_with_me) const
+void SocketFd::accept_connection(AllServers &servers)
 {
-	return socket_fd_ == compare_with_me;
-}
-
-bool SocketFd::operator<(const SocketFd &other) const
-{
-	return socket_fd_ < other.socket_fd_;
+	servers.add_handel(
+		std::make_unique<Connection>(server_, CloseFd(accept())));
 }
