@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/31 20:38:04 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/01 17:36:40 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,7 +74,8 @@ void Connection::on_epoll_event(AllServers &servers)
 	// todo:
 	if (receive() <= 0)
 	{
-		// servers.close_connection(fd_);
+		remove_from_epoll(servers.get_epoll_fd());
+		set_remove_me();
 		(void)servers;
 	}
 }

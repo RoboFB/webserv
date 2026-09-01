@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/31 20:26:09 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/01 17:15:54 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,8 @@
 #include "MagicValues.hpp"
 #include "SocketFd.hpp"
 
+#include <algorithm>
+#include <functional>
 #include <sys/epoll.h>
 #include <cstring>
 #include <array>
@@ -68,7 +70,7 @@ void AllServers::wait_epoll(void)
 	static std::array<struct epoll_event, MAX_EVENTS> events_buffer_array;
 
 	int events_count = epoll_wait(epoll_fd_, events_buffer_array.data(),
-								  MAX_EVENTS, EPOLL_TIMEOUT);
+								  MAX_EVENTS, EPOLL_TIMEOUT_MS);
 	if (events_count == -1)
 	{
 		throw std::runtime_error(std::string("epoll_wait: ") +
@@ -80,4 +82,16 @@ void AllServers::wait_epoll(void)
 		static_cast<EpollHandler *>(events_buffer_array[i].data.ptr)
 			->on_epoll_event(*this);
 	}
+}
+
+void AllServers::cleanup_all_fds(void)
+{
+	all_fds_.erase(std::remove_if(all_fds_.begin(), all_fds_.end(),
+								  std::mem_fn(&EpollHandler::is_remove_me)),
+				   all_fds_.end());
+}
+
+const CloseFd &AllServers::get_epoll_fd(void) const
+{
+	return epoll_fd_;
 }

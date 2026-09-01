@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/29 14:58:02 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/28 19:28:54 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/01 16:03:58 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ int main(int argc, const char *argv[])
 		while (true)
 		{
 			all_servers.wait_epoll();
+			LOG(LOG_DEBUG, "t");
 		}
 	}
 	catch (const std::exception &e)

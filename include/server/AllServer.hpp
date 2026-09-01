@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/31 20:21:25 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/01 17:07:23 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,10 @@ class AllServers
 		void wait_epoll(void);
 		// adds to all_fds_ and to epoll_fd_
 		void add_handel(std::unique_ptr<EpollHandler> &&new_handel);
+
+		void cleanup_all_fds(void);
+
+		const CloseFd &get_epoll_fd(void) const;
 
 	private:
 		int init_epoll(void);
