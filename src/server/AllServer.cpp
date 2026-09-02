@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/01 17:15:54 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/02 19:11:06 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,14 +27,14 @@ AllServers::AllServers(MainConfig &main_config) : epoll_fd_(init_epoll())
 	for (ServerConfig &other_server : main_config.http_conf.servers_confs)
 	{
 		Server new_server = Server(other_server);
-		new_server.add_sockets(all_fds_);
+		new_server.add_sockets(all_fds_, epoll_fd_);
 		all_servers_.push_back(std::move(new_server));
 	}
 	for (std::unique_ptr<EpollHandler> &connection_fd : all_fds_)
 	{
 		SocketFd &socket_fd = dynamic_cast<SocketFd &>(*connection_fd);
 		socket_fd.listen();
-		socket_fd.add_to_epoll(epoll_fd_);
+		socket_fd.add_to_epoll();
 	}
 }
 
@@ -53,10 +53,9 @@ int AllServers::init_epoll()
 	return epoll_fd;
 }
 
-// add to epoll + vector all_fds_
+// add to all_fds_
 void AllServers::add_handel(std::unique_ptr<EpollHandler> &&new_handel)
 {
-	new_handel->add_to_epoll(epoll_fd_);
 	all_fds_.push_back(std::move(new_handel));
 }
 
@@ -69,8 +68,8 @@ void AllServers::wait_epoll(void)
 {
 	static std::array<struct epoll_event, MAX_EVENTS> events_buffer_array;
 
-	int events_count = epoll_wait(epoll_fd_, events_buffer_array.data(),
-								  MAX_EVENTS, EPOLL_TIMEOUT_MS);
+	int events_count = ::epoll_wait(epoll_fd_, events_buffer_array.data(),
+									MAX_EVENTS, EPOLL_TIMEOUT_MS);
 	if (events_count == -1)
 	{
 		throw std::runtime_error(std::string("epoll_wait: ") +
@@ -91,7 +90,7 @@ void AllServers::cleanup_all_fds(void)
 				   all_fds_.end());
 }
 
-const CloseFd &AllServers::get_epoll_fd(void) const
-{
-	return epoll_fd_;
-}
+// const CloseFd &AllServers::get_epoll_fd(void) const
+// {
+// 	return epoll_fd_;
+// }

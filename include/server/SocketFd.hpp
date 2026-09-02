@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/31 20:24:36 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/02 19:52:21 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,9 @@
 
 #include "CloseFd.hpp"
 #include "EpollHandler.hpp"
+#include "Connection.hpp"
+
+#include <memory>
 
 /*
 init:
@@ -33,14 +36,15 @@ class SocketFd : public EpollHandler
 		SocketFd(const SocketFd &) = delete;
 		SocketFd &operator=(const SocketFd &) = delete;
 
-		SocketFd(SocketFd &&other) = default;
-		SocketFd &operator=(SocketFd &&) = default;
+		SocketFd(SocketFd &&other) = delete;
+		SocketFd &operator=(SocketFd &&) = delete;
 
-		SocketFd(const struct addrinfo *one_addr, const Server *server);
+		SocketFd(const struct addrinfo *one_addr, const Server *server,
+				 const CloseFd &epoll_fd);
 		~SocketFd() override;
 
 		void listen(void) const;
-		int accept(void) const;
+		std::unique_ptr<Connection> accept(void) const;
 
 		void on_epoll_event(AllServers &servers) override;
 
@@ -49,5 +53,5 @@ class SocketFd : public EpollHandler
 
 		CloseFd init_socket(const struct addrinfo *one_addr) const;
 
-		void accept_connection(AllServers &servers);
+		void accept_connection(AllServers &servers) const;
 };

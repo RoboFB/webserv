@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/29 14:58:02 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/01 16:03:58 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/02 16:40:27 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ int main(int argc, const char *argv[])
 		while (true)
 		{
 			all_servers.wait_epoll();
+			all_servers.cleanup_all_fds();
 			LOG(LOG_DEBUG, "t");
 		}
 	}

@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/01 17:27:10 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/02 19:51:38 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,8 +25,9 @@
 #include <cerrno>
 
 // makes the socket calls socket(), bind()
-SocketFd::SocketFd(const struct addrinfo *one_addr, const Server *server)
-	: EpollHandler(server, init_socket(one_addr))
+SocketFd::SocketFd(const struct addrinfo *one_addr, const Server *server,
+				   const CloseFd &epoll_fd)
+	: EpollHandler(server, init_socket(one_addr), epoll_fd)
 {
 	if (::bind(fd_, one_addr->ai_addr, one_addr->ai_addrlen) < 0)
 	{
@@ -67,12 +68,12 @@ void SocketFd::listen(void) const
 
 // returns the new socket file descriptor for the accepted connection,
 // ignores the address of the connecting client.
-int SocketFd::accept(void) const
+std::unique_ptr<Connection> SocketFd::accept(void) const
 {
 	struct sockaddr_storage client_addr;
 	socklen_t addr_len = sizeof(client_addr);
 
-	int client_fd_ = ::accept(
+	CloseFd client_fd_ = ::accept(
 		fd_, reinterpret_cast<struct sockaddr *>(&client_addr), &addr_len);
 	if (client_fd_ < 0)
 	{
@@ -80,16 +81,13 @@ int SocketFd::accept(void) const
 		// throw std::runtime_error(std::string("accept: ") +
 		// std::strerror(errno));
 	}
-	return client_fd_;
+	return std::make_unique<Connection>(server_, std::move(client_fd_),
+										epoll_fd_);
 }
 
 void SocketFd::on_epoll_event(AllServers &servers)
 {
-	accept_connection(servers);
-}
-
-void SocketFd::accept_connection(AllServers &servers)
-{
-	servers.add_handel(
-		std::make_unique<Connection>(server_, CloseFd(accept())));
+	std::unique_ptr<Connection> new_connection = accept();
+	new_connection->add_to_epoll();
+	servers.add_handel(std::move(new_connection));
 }

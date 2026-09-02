@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/31 19:39:08 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/02 16:15:40 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,10 +28,10 @@ class Connection : public EpollHandler
 		Connection(const Connection &) = delete;
 		Connection &operator=(const Connection &) = delete;
 
-		Connection(Connection &&) = default;
-		Connection &operator=(Connection &&) = default;
+		Connection(Connection &&) = delete;
+		Connection &operator=(Connection &&) = delete;
 
-		Connection(const Server *server, CloseFd &&fd);
+		Connection(const Server *server, CloseFd &&fd, const CloseFd &epoll_fd);
 		~Connection() override;
 
 		void on_epoll_event(AllServers &servers) override;

@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/31 20:21:56 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/02 16:20:36 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,8 +30,8 @@ class Server
 		Server &operator=(const Server &) = delete;
 		Server &operator=(Server &&) = delete;
 
-		void
-		add_sockets(std::vector<std::unique_ptr<EpollHandler>> &all_fds) const;
+		void add_sockets(std::vector<std::unique_ptr<EpollHandler>> &all_fds,
+						 const CloseFd &epoll_fd) const;
 
 	private:
 		std::vector<Location> locations_;
