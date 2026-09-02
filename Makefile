@@ -6,7 +6,7 @@
 #    By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/03/10 10:21:00 by rgohrig           #+#    #+#              #
-#    Updated: 2026/08/18 19:31:19 by rgohrig          ###   ########.fr        #
+#    Updated: 2026/08/24 17:57:29 by rgohrig          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -39,7 +39,7 @@ DEBUG_OBJ :=		$(SRC:%.cpp=$(DIR_OBJ)/%_debug.o)
 
 
 
-HEADERS :=			-I ./include -I ./include/utils -I ./include/server_config
+HEADERS :=			-I ./include -I ./include/utils -I ./include/server -I ./include/server_config
 
 LIBS :=				
 

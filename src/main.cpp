@@ -6,27 +6,16 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/29 14:58:02 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/20 21:50:30 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/02 16:40:27 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
-#include "Server.hpp"
+#include "AllServer.hpp"
 #include "logging.hpp"
 #include "normalFucntions.hpp"
 
-#include <SocketFd.hpp>
-
 #include <sys/socket.h>
-
-char response2[] = "HTTP/1.1 200 OK\r\n"
-"Content-Type: text/html; charset=UTF-8\r\n\r\n"
-"<!DOCTYPE html><html><head><title>Bye-bye baby bye-bye</title>"
-"<style>body { background-color: #111 }"
-"h1 { font-size:4cm; text-align: center; color: black;"
-" text-shadow: 0 0 2mm red}</style></head>"
-"<body><h1>Goodbye, world!</h1></body></html>\r\n\r\n";
-
 
 int main(int argc, const char *argv[])
 {
@@ -36,36 +25,27 @@ int main(int argc, const char *argv[])
 		const std::filesystem::path config_file = check_input_args(argc, argv);
 		{
 			Config config{config_file, main_config};
-			LOG(LOG_DEBUG, config.to_string());
 		}
 
 		AllServers all_servers(main_config);
-		
-		all_servers.listen();
 
 		while (true)
 		{
-			std::vector<int> new_fds = all_servers.accept();
-			for (int fd : new_fds)
-			{
-				send(fd, response2, sizeof(response2) - 1, 0);
-			}
+			all_servers.wait_epoll();
+			all_servers.cleanup_all_fds();
+			LOG(LOG_DEBUG, "t");
 		}
-		
-
-		//TODO: make good webserver loop and system calls etc. 
-		// first_website_copy_of_internet();
 	}
-	catch (const std::exception& e) 
+	catch (const std::exception &e)
 	{
 		LOG(LOG_ERROR, e.what());
 		return EXIT_FAILURE;
 	}
-	catch (...) 
+	catch (...)
 	{
-		LOG(LOG_ERROR, "Unknown exception occurred that is not derived from std::exception.");
+		LOG(LOG_ERROR, "Unknown exception occurred that is not derived from "
+					   "std::exception.");
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
 }
-
