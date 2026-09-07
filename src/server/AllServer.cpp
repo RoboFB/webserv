@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/02 19:11:06 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/04 18:32:13 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "EpollHandler.hpp"
 #include "MagicValues.hpp"
 #include "SocketFd.hpp"
+#include "logging.hpp"
 
 #include <algorithm>
 #include <functional>
@@ -78,8 +79,22 @@ void AllServers::wait_epoll(void)
 
 	for (int i = 0; i < events_count; ++i)
 	{
-		static_cast<EpollHandler *>(events_buffer_array[i].data.ptr)
-			->on_epoll_event(*this);
+		EpollHandler *p_handel =
+			static_cast<EpollHandler *>(events_buffer_array[i].data.ptr);
+		if (p_handel == nullptr)
+		{
+			throw std::runtime_error("epoll_wait: data.ptr is nullptr");
+		}
+
+		uint32_t &event = events_buffer_array[i].events;
+		if (event & EPOLL_EVENTS::EPOLLERR || event & EPOLL_EVENTS::EPOLLHUP)
+		{
+			LOG(LOG_ERROR, "epoll_wait: EPOLLERR or EPOLLHUP on fd ");
+			p_handel->remove_from_epoll();
+			p_handel->set_remove_me();
+			continue;
+		}
+		p_handel->on_epoll_event(*this, events_buffer_array[i].events);
 	}
 }
 

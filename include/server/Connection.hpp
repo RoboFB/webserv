@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/02 16:15:40 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/07 16:49:06 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,9 @@
 #include "EpollHandler.hpp"
 #include <string>
 #include <sys/types.h>
+
+#include <vector>
+#include <cstdint>
 
 class Server;
 
@@ -34,13 +37,23 @@ class Connection : public EpollHandler
 		Connection(const Server *server, CloseFd &&fd, const CloseFd &epoll_fd);
 		~Connection() override;
 
-		void on_epoll_event(AllServers &servers) override;
+		void on_epoll_event(AllServers &servers, uint32_t events) override;
 
 	private:
-		// reads once into an internal buffer and logs it (placeholder until
-		// request parsing is wired in). returns what read() returned:
-		// >0 bytes read, 0 peer closed, <0 error.
-		ssize_t receive(void) const;
+		void receive(void);
+		void make_response(void);
+		void send(void);
 
-		void send(const std::string &message) const;
+		std::vector<uint8_t> request_buffer_;
+		std::vector<uint8_t> response_buffer_;
+		enum class State
+		{
+			RECEIVING,
+			// RECEIVING_FINISHED,
+			BUILTING,
+			// BUILT_FINISHED,
+			SENDING,
+			// SENDING_FINISHED,
+			FINISHED
+		} state_;
 };

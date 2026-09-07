@@ -11,16 +11,16 @@
 
 
 # All
-- [ ] Understanding what HTTP is 
-- [ ] Understanding what a Webserver is 
+- [x] Understanding what HTTP is 
+- [x] Understanding what a Webserver is 
 - [ ] Read the RFCs defining the HTTP protocol
-- [ ] test telnet and NGINX before starting
+- [~] test telnet and NGINX before starting
 
 - [ ] great guid: https://beej.us/guide/bgnet/html/split/ip-addresses-structs-and-data-munging.html
 
 ### Rules
 - [ ] no Crash (even out of memory or terminated unexpectedly (signals))
-- [ ] Makefile ($(Name), all, clean, fclean, re)
+- [~] Makefile ($(Name), all, clean, fclean, re)
 
 - [~] compile: c++ -Wall -Wextra -Werror -std=c++17
 
