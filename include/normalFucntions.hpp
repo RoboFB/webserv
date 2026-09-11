@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 18:46:50 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/18 18:52:02 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/25 14:10:07 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,8 +16,3 @@
 
 // main parsing functions
 const std::filesystem::path check_input_args(int argc, const char *argv[]);
-
-
-
-
-

@@ -2,6 +2,10 @@
 #*.gitignore
 #docs
 
+# robin
+_R_*
+CLAUDE.md
+
 # IDE settings
 .vscode
 

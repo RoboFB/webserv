@@ -6,95 +6,78 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/19 16:51:33 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/20 19:26:36 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/08/25 13:55:06 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Config.hpp"
-#include "MagicValues.hpp"
-
-void Config::inherit_main_to_http(const MainConfig &parent, HttpConfig &child)
-{
-	(void)parent; // unused for now, but might be used in the future
-
-	for (ServerConfig &server : child.servers_confs)
-	{
-    	inherit_http_to_server(child, server);
-	}
-}
-
-
-void Config::inherit_http_to_server(const HttpConfig &parent, ServerConfig &child)
-{
-	inherit_default_to_default(parent, child);
-
-	for (auto &location : child.locations_confs)
-	{
-		inherit_server_to_location(child, location);
-	}
-}
-
-// set also the defaults at the end
-void Config::inherit_server_to_location(const ServerConfig &parent, LocationConfig &child)
-{
-	inherit_default_to_default(parent, child);
-
-	set_default_values(child);
-}
+#include "ConfigStructs.hpp"
 
 template <typename T>
-static void inherit_field(const std::optional<T> &parent, std::optional<T> &child)
+static void h_inherit_field(const std::optional<T> &parent,
+							std::optional<T> &child)
 {
 	if (parent && !child)
 		child = parent;
 }
 
 template <typename T>
-static void inherit_field(const std::vector<T> &parent, std::vector<T> &child)
+static void h_inherit_field(const std::vector<T> &parent, std::vector<T> &child)
 {
 	if (child.empty() && !parent.empty())
 		child = parent;
 }
 
-static void inherit_field(const Methods &parent, Methods &child)
+static void h_inherit_field(const Methods &parent, Methods &child)
 {
 	if (child == Methods::NONE && parent != Methods::NONE)
 		child = parent;
 }
 
-void Config::inherit_default_to_default(const DefaultConfig &parent, DefaultConfig &child)
+static void h_inherit_default_to_default(const DefaultConfig &parent,
+										 DefaultConfig &child)
 {
-	inherit_field(parent.error_codes, child.error_codes);
-	inherit_field(parent.error_page_path, child.error_page_path);
-	inherit_field(parent.client_max_body_size, child.client_max_body_size);
-	inherit_field(parent.autoindex, child.autoindex);
-	inherit_field(parent.root_path, child.root_path);
-	inherit_field(parent.indexs_paths, child.indexs_paths);
-	inherit_field(parent.return_code, child.return_code);
-	inherit_field(parent.return_path, child.return_path);
-	inherit_field(parent.limit_except, child.limit_except);
+	h_inherit_field(parent.error_codes, child.error_codes);
+	h_inherit_field(parent.error_page_path, child.error_page_path);
+	h_inherit_field(parent.client_max_body_size, child.client_max_body_size);
+	h_inherit_field(parent.autoindex, child.autoindex);
+	h_inherit_field(parent.root_path, child.root_path);
+	h_inherit_field(parent.indexs_paths, child.indexs_paths);
+	h_inherit_field(parent.return_code, child.return_code);
+	h_inherit_field(parent.return_path, child.return_path);
+	h_inherit_field(parent.limit_except, child.limit_except);
 }
 
-void Config::set_default_values(DefaultConfig &child)
+// set also the defaults at the end
+static void h_inherit_server_to_location(const ServerConfig &parent,
+										 LocationConfig &child)
 {
-	if (child.error_codes.empty())
-		child.error_codes.push_back(999); //todo
-	if (!child.error_page_path)
-		child.error_page_path = "./example"; //todo
-	if (!child.client_max_body_size)
-		child.client_max_body_size = BODY_SIZE_DEFAULT;
-	if (!child.autoindex)
-		child.autoindex = false;
-	if (!child.root_path)
-		child.root_path = "."; //todo
-	if (child.indexs_paths.empty())
-		child.indexs_paths.push_back("index.html"); //todo
-	if (!child.return_code)
-		child.return_code = 888; //todo
-	if (!child.return_path)
-		child.return_path = "./example"; //todo
-	if (child.limit_except == Methods::NONE)
-		child.limit_except = Methods::GET; //todo
+	h_inherit_default_to_default(parent, child);
 
+	// set_default_values(child);
+}
 
+static void h_inherit_http_to_server(const HttpConfig &parent,
+									 ServerConfig &child)
+{
+	h_inherit_default_to_default(parent, child);
+
+	for (auto &location : child.locations_confs)
+	{
+		h_inherit_server_to_location(child, location);
+	}
+}
+
+static void h_inherit_main_to_http(const MainConfig &parent, HttpConfig &child)
+{
+	(void)parent; // unused for now, but might be used in the future
+
+	for (ServerConfig &server : child.servers_confs)
+	{
+		h_inherit_http_to_server(child, server);
+	}
+}
+
+void inherit_all_config(MainConfig &parent_config)
+{
+	h_inherit_main_to_http(parent_config, parent_config.http_conf);
 }

@@ -1,41 +1,36 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   SocketFds.hpp                                      :+:      :+:    :+:   */
+/*   CloseFd.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/08/20 20:21:16 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/20 21:29:22 by rgohrig          ###   ########.fr       */
+/*   Created: 2026/08/24 14:04:52 by rgohrig           #+#    #+#             */
+/*   Updated: 2026/08/28 17:01:22 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-#include "AddrInfoPtr.hpp"
-#include "SocketFd.hpp"
-#include <vector>
-
-class SocketFds
+// wrapper for a file descriptor (fd)
+// - implicitly converts to int, be carful
+// - automatically closes the fd
+class CloseFd
 {
 	public:
-		SocketFds(const SocketFds &) = delete;
-		SocketFds &operator=(const SocketFds &) = delete;
-		
-		SocketFds(SocketFds &&) = default;
-		SocketFds &operator=(SocketFds &&) = delete;
-		
-		
-		SocketFds(const AddrInfoPtr &start);
-		
+		CloseFd(const CloseFd &) = delete;
+		CloseFd &operator=(const CloseFd &) = delete;
 
-		void listen(void);
+		CloseFd(CloseFd &&other);
+		CloseFd &operator=(CloseFd &&other);
 
-		std::vector<int> accept(void);
+		CloseFd(int &&fd);
+		~CloseFd();
 
-		SocketFd &at(size_t index);
+		// be careful, but best tradeoff for easy use
+		operator int() const;
 
 	private:
-		std::vector<SocketFd> socket_fds_;
+		int raw_fd_;
+		void better_close(int &fd);
 };
-
