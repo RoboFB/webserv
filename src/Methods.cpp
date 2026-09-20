@@ -1,28 +1,23 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   RequestParser.hpp                                  :+:      :+:    :+:   */
+/*   Methods.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/20 18:49:51 by modiepge          #+#    #+#             */
-/*   Updated: 2026/09/20 23:50:43 by modiepge         ###   ########.fr       */
+/*   Created: 2026/09/21 00:04:05 by modiepge          #+#    #+#             */
+/*   Updated: 2026/09/21 00:05:44 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Message.hpp"
+#include "Methods.hpp"
 
-enum class RequestStatus {
-	MSG_INCOMPLETE,
-	MSG_BAD,
-	MSG_COMPLETE
-};
-
-struct RequestParsing
-{
-	RequestStatus status = RequestStatus::MSG_BAD;
-	Request message;
-	std::size_t	bytes;
-};
-
-RequestParsing request_parsing(const std::vector<uint8_t>& buffer);
+Methods string_to_methods(const std::string& string) {
+	if (string == "GET")
+		return (Methods::GET);
+	else if (string == "POST")
+		return (Methods::POST);
+	else if (string == "DELETE")
+		return (Methods::DELETE);
+	return (Methods::NONE);
+}

@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 11:23:43 by modiepge          #+#    #+#             */
-/*   Updated: 2026/09/20 23:16:58 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/09/21 00:08:56 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,11 +64,6 @@ Request::Request() : method_(Methods::GET), target_("/") {}
 
 Request::Request(Methods method, const std::string &target)
 	: method_(method), target_(target) {}
-
-void	Request::parse(const std::vector<uint8_t>& buffer) {
-
-
-}
 
 void Request::setMethod(Methods method)
 {

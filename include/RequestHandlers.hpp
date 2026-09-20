@@ -1,28 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   RequestParser.hpp                                  :+:      :+:    :+:   */
+/*   RequestHandlers.hpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/20 18:49:51 by modiepge          #+#    #+#             */
-/*   Updated: 2026/09/20 23:50:43 by modiepge         ###   ########.fr       */
+/*   Created: 2026/09/21 00:50:21 by modiepge          #+#    #+#             */
+/*   Updated: 2026/09/21 00:50:22 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Message.hpp"
-
-enum class RequestStatus {
-	MSG_INCOMPLETE,
-	MSG_BAD,
-	MSG_COMPLETE
-};
-
-struct RequestParsing
-{
-	RequestStatus status = RequestStatus::MSG_BAD;
-	Request message;
-	std::size_t	bytes;
-};
-
-RequestParsing request_parsing(const std::vector<uint8_t>& buffer);
