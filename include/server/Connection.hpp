@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Connection.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/07 16:49:06 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/21 01:02:32 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,11 +41,12 @@ class Connection : public EpollHandler
 
 	private:
 		void receive(void);
-		void make_response(void);
+		void make_response(const Request& request);
 		void send(void);
 
 		std::vector<uint8_t> request_buffer_;
 		std::vector<uint8_t> response_buffer_;
+		std::size_t response_offset_ = 0;
 		enum class State
 		{
 			RECEIVING,

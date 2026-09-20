@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 18:51:03 by modiepge          #+#    #+#             */
-/*   Updated: 2026/09/20 23:17:06 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/09/21 00:15:12 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,20 @@ static	std::size_t	header_length(const	std::vector<uint8_t>& buffer)
 	if (found == buffer.end())
 		return (std::string::npos);
 	return (static_cast<std::size_t>(found - buffer.begin()) + delimiter.size());
+}
+
+static	std::string lower_case(const std::string& input) {
+	std::string string = input;
+	std::for_each(string.begin(), string.end(), [](char& c) {c = std::tolower(c);});
+	return (string);
+}
+
+static std::string trim(const std::string& input) {
+	const std::size_t first = input.find_first_not_of(" \t");
+    if (first == std::string::npos)
+        return "";
+    const std::size_t last = input.find_last_not_of(" \t");
+    return (input.substr(first, last - first + 1));
 }
 
 RequestParsing request_parsing(const std::vector<uint8_t>& buffer) {
@@ -44,7 +58,7 @@ RequestParsing request_parsing(const std::vector<uint8_t>& buffer) {
 		return (request);
 	const	std::string	target = request_line.substr(first_space + 1, second_space - first_space - 1);
 	const	std::string	version = request_line.substr(second_space + 1);
-	if (method == Methods::NONE || target.empty() || target[0] != '/' || version.find("HTTP") == std::string::npos)
+	if (method == Methods::NONE || target.empty() || target[0] != '/' || version.find("HTTP/") == std::string::npos)
 		return (request);
 	request.message.setMethod(method);
 	request.message.setTarget(target);

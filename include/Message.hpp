@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/09/20 18:50:12 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/09/21 00:08:39 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,7 +78,6 @@ class Request : public Message
 		void 		setTarget(const std::string &target);
 		std::filesystem::path getTarget() const;
 		std::string serialize() const;
-		void		parse(const std::vector<uint8_t>& buffer);
 };
 
 class Response : public Message
