@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/21 01:02:08 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/09/21 01:49:32 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,7 @@ Connection::Connection(const Server *server, CloseFd &&fd,
 // 	return;
 // }
 
-Connection::receive(void) {
+void	Connection::receive(void) {
 	static constexpr size_t buffer_size = 4096;
 	std::array<uint8_t, buffer_size> tmp_buffer = {};
 	ssize_t bytes_read = ::recv(fd_, tmp_buffer.data(), buffer_size, 0);
@@ -86,7 +86,10 @@ Connection::receive(void) {
 	if (parsed.status == RequestStatus::MSG_INCOMPLETE)
 		return;
 	if (parsed.status == RequestStatus::MSG_BAD) {
-		//error 400
+		const Response response = make_error_response(400);
+		const std::string serialized = response.serialize();
+		response_buffer_.assign(serialized.begin(), serialized.end());
+		response_offset_ = 0;
 		state_ = State::SENDING;
 		modify_epoll(EPOLLOUT);
 		return;
@@ -125,11 +128,12 @@ void Connection::make_response(const Request& request)
 	// {
 	// 	response_buffer_.push_back(static_cast<uint8_t>(byte));
 	// }
-	// state_ = State::SENDING;
 	const Response response = handle_request(request, *server_);
-	const std::string	send = response.serialize();
-	response_buffer_.assign(send.begin(), send.end());
+	const std::string	serialized = response.serialize();
+	response_buffer_.assign(serialized.begin(), serialized.end());
 	response_offset_ = 0;
+	state_ = State::SENDING;
+	modify_epoll(EPOLLOUT);
 	return;
 }
 
@@ -149,13 +153,13 @@ void Connection::on_epoll_event(AllServers &servers, uint32_t events)
 		}
 		break;
 
-	case State::BUILTING:
-		if (events & EPOLL_EVENTS::EPOLLOUT)
-		{
-			make_response();
-			return;
-		}
-		break;
+	// case State::BUILTING:
+	// 	if (events & EPOLL_EVENTS::EPOLLOUT)
+	// 	{
+	// 		make_response();
+	// 		return;
+	// 	}
+	// 	break;
 
 	case State::SENDING:
 		if (events & EPOLL_EVENTS::EPOLLOUT)

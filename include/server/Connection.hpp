@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/21 01:02:32 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/09/21 01:21:55 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,8 @@
 
 #include "CloseFd.hpp"
 #include "EpollHandler.hpp"
+#include "Message.hpp"
+#include "RequestHandlers.hpp"
 #include <string>
 #include <sys/types.h>
 
@@ -51,7 +53,7 @@ class Connection : public EpollHandler
 		{
 			RECEIVING,
 			// RECEIVING_FINISHED,
-			BUILTING,
+			// BUILTING,
 			// BUILT_FINISHED,
 			SENDING,
 			// SENDING_FINISHED,
