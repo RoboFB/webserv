@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/21 01:49:32 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/09/21 03:24:45 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,10 +104,28 @@ Connection::~Connection() {}
 
 void Connection::send()
 {
-	if (::send(fd_, response_buffer_.data(), response_buffer_.size(), 0) < 0)
-	{
+	if (response_offset_ >= response_buffer_.size()) {
+		remove_from_epoll();
+		set_remove_me();
+		state_ = State::FINISHED;
+		return;
+	}
+	const std::size_t remaining =
+		response_buffer_.size() - response_offset_;
+	const ssize_t bytes_sent = ::send(fd_, response_buffer_.data() + response_offset_, remaining, 0);
+
+	if (bytes_sent < 0) {
 		throw std::runtime_error(std::string("send: ") + std::strerror(errno));
 	}
+	if (bytes_sent == 0) {
+		remove_from_epoll();
+		set_remove_me();
+		state_ = State::FINISHED;
+		return;
+	}
+	response_offset_ += static_cast<std::size_t>(bytes_sent);
+	if (response_offset_ < response_buffer_.size())
+		return;
 	remove_from_epoll();
 	set_remove_me();
 	state_ = State::FINISHED;
