@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/25 13:33:13 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/01 16:41:26 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/21 02:01:22 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,8 @@
 #include "MagicValues.hpp"
 
 Location::Location(const LocationConfig &from)
-	: error_codes(from.error_codes), indexs_paths(from.indexs_paths),
+	: location_path(from.location_path.string()),
+	  error_codes(from.error_codes), indexs_paths(from.indexs_paths),
 	  error_page_path(from.error_page_path.value_or("./example")),
 	  root_path(from.root_path.value_or(".")), // todo
 	  return_path(from.return_path.value_or("./example")),

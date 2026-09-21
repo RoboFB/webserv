@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/25 13:34:03 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/25 14:10:20 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/21 02:15:52 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@
 class Location
 {
 	public:
+		std::string location_path;
 		std::vector<int> error_codes; // todo
 		std::vector<std::filesystem::path> indexs_paths;
 		std::filesystem::path error_page_path; // todo

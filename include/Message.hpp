@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Message.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/08/12 18:32:27 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/21 00:08:39 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,8 +46,6 @@
 
 #define LINE "\r\n"
 
-
-
 class Message
 {
 	protected:
@@ -70,13 +68,13 @@ class Message
 class Request : public Message
 {
 	private:
-		Methods				method_;
+		Methods					method_;
 		std::filesystem::path	target_; //path
 	public:
 		Request();
 		Request(Methods method, const std::string &target);
 		void 		setMethod(Methods method);
-		Methods	getMethod() const;
+		Methods		getMethod() const;
 		void 		setTarget(const std::string &target);
 		std::filesystem::path getTarget() const;
 		std::string serialize() const;
