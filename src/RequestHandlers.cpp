@@ -6,13 +6,15 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/09/21 02:51:22 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/09/21 03:04:30 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Message.hpp"
 #include "Server.hpp"
 #include <optional>
+#include <fstream>
+#include <sstream>
 #include <system_error>
 
 static std::string path_without_query(const Request& request) {
@@ -95,6 +97,31 @@ static std::optional<std::filesystem::path> resolve_path(const Location& locatio
 	return (canonical_candidate);
 }
 
+
+//temporary until I can get a better list
+static std::string mime_type_for(const std::filesystem::path& path) {
+	const std::string extension = path.extension().string();
+
+	if (extension == ".html" || extension == ".htm")
+		return ("text/html; charset=utf-8");
+	if (extension == ".css")
+        return ("text/css; charset=utf-8");
+    if (extension == ".js")
+        return ("text/javascript; charset=utf-8");
+    if (extension == ".txt")
+        return ("text/plain; charset=utf-8");
+    if (extension == ".json")
+        return ("application/json");
+    if (extension == ".svg")
+        return ("image/svg+xml");
+    if (extension == ".png")
+        return ("image/png");
+    if (extension == ".jpg" || extension == ".jpeg")
+        return ("image/jpeg");
+
+    return "application/octet-stream";
+}
+
 Response make_error_response(int status) {
 	const	std::string body = std::to_string(status) + " " + Response(status).getReason() + "\n";
 	Response response(status);
@@ -116,12 +143,27 @@ Response	handle_get(const Request& request, const Server& server) {
 	if(!resolved_path)
 		return (make_error_response(403));
 
-	const std::string body = "Resolved path: " + resolved_path->string() + "\n";
-	// const std::string file_contents = read_file();
+	std::error_code error;
+	const std::filesystem::file_status status = std::filesystem::status(*resolved_path, error);
+	if (error)
+		return (make_error_response(403));
+	if (!std::filesystem::exists(status))
+		return (make_error_response(404));
+	if (!std::filesystem::is_regular_file(status))
+		return (make_error_response(403));
+
+	std::ifstream file(resolved_path->string().c_str(), std::ios::binary);
+	if (!file)
+		return (make_error_response(403));
+	std::ostringstream contents;
+	contents << file.rdbuf();
+	if (file.bad())
+		return (make_error_response(500));
+	const std::string body = contents.str();
 
 	Response response(200);
 	response.setVersion("HTTP/1.1");
-	response.addHeader("Content-Type", "text/plain; charset=utf-8");
+	response.addHeader("Content-Type", mime_type_for(*resolved_path));
 	response.addHeader("Content-Length", std::to_string(body.size()));
 	response.addHeader("Connection", "close");
 	response.setBody(body);
