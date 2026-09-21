@@ -25,11 +25,18 @@
 
 AllServers::AllServers(MainConfig &main_config) : epoll_fd_(init_epoll())
 {
+	// SocketFd and Connection retain a pointer to their owning Server.  Create
+	// every Server in its final vector storage before creating those handlers:
+	// using a temporary Server here would leave the handlers with a dangling
+	// pointer once that temporary is moved/destroyed.
+	all_servers_.reserve(main_config.http_conf.servers_confs.size());
 	for (ServerConfig &other_server : main_config.http_conf.servers_confs)
 	{
-		Server new_server = Server(other_server);
-		new_server.add_sockets(all_fds_, epoll_fd_);
-		all_servers_.push_back(std::move(new_server));
+		all_servers_.emplace_back(other_server);
+	}
+	for (const Server &server : all_servers_)
+	{
+		server.add_sockets(all_fds_, epoll_fd_);
 	}
 	for (std::unique_ptr<EpollHandler> &connection_fd : all_fds_)
 	{
