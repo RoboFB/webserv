@@ -1,0 +1,26 @@
+# No named preset (LLVM/Google/...) - every option below is explicit,
+# nothing is inherited from a preset's opinions.
+Language: Cpp
+
+UseTab:      Always
+TabWidth:    4
+IndentWidth: 4
+ColumnLimit: 80
+
+BreakBeforeBraces:     Allman
+IndentAccessModifiers: true
+
+AllowShortFunctionsOnASingleLine:    Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine:        false
+AllowShortBlocksOnASingleLine:       Never
+AllowShortCaseLabelsOnASingleLine:   false
+
+PointerAlignment:   Right
+ReferenceAlignment: Right
+SpaceBeforeParens:  ControlStatements
+
+AlignTrailingComments: false
+SortIncludes:           false
+MaxEmptyLinesToKeep:              1
+KeepEmptyLinesAtTheStartOfBlocks: false
