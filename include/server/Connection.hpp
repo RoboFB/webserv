@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/21 01:21:55 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/18 16:27:56 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,8 +43,9 @@ class Connection : public EpollHandler
 
 	private:
 		void receive(void);
-		void make_response(const Request& request);
 		void send(void);
+		void queue_response(const Response& response);
+		void finish();
 
 		std::vector<uint8_t> request_buffer_;
 		std::vector<uint8_t> response_buffer_;

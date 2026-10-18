@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/21 03:24:45 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/18 18:51:45 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <array>
 #include <cstring>
+#include <cerrno>
 
 Connection::Connection(const Server *server, CloseFd &&fd,
 					   const CloseFd &epoll_fd)
@@ -26,78 +27,59 @@ Connection::Connection(const Server *server, CloseFd &&fd,
 {
 }
 
-// void Connection::receive(void)
-// {
-// 	static constexpr size_t buffer_size = 4096;
+void Connection::finish()
+{
+	if (state_ == State::FINISHED)
+		return;
+	remove_from_epoll();
+	set_remove_me();
+	state_ = State::FINISHED;
+}
 
-// 	std::array<uint8_t, buffer_size> tmp_buffer = {};
+void Connection::queue_response(const Response& response)
+{
+	const std::string serialized = response.serialize();
+	response_buffer_.assign(serialized.begin(), serialized.end());
+	response_offset_ = 0;
+	state_ = State::SENDING;
+	modify_epoll(EPOLLOUT);
+}
 
-// 	ssize_t bytes_read = ::recv(fd_, tmp_buffer.data(), buffer_size, 0);
-
-// 	if (bytes_read <= -1)
-// 	{
-// 		LOG(LOG_ERROR, "recv: " + std::string(std::strerror(errno)));
-// 	}
-// 	else if (bytes_read == buffer_size) // still more to read
-// 	{
-// 		request_buffer_.insert(request_buffer_.end(), tmp_buffer.begin(),
-// 							   tmp_buffer.end());
-// 		return;
-// 	}
-// 	else if (bytes_read == 0)
-// 	{
-// 		LOG(LOG_DEBUG,
-// 			"Connection::receive: peer closed fd " + std::to_string(fd_));
-// 	}
-// 	else // read completed
-// 	{
-// 		request_buffer_.insert(request_buffer_.end(), tmp_buffer.begin(),
-// 							   tmp_buffer.begin() + bytes_read);
-// 	}
-
-// 	if (request_buffer_.empty())
-// 	{
-// 		remove_from_epoll();
-// 		set_remove_me();
-// 		return;
-// 	}
-// 	modify_epoll(EPOLL_EVENTS::EPOLLOUT);
-// 	state_ = State::BUILTING;
-
-// 	return;
-// }
-
-void	Connection::receive(void) {
-	static constexpr size_t buffer_size = 4096;
-	std::array<uint8_t, buffer_size> tmp_buffer = {};
-	ssize_t bytes_read = ::recv(fd_, tmp_buffer.data(), buffer_size, 0);
-	if (bytes_read == 0) {
-		remove_from_epoll();
-		set_remove_me();
+void Connection::receive()
+{
+	static constexpr std::size_t buffer_size = 4096;
+	std::array<uint8_t, buffer_size> temporary_buffer = {};
+	const ssize_t bytes_read =
+		::recv(fd_, temporary_buffer.data(), temporary_buffer.size(), 0);
+	if (bytes_read == 0)
+	{
+		finish();
 		return;
 	}
-	if (bytes_read < 0) {
-		remove_from_epoll();
-		set_remove_me();
+	if (bytes_read < 0)
+	{
+		if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+			return;
+		LOG(LOG_ERROR, "recv: " + std::string(std::strerror(errno)));
+		finish();
 		return;
 	}
-	request_buffer_.insert(request_buffer_.end(), tmp_buffer.begin(), tmp_buffer.begin() + bytes_read);
+	request_buffer_.insert(
+		request_buffer_.end(),
+		temporary_buffer.begin(),
+		temporary_buffer.begin() + bytes_read);
 	const RequestParsing parsed = request_parsing(request_buffer_);
 	if (parsed.status == RequestStatus::MSG_INCOMPLETE)
 		return;
-	if (parsed.status == RequestStatus::MSG_BAD) {
-		const Response response = make_error_response(400);
-		const std::string serialized = response.serialize();
-		response_buffer_.assign(serialized.begin(), serialized.end());
-		response_offset_ = 0;
-		state_ = State::SENDING;
-		modify_epoll(EPOLLOUT);
+	if (parsed.status == RequestStatus::MSG_BAD)
+	{
+		queue_response(make_error_response(400));
 		return;
 	}
-	request_buffer_.erase(request_buffer_.begin(), request_buffer_.begin() + parsed.bytes);
-	make_response(parsed.message);
-	state_ = State::SENDING;
-	modify_epoll(EPOLLOUT);
+	request_buffer_.erase(
+		request_buffer_.begin(),
+		request_buffer_.begin() + parsed.bytes);
+	queue_response(handle_request(parsed.message, *server_));
 }
 
 Connection::~Connection() {}
@@ -105,86 +87,47 @@ Connection::~Connection() {}
 void Connection::send()
 {
 	if (response_offset_ >= response_buffer_.size()) {
-		remove_from_epoll();
-		set_remove_me();
-		state_ = State::FINISHED;
+		finish();
 		return;
 	}
 	const std::size_t remaining =
 		response_buffer_.size() - response_offset_;
-	const ssize_t bytes_sent = ::send(fd_, response_buffer_.data() + response_offset_, remaining, 0);
-
+	const ssize_t bytes_sent = ::send(
+		fd_,
+		response_buffer_.data() + response_offset_,
+		remaining,
+		0);
 	if (bytes_sent < 0) {
-		throw std::runtime_error(std::string("send: ") + std::strerror(errno));
+		if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+			return;
+		LOG(LOG_ERROR, "send: " + std::string(std::strerror(errno)));
+		finish();
+		return;
 	}
-	if (bytes_sent == 0) {
-		remove_from_epoll();
-		set_remove_me();
-		state_ = State::FINISHED;
+	if (bytes_sent == 0)
+	{
+		finish();
 		return;
 	}
 	response_offset_ += static_cast<std::size_t>(bytes_sent);
-	if (response_offset_ < response_buffer_.size())
-		return;
-	remove_from_epoll();
-	set_remove_me();
-	state_ = State::FINISHED;
+	if (response_offset_ == response_buffer_.size())
+		finish();
 }
 
-std::string response2 =
-	"HTTP/1.1 200 OK\r\n"
-	"Content-Type: text/html; charset=UTF-8\r\n\r\n"
-	"<!DOCTYPE html><html><head><title>Bye-bye baby bye-bye</title>"
-	"<style>body { background-color: #111 }"
-	"h1 { font-size:4cm; text-align: center; color: black;"
-	" text-shadow: 0 0 2mm red}</style></head>"
-	"<body><h1>Goodbye, world!</h1></body></html>\r\n\r\n";
-
-void Connection::make_response(const Request& request)
-{
-	// for (auto &byte : response2)
-	// {
-	// 	response_buffer_.push_back(static_cast<uint8_t>(byte));
-	// }
-	const Response response = handle_request(request, *server_);
-	const std::string	serialized = response.serialize();
-	response_buffer_.assign(serialized.begin(), serialized.end());
-	response_offset_ = 0;
-	state_ = State::SENDING;
-	modify_epoll(EPOLLOUT);
-	return;
-}
-
-void Connection::on_epoll_event(AllServers &servers, uint32_t events)
+void Connection::on_epoll_event(AllServers& servers, uint32_t events)
 {
 	(void)servers;
 
 	LOG(LOG_DEBUG, " state: " + std::to_string(static_cast<int>(state_)));
-
 	switch (state_)
 	{
 	case State::RECEIVING:
 		if (events & EPOLL_EVENTS::EPOLLIN)
-		{
 			receive();
-			return;
-		}
 		break;
-
-	// case State::BUILTING:
-	// 	if (events & EPOLL_EVENTS::EPOLLOUT)
-	// 	{
-	// 		make_response();
-	// 		return;
-	// 	}
-	// 	break;
-
 	case State::SENDING:
 		if (events & EPOLL_EVENTS::EPOLLOUT)
-		{
 			send();
-			return;
-		}
 		break;
 	case State::FINISHED:
 		break;
