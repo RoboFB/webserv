@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/25 13:33:13 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/21 02:01:22 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/18 23:53:45 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@ Location::Location(const LocationConfig &from)
 	  error_page_path(from.error_page_path.value_or("./example")),
 	  root_path(from.root_path.value_or(".")), // todo
 	  return_path(from.return_path.value_or("./example")),
+	  cgi(from.cgi),
 	  client_max_body_size(
 		  from.client_max_body_size.value_or(BODY_SIZE_DEFAULT)), // todo
 	  return_code(from.return_code.value_or(888)), // todo

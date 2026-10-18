@@ -6,7 +6,7 @@
 #    By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/03/10 10:21:00 by rgohrig           #+#    #+#              #
-#    Updated: 2026/10/18 23:03:09 by modiepge         ###   ########.fr        #
+#    Updated: 2026/10/19 00:14:03 by modiepge         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -39,7 +39,7 @@ DEBUG_OBJ :=		$(SRC:%.cpp=$(DIR_OBJ)/%_debug.o)
 
 
 
-HEADERS :=			-I ./include -I ./include/utils -I ./include/server -I ./include/server_config -I ./include/message -I ./include/routing
+HEADERS :=			-I ./include -I ./include/utils -I ./include/server -I ./include/server_config -I ./include/message -I ./include/routing -I ./include/cgi -I ./include/http
 
 LIBS :=
 
