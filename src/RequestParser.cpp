@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 18:51:03 by modiepge          #+#    #+#             */
-/*   Updated: 2026/09/21 01:54:57 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/18 14:51:37 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,25 @@ static	std::size_t	header_length(const	std::vector<uint8_t>& buffer)
 	if (found == buffer.end())
 		return (std::string::npos);
 	return (static_cast<std::size_t>(found - buffer.begin()) + delimiter.size());
+}
+
+static bool parse_content_length(const std::string& text,
+                                 std::size_t& length)
+{
+	if (text.empty())
+		return false;
+	length = 0;
+	for (std::size_t i = 0; i < text.size(); ++i)
+	{
+		const unsigned char c = static_cast<unsigned char>(text[i]);
+		if (!std::isdigit(c))
+			return false;
+		const std::size_t digit = c - '0';
+		if (length > (std::numeric_limits<std::size_t>::max() - digit) / 10)
+			return false;
+		length = length * 10 + digit;
+	}
+	return true;
 }
 
 static	std::string lower_case(const std::string& input) {
@@ -101,18 +120,30 @@ RequestParsing request_parsing(const std::vector<uint8_t>& buffer) {
 			return (request);
 		request.message.addHeader(name, value);
 	}
-
 	const	std::map<std::string, std::vector<std::string>>& headers = request.message.getHeaders();
 	const	std::map<std::string, std::vector<std::string>>::const_iterator host = headers.find("host");
 	if (version == "HTTP/1.1" && (host == headers.end() || host->second.size() != 1 || host->second[0].empty()))
 		return (request);
 	if (request.message.getMethod() == Methods::GET && headers.find("transfer-encoding") != headers.end())
 		return (request);
-	const std::map<std::string, std::vector<std::string> >::const_iterator length = headers.find("content-length");
-	if (length != headers.end() &&
-		(length->second.size() != 1 || length->second[0] != "0"))
+	std::size_t body_length = 0;
+	const std::map<std::string, std::vector<std::string> >::const_iterator length
+		= headers.find("content-length");
+	if (length != headers.end())
+	{
+		if (length->second.size() != 1 ||
+			!parse_content_length(length->second[0], body_length))
+			return request;
+	}
+	if (buffer.size() < header + body_length)
+	{
+		request.status = RequestStatus::MSG_INCOMPLETE;
 		return request;
+	}
+	request.message.setBody(std::string(
+		buffer.begin() + header,
+		buffer.begin() + header + body_length));
 	request.status = RequestStatus::MSG_COMPLETE;
-	request.bytes = header;
-	return (request);
+	request.bytes = header + body_length;
+	return request;
 }

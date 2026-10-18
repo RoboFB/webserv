@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 18:49:51 by modiepge          #+#    #+#             */
-/*   Updated: 2026/09/21 01:29:17 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/18 14:36:32 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include "Message.hpp"
 #include <algorithm>
 #include <cctype>
+#include <limits>
 
 enum class RequestStatus {
 	MSG_INCOMPLETE,
