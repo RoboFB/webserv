@@ -6,13 +6,14 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/18 22:51:52 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/18 23:03:25 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/18 23:29:03 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Resolver.hpp"
 #include "Message.hpp"
 #include <system_error>
+#include <optional>
 
 bool is_path_within_root(
 	const std::filesystem::path& candidate,

@@ -6,25 +6,18 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/18 22:58:38 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/18 23:28:45 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Message.hpp"
 #include "Server.hpp"
-#include "routing/Resolver.hpp"
+#include "Resolver.hpp"
+#include "URITarget.hpp"
 #include <optional>
 #include <fstream>
 #include <sstream>
 #include <system_error>
-
-static std::string path_without_query(const Request& request) {
-	const std::string target = request.getTarget();
-	const std::size_t query_start = target.find('?');
-	if (query_start == std::string::npos)
-		return (target);
-	return (target.substr(0, query_start));
-}
 
 static std::optional<std::filesystem::path> find_index_file(const Location& location, const std::filesystem::path& directory) {
 	std::error_code error;
@@ -264,7 +257,8 @@ Response handle_delete(
 
 Response handle_request(const Request& request, const Server& server)
 {
-	const std::string request_path = path_without_query(request);
+	const URITarget target = split_uri_target(request.getTarget());
+	const std::string& request_path = target.path;
 	const Location* location = server.find_location(request_path);
 
 	if (location == NULL)
