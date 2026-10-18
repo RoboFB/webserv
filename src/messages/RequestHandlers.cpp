@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/18 22:39:11 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/18 22:44:12 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -153,7 +153,7 @@ static std::string allowed_methods(Methods methods)
 	return result;
 }
 
-static Response make_method_not_allowed(const Location& location)
+static Response make_method_not_allowed_response(const Location& location)
 {
 	Response response = make_empty_response(405);
 
@@ -310,7 +310,7 @@ Response handle_request(const Request& request, const Server& server)
 		return make_error_response(404);
 
 	if (!is_method(location->limit_except, request.getMethod()))
-		return make_method_not_allowed(*location);
+		return make_method_not_allowed_response(*location);
 
 	switch (request.getMethod())
 	{
