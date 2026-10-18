@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/18 22:33:05 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/18 22:58:11 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,14 +71,14 @@ class Request : public Message
 {
 	private:
 		Methods					method_;
-		std::filesystem::path	target_; //path
+		std::string				target_; //this needs to be a string because it is a URI, so that we may interpret things like ?key=value
 	public:
 		Request();
 		Request(Methods method, const std::string &target);
 		void 		setMethod(Methods method);
 		Methods		getMethod() const;
 		void 		setTarget(const std::string &target);
-		std::filesystem::path getTarget() const;
+		std::string getTarget() const;
 		std::string serialize() const;
 };
 

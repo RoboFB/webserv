@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 11:23:43 by modiepge          #+#    #+#             */
-/*   Updated: 2026/09/21 00:08:56 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/18 22:58:39 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,14 +80,14 @@ void Request::setTarget(const std::string &target)
 	this->target_ = target;
 }
 
-std::filesystem::path Request::getTarget() const
+std::string Request::getTarget() const
 {
 	return target_;
 }
 
 std::string Request::serialize() const
 {
-	return methods_to_string(method_) + " " + target_.string() + " " + version_ + LINE
+	return methods_to_string(method_) + " " + target_ + " " + version_ + LINE
 		+ serializeHeaders() + LINE + body_;
 }
 

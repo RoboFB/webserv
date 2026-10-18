@@ -6,9 +6,11 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/25 13:34:03 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/21 02:15:52 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/18 22:58:56 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
+
+#pragma once
 
 #include "ConfigStructs.hpp"
 #include "Methods.hpp"

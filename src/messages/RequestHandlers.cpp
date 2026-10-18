@@ -6,63 +6,24 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/18 22:44:12 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/18 22:58:38 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Message.hpp"
 #include "Server.hpp"
+#include "routing/Resolver.hpp"
 #include <optional>
 #include <fstream>
 #include <sstream>
 #include <system_error>
 
 static std::string path_without_query(const Request& request) {
-	const std::string target = request.getTarget().string();
+	const std::string target = request.getTarget();
 	const std::size_t query_start = target.find('?');
 	if (query_start == std::string::npos)
 		return (target);
 	return (target.substr(0, query_start));
-}
-
-static bool is_within_root(const std::filesystem::path& candidate, const std::filesystem::path& root) {
-	std::filesystem::path::const_iterator root_part = root.begin();
-	std::filesystem::path::const_iterator candidate_part = candidate.begin();
-	while (root_part != root.end()) {
-		if (candidate_part == candidate.end() || *candidate_part != *root_part)
-			return (false);
-		++root_part;
-		++candidate_part;
-	}
-	return (true);
-}
-
-static std::optional<std::filesystem::path> resolve_path(const Location& location, const std::string& request_path){
-	std::string suffix;
-	if (location.location_path =="/")
-		suffix = request_path.substr(1);
-	else
-		suffix = request_path.substr(location.location_path.size());
-	while (!suffix.empty() && suffix[0] == '/')
-		suffix.erase(0, 1);
-	std::string decoded_suffix;
-	if (!percent_decode(suffix, decoded_suffix))
-		return (std::nullopt);
-	std::filesystem::path relative_path(decoded_suffix);
-	if (relative_path.is_absolute())
-		return (std::nullopt);
-	for (const std::filesystem::path& part : relative_path) {
-		if (part == "..")
-			return (std::nullopt);
-	}
-	std::error_code error;
-	const std::filesystem::path canonical_root = std::filesystem::weakly_canonical(location.root_path, error);
-	if (error)
-		return (std::nullopt);
-	const std::filesystem::path canonical_candidate = std::filesystem::weakly_canonical(canonical_root / relative_path, error);
-	if (error || !is_within_root(canonical_candidate, canonical_root))
-		return (std::nullopt);
-	return (canonical_candidate);
 }
 
 static std::optional<std::filesystem::path> find_index_file(const Location& location, const std::filesystem::path& directory) {
@@ -79,7 +40,7 @@ static std::optional<std::filesystem::path> find_index_file(const Location& loca
 			error.clear();
 			continue;
 		}
-		if (!is_within_root(candidate, canonical_root))
+		if (!is_path_within_root(candidate, canonical_root))
 			continue;
 		const std::filesystem::file_status status =
 			std::filesystem::status(candidate, error);
@@ -168,15 +129,15 @@ Response handle_get(
 {
 	(void)request;
 
-	const std::optional<std::filesystem::path> resolved_path =
-		resolve_path(location, request_path);
+	const ResolvedPath resolved_path =
+		resolve_resource_path(location, request_path);
 
-	if (!resolved_path)
+	if (resolved_path.status != ResolveStatus::OK)
 		return make_error_response(403);
 
 	std::error_code error;
 	const std::filesystem::file_status status =
-		std::filesystem::status(*resolved_path, error);
+		std::filesystem::status(resolved_path.path, error);
 	if (!std::filesystem::exists(status))
 	{
 		if (error == std::make_error_code(
@@ -189,7 +150,7 @@ Response handle_get(
 	if (error)
 		return make_error_response(403);
 
-	std::filesystem::path file_path = *resolved_path;
+	std::filesystem::path file_path = resolved_path.path;
 
 	if (std::filesystem::is_directory(status))
 	{
@@ -233,15 +194,15 @@ Response handle_post(
 	if (request.getBody().size() > location.client_max_body_size)
 		return make_error_response(413);
 
-	const std::optional<std::filesystem::path> resolved_path =
-		resolve_path(location, request_path);
+	const ResolvedPath resolved_path =
+		resolve_resource_path(location, request_path);
 
-	if (!resolved_path)
+	if (resolved_path.status != ResolveStatus::OK)
 		return make_error_response(403);
 
 	std::error_code error;
 	const std::filesystem::file_status existing_status =
-		std::filesystem::status(*resolved_path, error);
+		std::filesystem::status(resolved_path.path, error);
 
 	const bool existed = !error && std::filesystem::exists(existing_status);
 
@@ -250,13 +211,13 @@ Response handle_post(
 
 	error.clear();
 	const std::filesystem::file_status parent_status =
-		std::filesystem::status(resolved_path->parent_path(), error);
+		std::filesystem::status(resolved_path.path.parent_path(), error);
 
 	if (error || !std::filesystem::is_directory(parent_status))
 		return make_error_response(404);
 
 	std::ofstream file(
-		resolved_path->string().c_str(),
+		resolved_path.path.string().c_str(),
 		std::ios::binary | std::ios::trunc);
 
 	if (!file)
@@ -279,15 +240,15 @@ Response handle_delete(
 {
 	(void)request;
 
-	const std::optional<std::filesystem::path> resolved_path =
-		resolve_path(location, request_path);
+	const ResolvedPath resolved_path =
+		resolve_resource_path(location, request_path);
 
-	if (!resolved_path)
+	if (resolved_path.status != ResolveStatus::OK)
 		return make_error_response(403);
 
 	std::error_code error;
 	const std::filesystem::file_status status =
-		std::filesystem::status(*resolved_path, error);
+		std::filesystem::status(resolved_path.path, error);
 
 	if (error || !std::filesystem::exists(status))
 		return make_error_response(404);
@@ -295,7 +256,7 @@ Response handle_delete(
 	if (!std::filesystem::is_regular_file(status))
 		return make_error_response(403);
 
-	if (!std::filesystem::remove(*resolved_path, error) || error)
+	if (!std::filesystem::remove(resolved_path.path, error) || error)
 		return make_error_response(500);
 
 	return make_empty_response(204);
