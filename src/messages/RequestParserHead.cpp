@@ -6,12 +6,13 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/18 21:28:57 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/18 21:40:35 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/19 00:21:08 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "RequestParserHead.hpp"
 
+#include "Syntax.hpp"
 #include <algorithm>
 #include <cctype>
 #include <map>
@@ -28,37 +29,6 @@ static std::size_t header_length(const std::vector<uint8_t>& buffer)
 	if (found == buffer.end())
 		return std::string::npos;
 	return static_cast<std::size_t>(found - buffer.begin()) + delimiter.size();
-}
-
-static std::string lower_case(const std::string& input)
-{
-	std::string result = input;
-	std::transform(result.begin(), result.end(), result.begin(),
-		[](unsigned char character) { return std::tolower(character); });
-	return result;
-}
-
-static std::string trim(const std::string& input)
-{
-	const std::size_t first = input.find_first_not_of(" \t");
-	if (first == std::string::npos)
-		return "";
-	const std::size_t last = input.find_last_not_of(" \t");
-	return input.substr(first, last - first + 1);
-}
-
-static bool is_valid_header_name(const std::string& name)
-{
-	static const std::string allowed = "!#$%&'*+-.^_`|~";
-	if (name.empty())
-		return false;
-	for (std::string::const_iterator it = name.begin(); it != name.end(); ++it)
-	{
-		const unsigned char character = static_cast<unsigned char>(*it);
-		if (!std::isalnum(character) && allowed.find(*it) == std::string::npos)
-			return false;
-	}
-	return true;
 }
 
 static bool parse_request_line(const std::string& line, Request& request)
@@ -84,21 +54,28 @@ static bool parse_request_line(const std::string& line, Request& request)
 	return true;
 }
 
-static bool parse_headers(const std::string& block, std::size_t cursor, Request& request)
+static bool parse_headers(
+	const std::string& block,
+	std::size_t cursor,
+	Request& request)
 {
 	while (cursor < block.size())
 	{
 		const std::size_t line_end = block.find(LINE, cursor);
+
 		if (line_end == std::string::npos)
 			return false;
-		const std::string line = block.substr(cursor, line_end - cursor);
-		const std::size_t colon = line.find(':');
-		if (colon == std::string::npos || colon == 0)
+
+		const std::string line =
+			block.substr(cursor, line_end - cursor);
+
+		const std::optional<HeaderField> field =
+			parse_header_field(line);
+
+		if (!field)
 			return false;
-		const std::string name = lower_case(line.substr(0, colon));
-		if (!is_valid_header_name(name))
-			return false;
-		request.addHeader(name, trim(line.substr(colon + 1)));
+
+		request.addHeader(field->normalized_name, field->value);
 		cursor = line_end + 2;
 	}
 	return true;

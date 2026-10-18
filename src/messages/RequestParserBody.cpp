@@ -6,12 +6,12 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/18 20:29:59 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/18 21:39:08 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/19 00:24:09 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "RequestParserBody.hpp"
-
+#include "Syntax.hpp"
 #include <algorithm>
 #include <charconv>
 #include <cctype>
@@ -34,32 +34,6 @@ static BodyParsing make_complete(const std::string& body, std::size_t bytes)
 	return result;
 }
 
-static std::string lower_case(const std::string& input)
-{
-	std::string result = input;
-	std::transform(result.begin(), result.end(), result.begin(),
-		[](unsigned char character) { return std::tolower(character); });
-	return result;
-}
-
-static bool parse_content_length(const std::string& text, std::size_t& length)
-{
-	if (text.empty())
-		return false;
-	length = 0;
-	for (std::size_t index = 0; index < text.size(); ++index)
-	{
-		const unsigned char character = static_cast<unsigned char>(text[index]);
-		if (!std::isdigit(character))
-			return false;
-		const std::size_t digit = character - '0';
-		if (length > (std::numeric_limits<std::size_t>::max() - digit) / 10)
-			return false;
-		length = length * 10 + digit;
-	}
-	return true;
-}
-
 /*	Fixed length body
 */
 static BodyParsing parse_content_length_body(
@@ -68,7 +42,7 @@ static BodyParsing parse_content_length_body(
 	const std::string& length_text)
 {
 	std::size_t body_length = 0;
-	if (!parse_content_length(length_text, body_length))
+	if (!parse_decimal_size(length_text, body_length))
 		return BodyParsing();
 	if (body_start > buffer.size() || body_length > buffer.size() - body_start)
 		return make_incomplete();
@@ -174,7 +148,7 @@ BodyParsing parse_body(
 	if (transfer != headers.end())
 	{
 		if (transfer->second.size() != 1 ||
-			lower_case(transfer->second[0]) != "chunked")
+			ascii_lowercase(transfer->second[0]) != "chunked")
 			return BodyParsing();
 		return parse_chunked_body(buffer, body_start);
 	}

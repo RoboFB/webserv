@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 11:23:43 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/18 22:58:39 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/18 23:58:32 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -100,7 +100,7 @@ Response::Response(int status)
 
 void Response::setStatus(int status)
 {
-	if (reasons.find(status) == reasons.end())
+	if (status < 100 || status > 599)
 		this->status_ = 500;
 	else
 		this->status_ = status;
@@ -113,11 +113,13 @@ int Response::getStatus() const
 
 std::string Response::getReason() const
 {
-	std::map<int, std::string>::const_iterator it = reasons.find(status_);
+	const std::map<int, std::string>::const_iterator it =
+		reasons.find(status_);
 
-	if (it == reasons.end())
-		return reasons.at(500);
-	return it->second;
+	if (it != reasons.end())
+		return it->second;
+
+	return "Unknown Status";
 }
 
 std::string Response::serialize() const
