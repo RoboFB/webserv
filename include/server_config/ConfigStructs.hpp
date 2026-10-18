@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigStructs.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 18:36:32 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/01 16:51:39 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/19 01:01:15 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 
 #include "AddrInfoPtr.hpp"
 #include "Methods.hpp"
+#include "CGIConfig.hpp"
 
 #include <filesystem>
 #include <optional>
@@ -36,7 +37,8 @@ struct DefaultConfig
 
 struct LocationConfig : public DefaultConfig
 {
-		std::filesystem::path location_path;
+		std::string location_path;
+		std::optional<CGIConfig> cgi;
 
 		LocationConfig() : DefaultConfig() {};
 };

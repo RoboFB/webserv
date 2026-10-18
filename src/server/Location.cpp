@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/25 13:33:13 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/18 23:53:45 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/19 01:01:33 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 #include "MagicValues.hpp"
 
 Location::Location(const LocationConfig &from)
-	: location_path(from.location_path.string()),
+	: location_path(from.location_path),
 	  error_codes(from.error_codes), indexs_paths(from.indexs_paths),
 	  error_page_path(from.error_page_path.value_or("./example")),
 	  root_path(from.root_path.value_or(".")), // todo

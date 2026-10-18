@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/21 02:09:23 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/19 01:19:50 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,7 @@ static bool is_location_match(const std::string& request_path, const std::string
 	return (request_path.size() == location_path.size() || request_path[location_path.size()] == '/');
 }
 
+// this finds a location based on the request path relative to the configured server settings, it can fail
 const Location* Server::find_location(const std::string& request_path) const {
 	const Location* best_match = nullptr;
 	for (const Location& location : locations_) {
