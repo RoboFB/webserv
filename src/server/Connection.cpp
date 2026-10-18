@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/18 18:51:45 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/18 19:54:17 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,9 +69,9 @@ void Connection::receive()
 		temporary_buffer.begin(),
 		temporary_buffer.begin() + bytes_read);
 	const RequestParsing parsed = request_parsing(request_buffer_);
-	if (parsed.status == RequestStatus::MSG_INCOMPLETE)
+	if (parsed.status == ParseStatus::INCOMPLETE)
 		return;
-	if (parsed.status == RequestStatus::MSG_BAD)
+	if (parsed.status == ParseStatus::BAD)
 	{
 		queue_response(make_error_response(400));
 		return;

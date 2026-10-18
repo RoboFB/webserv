@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/09/21 00:08:39 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/18 22:33:05 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,11 +46,13 @@
 
 #define LINE "\r\n"
 
+using Headers = std::map<std::string, std::vector<std::string> >;
+
 class Message
 {
 	protected:
 		std::string version_ = "HTTP/1.0";
-		std::map<std::string, std::vector<std::string>> headers_;
+		Headers headers_;
 		std::string body_;
 		std::string serializeHeaders() const;
 	public:
@@ -59,7 +61,7 @@ class Message
 		void setVersion(const std::string &version);
 		const std::string &getVersion() const;
 		void addHeader(const std::string &name, const std::string &value);
-		const std::map<std::string, std::vector<std::string>> &getHeaders() const;
+		const Headers &getHeaders() const;
 		void setBody(const std::string &body);
 		const std::string &getBody() const;
 		virtual std::string serialize() const = 0;
@@ -101,3 +103,6 @@ class Response : public Message
 		std::string	getReason() const;
 		std::string	serialize() const;
 };
+
+int hex_value(char character);
+bool percent_decode(const std::string& input, std::string& output);

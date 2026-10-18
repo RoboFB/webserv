@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   fill_default.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:38:24 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/20 19:25:19 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/18 21:31:07 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,11 +23,11 @@ void Config::append_addrinfo(AddrInfoPtr &addr_list, const std::string &address_
 	hints.ai_socktype = SOCK_STREAM;	// TCP stream sockets
 
 	addrinfo* new_list = nullptr;
-	
+
 	int status = getaddrinfo(address_str.c_str(), port_str.c_str(), &hints, &new_list);
 	if (status != 0)
 		throw ConfigParseException("getaddrinfo error: " + std::string(gai_strerror(status)), token);
-	
+
 	if (addr_list.get() == nullptr)
 	{
 		addr_list.reset(new_list);
@@ -42,7 +42,7 @@ void Config::append_addrinfo(AddrInfoPtr &addr_list, const std::string &address_
 }
 
 
-/* 
+/*
 listen port
 listen ip:port
 
@@ -74,8 +74,8 @@ void Config::fill_listen(TokenIterator &head_token,
     }
 	if (validate_port(port_str) == -1)
 		throw ConfigParseException("invalid port number", token);
-	
-	
+
+
 	append_addrinfo(reinterpret_cast<ServerConfig&>(fill_config).listen, address_str, port_str, token);
 
 	skip_next(head_token, TokenType::SEMICOLON);
@@ -86,7 +86,7 @@ void Config::fill_listen(TokenIterator &head_token,
 
 
 
-/* 
+/*
 default: off
 */
 void Config::fill_autoindex(TokenIterator &head_token,
@@ -113,7 +113,7 @@ void Config::fill_autoindex(TokenIterator &head_token,
 
 
 
-/* 
+/*
 Default: root html;
 */
 void Config::fill_root(TokenIterator &head_token,
@@ -129,7 +129,7 @@ void Config::fill_root(TokenIterator &head_token,
 	return;
 }
 
-/* 
+/*
 converts "3G" "20M" "1024k" "10" in Bytes (size_t)
 */
 size_t Config::parse_max_body_size(std::string number_str, const Token &token)
@@ -139,7 +139,7 @@ size_t Config::parse_max_body_size(std::string number_str, const Token &token)
 		number_str.erase(x, 2);
 
     char unit_letter = number_str.back();
-	
+
 	size_t multiplier = 1;
 	if (!std::isdigit(unit_letter))
 	{
@@ -160,7 +160,7 @@ size_t Config::parse_max_body_size(std::string number_str, const Token &token)
 	int result;
 	try {
 		result = std::stoi(number_str, &index);
-	} 
+	}
 	catch (const std::exception& e) {
 		throw ConfigParseException("invalid number", token);
 	}
@@ -170,12 +170,12 @@ size_t Config::parse_max_body_size(std::string number_str, const Token &token)
 		throw ConfigParseException("invalid negative number", token);
 	else if (SIZE_MAX / multiplier < static_cast<size_t>(result))
 		throw ConfigParseException("invalid big number", token);
-	
-	return result * multiplier;	
+
+	return result * multiplier;
 }
 
-/* 
-Default:	
+/*
+Default:
 client_max_body_size 1m
 */
 void Config::fill_client_max_body_size(TokenIterator &head_token,
@@ -237,25 +237,10 @@ Methods string_to_get_allowed_methods(const std::string& methods)
 		return Methods::NONE;
 }
 
-std::string methods_to_string(Methods methods)
-{
-	if (methods == Methods::GET)
-		return "GET";
-	else if (methods == Methods::POST)
-		return "POST";
-	else if (methods == Methods::DELETE)
-		return "DELETE";
-	else if (methods == Methods::NONE)
-		return "NONE";
-	else
-		return "NONE";
-}
-
-
-/* 
+/*
 
 default: limit_except NONE; Breaking to nginx but the easiest to implement and make a little sense. maby remane it to allowd methods.
-        so the config needa at least one methet. 
+        so the config needa at least one methet.
 		can be difficult to inhert it kouse it only adds and not overwrite values prevuslie set.
 limit_except GET POST DELETE;
 limit_except GET;
@@ -285,7 +270,7 @@ void Config::fill_limit_except(TokenIterator &head_token,
 
 
 
-/* 
+/*
 BIG TODO:
 - fix and implement all the fill_context functions for the directives
 
@@ -312,7 +297,7 @@ void Config::fill_return(TokenIterator &head_token,
 	{
 		return;
 	}
-	else 
+	else
 		throw ConfigParseException("expected a word or a semicolon", token);
 
 	return;
@@ -340,11 +325,11 @@ void Config::fill_error_page(
 		{
 			fill_config.error_page_path = current_token.word;
 		}
-		
+
 		current_token = get_next_word(head_token);
 	}
-	
-	
+
+
 	skip_next(head_token, TokenType::SEMICOLON);
 	return;
 }
