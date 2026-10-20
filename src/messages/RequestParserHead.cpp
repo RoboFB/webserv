@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   RequestParserHead.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
+/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/18 21:28:57 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/19 00:21:08 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/20 21:09:30 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,17 +21,32 @@
 
 constexpr std::size_t max_header_size = 8192;
 
-static std::size_t header_length(const std::vector<uint8_t>& buffer)
+static std::size_t header_length(const std::vector<uint8_t> &buffer)
 {
 	static const std::string delimiter = "\r\n\r\n";
 	const std::vector<uint8_t>::const_iterator found = std::search(
 		buffer.begin(), buffer.end(), delimiter.begin(), delimiter.end());
 	if (found == buffer.end())
 		return std::string::npos;
-	return static_cast<std::size_t>(found - buffer.begin()) + delimiter.size();
+	return (found - buffer.begin()) + delimiter.size();
 }
 
-static bool parse_request_line(const std::string& line, Request& request)
+bool Request::is_version_valid() const
+{
+	return version_ == "HTTP/1.0" || version_ == "HTTP/1.1";
+}
+
+bool Request::is_method_valid() const
+{
+	return method_ != Methods::NONE;
+}
+
+bool Request::is_target_valid() const
+{
+	return !target_.empty() && target_[0] == '/';
+}
+
+bool Request::parse_request_line(const std::string &line)
 {
 	const std::size_t first_space = line.find(' ');
 	const std::size_t second_space = line.find(' ', first_space + 1);
@@ -39,25 +54,13 @@ static bool parse_request_line(const std::string& line, Request& request)
 		line.find(' ', second_space + 1) != std::string::npos)
 		return false;
 
-	const Methods method = string_to_methods(line.substr(0, first_space));
-	const std::string target = line.substr(
-		first_space + 1, second_space - first_space - 1);
-	const std::string version = line.substr(second_space + 1);
-
-	if (method == Methods::NONE || target.empty() || target[0] != '/' ||
-		(version != "HTTP/1.0" && version != "HTTP/1.1"))
-		return false;
-
-	request.setMethod(method);
-	request.setTarget(target);
-	request.setVersion(version);
-	return true;
+	method_ = string_to_methods(line.substr(0, first_space));
+	target_ = line.substr(first_space + 1, second_space - first_space - 1);
+	version_ = line.substr(second_space + 1);
+	return is_method_valid() && is_target_valid() && is_version_valid();
 }
 
-static bool parse_headers(
-	const std::string& block,
-	std::size_t cursor,
-	Request& request)
+bool Request::parse_headers(const std::string &block, std::size_t cursor)
 {
 	while (cursor < block.size())
 	{
@@ -66,34 +69,31 @@ static bool parse_headers(
 		if (line_end == std::string::npos)
 			return false;
 
-		const std::string line =
-			block.substr(cursor, line_end - cursor);
+		const std::string line = block.substr(cursor, line_end - cursor);
 
-		const std::optional<HeaderField> field =
-			parse_header_field(line);
+		const std::optional<HeaderField> field = parse_header_field(line);
 
 		if (!field)
 			return false;
 
-		request.addHeader(field->normalized_name, field->value);
+		addHeader(field->normalized_name, field->value);
 		cursor = line_end + 2;
 	}
 	return true;
 }
 
-static bool has_required_host(const Request& request)
+bool Request::has_required_host() const
 {
-	if (request.getVersion() != "HTTP/1.1")
+	if (version_ != "HTTP/1.1")
 		return true;
-	const std::map<std::string, std::vector<std::string> >& headers =
-		request.getHeaders();
-	const std::map<std::string, std::vector<std::string> >::const_iterator host =
-		headers.find("host");
-	return host != headers.end() && host->second.size() == 1 &&
-		!host->second[0].empty();
+	const auto host = headers_.find("host");
+	if (host == headers_.end())
+		return false;
+	const std::vector<std::string> &values = host->second;
+	return values.size() == 1 && !values[0].empty();
 }
 
-HeaderParsing parse_request_head(const std::vector<uint8_t>& buffer)
+HeaderParsing parse_request_head(const std::vector<uint8_t> &buffer)
 {
 	HeaderParsing result;
 	const std::size_t head_length = header_length(buffer);
@@ -109,9 +109,9 @@ HeaderParsing parse_request_head(const std::vector<uint8_t>& buffer)
 	const std::string block(buffer.begin(), buffer.begin() + head_length - 2);
 	const std::size_t request_line_end = block.find(LINE);
 	if (request_line_end == std::string::npos ||
-		!parse_request_line(block.substr(0, request_line_end), result.request) ||
-		!parse_headers(block, request_line_end + 2, result.request) ||
-		!has_required_host(result.request))
+		!result.request.parse_request_line(block.substr(0, request_line_end)) ||
+		!result.request.parse_headers(block, request_line_end + 2) ||
+		!result.request.has_required_host())
 		return result;
 
 	result.body_start = head_length;

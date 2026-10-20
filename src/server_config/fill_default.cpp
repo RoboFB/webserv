@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   fill_default.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
+/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:38:24 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/18 21:31:07 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/20 15:41:31 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,18 +15,22 @@
 #include <algorithm>
 #include <cstring>
 
-void Config::append_addrinfo(AddrInfoPtr &addr_list, const std::string &address_str, const std::string &port_str, const Token &token)
+void Config::append_addrinfo(AddrInfoPtr &addr_list,
+							 const std::string &address_str,
+							 const std::string &port_str, const Token &token)
 {
 	addrinfo hints{};
-	hints.ai_flags = AI_PASSIVE;		// fill in my IP for me
-	hints.ai_family = AF_UNSPEC;		// don't care IPv4 or IPv6
-	hints.ai_socktype = SOCK_STREAM;	// TCP stream sockets
+	hints.ai_flags = AI_PASSIVE; // fill in my IP for me
+	hints.ai_family = AF_UNSPEC; // don't care IPv4 or IPv6
+	hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
 
-	addrinfo* new_list = nullptr;
+	addrinfo *new_list = nullptr;
 
-	int status = getaddrinfo(address_str.c_str(), port_str.c_str(), &hints, &new_list);
+	int status =
+		getaddrinfo(address_str.c_str(), port_str.c_str(), &hints, &new_list);
 	if (status != 0)
-		throw ConfigParseException("getaddrinfo error: " + std::string(gai_strerror(status)), token);
+		throw ConfigParseException(
+			"getaddrinfo error: " + std::string(gai_strerror(status)), token);
 
 	if (addr_list.get() == nullptr)
 	{
@@ -34,13 +38,12 @@ void Config::append_addrinfo(AddrInfoPtr &addr_list, const std::string &address_
 	}
 	else
 	{
-		addrinfo* current = addr_list.get();
+		addrinfo *current = addr_list.get();
 		while (current->ai_next)
 			current = current->ai_next;
 		current->ai_next = new_list;
 	}
 }
-
 
 /*
 listen port
@@ -54,43 +57,39 @@ ipv6 not supported yet, but should be in the future
 
 default: 0.0.0.0:8000; and 0.0.0.0:80;
 */
-void Config::fill_listen(TokenIterator &head_token,
-					DefaultConfig &fill_config)
+void Config::fill_listen(TokenIterator &head_token, DefaultConfig &fill_config)
 {
 	Token token = get_next_word(head_token);
 
 	std::string port_str(token.word);
-	std::string address_str = "0.0.0.0";// default
+	std::string address_str = "0.0.0.0"; // default
 
 	size_t count_colon = std::count(port_str.begin(), port_str.end(), ':');
 	if (count_colon > 1)
 	{
-		throw ConfigParseException("invalid listen format to many colons", token);
-    }
+		throw ConfigParseException("invalid listen format to many colons",
+								   token);
+	}
 	else if (count_colon == 1)
 	{
 		std::getline(std::istringstream(port_str), address_str, ':');
 		port_str = port_str.substr(address_str.length() + 1);
-    }
+	}
 	if (validate_port(port_str) == -1)
 		throw ConfigParseException("invalid port number", token);
 
-
-	append_addrinfo(reinterpret_cast<ServerConfig&>(fill_config).listen, address_str, port_str, token);
+	append_addrinfo(reinterpret_cast<ServerConfig &>(fill_config).listen,
+					address_str, port_str, token);
 
 	skip_next(head_token, TokenType::SEMICOLON);
 	return;
 }
 
-
-
-
-
 /*
 default: off
 */
 void Config::fill_autoindex(TokenIterator &head_token,
-					DefaultConfig &fill_config)
+							DefaultConfig &fill_config)
 {
 	Token token = get_next_word(head_token);
 
@@ -104,26 +103,23 @@ void Config::fill_autoindex(TokenIterator &head_token,
 	}
 	else
 	{
-		throw ConfigParseException("invalid autoindex value, expected 'on' or 'off'", token);
+		throw ConfigParseException(
+			"invalid autoindex value, expected 'on' or 'off'", token);
 	}
 
 	skip_next(head_token, TokenType::SEMICOLON);
 	return;
 }
 
-
-
 /*
 Default: root html;
 */
-void Config::fill_root(TokenIterator &head_token,
-					DefaultConfig &fill_config)
+void Config::fill_root(TokenIterator &head_token, DefaultConfig &fill_config)
 {
 	Token token = get_next_word(head_token);
 
 	fill_config.root_path = token.word;
 	// todo: maybe more error handling
-
 
 	skip_next(head_token, TokenType::SEMICOLON);
 	return;
@@ -138,34 +134,48 @@ size_t Config::parse_max_body_size(std::string number_str, const Token &token)
 	if (x != std::string::npos)
 		number_str.erase(x, 2);
 
-    char unit_letter = number_str.back();
+	char unit_letter = number_str.back();
 
 	size_t multiplier = 1;
 	if (!std::isdigit(unit_letter))
 	{
 		number_str.pop_back();
 		if (number_str.length() == 0)
-			throw ConfigParseException("invalid client_max_body_size value, no number before unit", token);
-		switch (std::tolower(unit_letter)) {
-			case 'b': multiplier = BODY_SIZE_B; break;
-			case 'k': multiplier = BODY_SIZE_K; break;
-			case 'm': multiplier = BODY_SIZE_M; break;
-			case 'g': multiplier = BODY_SIZE_G; break;
-			default: throw ConfigParseException("wrong modifier client_max_body_size value", token);
+			throw ConfigParseException(
+				"invalid client_max_body_size value, no number before unit",
+				token);
+		switch (std::tolower(unit_letter))
+		{
+		case 'b':
+			multiplier = BODY_SIZE_B;
+			break;
+		case 'k':
+			multiplier = BODY_SIZE_K;
+			break;
+		case 'm':
+			multiplier = BODY_SIZE_M;
+			break;
+		case 'g':
+			multiplier = BODY_SIZE_G;
+			break;
+		default:
+			throw ConfigParseException(
+				"wrong modifier client_max_body_size value", token);
 		}
 	}
 
-
 	size_t index = 0;
 	int result;
-	try {
+	try
+	{
 		result = std::stoi(number_str, &index);
 	}
-	catch (const std::exception& e) {
+	catch (const std::exception &e)
+	{
 		throw ConfigParseException("invalid number", token);
 	}
 	if (index != number_str.length())
-		throw ConfigParseException("invalid number" , token);
+		throw ConfigParseException("invalid number", token);
 	else if (result < 0)
 		throw ConfigParseException("invalid negative number", token);
 	else if (SIZE_MAX / multiplier < static_cast<size_t>(result))
@@ -179,7 +189,7 @@ Default:
 client_max_body_size 1m
 */
 void Config::fill_client_max_body_size(TokenIterator &head_token,
-					DefaultConfig &fill_config)
+									   DefaultConfig &fill_config)
 {
 	Token token = get_next_word(head_token);
 	fill_config.client_max_body_size = parse_max_body_size(token.word, token);
@@ -187,19 +197,7 @@ void Config::fill_client_max_body_size(TokenIterator &head_token,
 	return;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-void Config::fill_index(TokenIterator &head_token,
-					DefaultConfig &fill_config)
+void Config::fill_index(TokenIterator &head_token, DefaultConfig &fill_config)
 {
 	Token token = get_next_word(head_token);
 
@@ -223,40 +221,26 @@ void Config::fill_index(TokenIterator &head_token,
 // 	return;
 // }
 
-
-
-Methods string_to_get_allowed_methods(const std::string& methods)
-{
-	if (methods == "GET")
-		return Methods::GET;
-	else if (methods == "POST")
-		return Methods::POST;
-	else if (methods == "DELETE")
-		return Methods::DELETE;
-	else
-		return Methods::NONE;
-}
-
 /*
 
-default: limit_except NONE; Breaking to nginx but the easiest to implement and make a little sense. maby remane it to allowd methods.
-        so the config needa at least one methet.
-		can be difficult to inhert it kouse it only adds and not overwrite values prevuslie set.
-limit_except GET POST DELETE;
-limit_except GET;
+default: limit_except NONE; Breaking to nginx but the easiest to implement and
+make a little sense. maby remane it to allowd methods. so the config needa at
+least one methet. can be difficult to inhert it kouse it only adds and not
+overwrite values prevuslie set. limit_except GET POST DELETE; limit_except GET;
 limit_except POST;
 limit_except DELETE;
 
 */
 void Config::fill_limit_except(TokenIterator &head_token,
-					DefaultConfig &fill_config)
+							   DefaultConfig &fill_config)
 {
 	Token token = get_next_word(head_token);
 	while (true)
 	{
-		Methods method = string_to_get_allowed_methods(token.word);
+		Methods method = string_to_methods(token.word);
 		if (method == Methods::NONE)
-			throw ConfigParseException("invalid limit_except needs 'GET', 'POST' or 'DELETE'", token);
+			throw ConfigParseException(
+				"invalid limit_except needs 'GET', 'POST' or 'DELETE'", token);
 		fill_config.limit_except = fill_config.limit_except | method;
 
 		token = get_next_token(head_token);
@@ -268,24 +252,21 @@ void Config::fill_limit_except(TokenIterator &head_token,
 	return;
 }
 
-
-
 /*
 BIG TODO:
 - fix and implement all the fill_context functions for the directives
 
 */
 
-
 // TODO: implement return directive
-void Config::fill_return(TokenIterator &head_token,
-					DefaultConfig &fill_config)
+void Config::fill_return(TokenIterator &head_token, DefaultConfig &fill_config)
 {
 	Token token = get_next_word(head_token);
 
 	fill_config.return_code = std::stoi(token.word);
 
-	token = get_next_token(head_token); // get next token, should be a word or a semicolon
+	token = get_next_token(
+		head_token); // get next token, should be a word or a semicolon
 
 	if (token.type == TokenType::WORD)
 	{
@@ -303,15 +284,10 @@ void Config::fill_return(TokenIterator &head_token,
 	return;
 }
 
-
-
-
 // TODO: implement error_page directive
-void Config::fill_error_page(
-			TokenIterator &head_token,
-			DefaultConfig &fill_config)
+void Config::fill_error_page(TokenIterator &head_token,
+							 DefaultConfig &fill_config)
 {
-
 	// LOG(LOG_DEBUG, "NOICE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
 	Token current_token = get_next_word(head_token);
@@ -321,14 +297,13 @@ void Config::fill_error_page(
 		{
 			fill_config.error_codes.push_back(std::stoi(current_token.word));
 		}
-		catch(const std::exception& e)
+		catch (const std::exception &e)
 		{
 			fill_config.error_page_path = current_token.word;
 		}
 
 		current_token = get_next_word(head_token);
 	}
-
 
 	skip_next(head_token, TokenType::SEMICOLON);
 	return;

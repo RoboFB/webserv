@@ -3,16 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   Methods.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
+/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:04:05 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/18 21:39:46 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/20 15:41:46 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Methods.hpp"
 
-Methods string_to_methods(const std::string& string) {
+Methods string_to_methods(const std::string &string)
+{
 	if (string == "GET")
 		return (Methods::GET);
 	else if (string == "POST")

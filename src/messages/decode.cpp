@@ -3,16 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   decode.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
+/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/18 20:01:03 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/18 20:05:07 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/20 19:22:25 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "normalFucntions.hpp"
+#include "Message.hpp"
 
-int hex_value(char character) {
+int hex_value(char character)
+{
 	if (character >= '0' && character <= '9')
 		return character - '0';
 	if (character >= 'a' && character <= 'f')
@@ -22,10 +23,13 @@ int hex_value(char character) {
 	return -1;
 }
 
-bool percent_decode(const std::string& input, std::string& output) {
+bool percent_decode(const std::string &input, std::string &output)
+{
 	output.clear();
-	for (std::size_t index = 0; index < input.size(); ++index) {
-		if (input[index] != '%') {
+	for (std::size_t index = 0; index < input.size(); ++index)
+	{
+		if (input[index] != '%')
+		{
 			output += input[index];
 			continue;
 		}

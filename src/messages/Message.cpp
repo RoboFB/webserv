@@ -3,24 +3,23 @@
 /*                                                        :::      ::::::::   */
 /*   Message.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
+/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 11:23:43 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/18 23:58:32 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/20 19:14:18 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Message.hpp"
 
-
-
 Message::Message() {}
 
 Message::~Message() {}
 
-void Message::setVersion(const std::string &version)
+Message &Message::setVersion(const std::string &version)
 {
 	this->version_ = version;
+	return *this;
 }
 
 const std::string &Message::getVersion() const
@@ -28,12 +27,14 @@ const std::string &Message::getVersion() const
 	return version_;
 }
 
-void Message::addHeader(const std::string &name, const std::string &value)
+Message &Message::addHeader(const std::string &name, const std::string &value)
 {
 	headers_[name].push_back(value);
+	return *this;
 }
 
-const std::map<std::string, std::vector<std::string>> &Message::getHeaders() const
+const std::map<std::string, std::vector<std::string>> &
+Message::getHeaders() const
 {
 	return headers_;
 }
@@ -63,35 +64,28 @@ std::string Message::serializeHeaders() const
 Request::Request() : method_(Methods::GET), target_("/") {}
 
 Request::Request(Methods method, const std::string &target)
-	: method_(method), target_(target) {}
-
-void Request::setMethod(Methods method)
+	: method_(method), target_(target)
 {
-	this->method_ = method;
 }
 
-Methods Request::getMethod() const
+URITarget Request::split_uri_target() const
 {
-	return method_;
-}
+	const std::size_t query_start = target_.find('?');
 
-void Request::setTarget(const std::string &target)
-{
-	this->target_ = target;
-}
+	if (query_start == std::string::npos)
+		return URITarget{target_, ""};
 
-std::string Request::getTarget() const
-{
-	return target_;
+	return URITarget{target_.substr(0, query_start),
+					 target_.substr(query_start + 1)};
 }
 
 std::string Request::serialize() const
 {
-	return methods_to_string(method_) + " " + target_ + " " + version_ + LINE
-		+ serializeHeaders() + LINE + body_;
+	return methods_to_string(method_) + " " + target_ + " " + version_ + LINE +
+		   serializeHeaders() + LINE + body_;
 }
 
-Response::Response() {}
+Response::Response() : status_(500) {}
 
 Response::Response(int status)
 {
@@ -106,17 +100,12 @@ void Response::setStatus(int status)
 		this->status_ = status;
 }
 
-int Response::getStatus() const
-{
-	return status_;
-}
-
 std::string Response::getReason() const
 {
 	const std::map<int, std::string>::const_iterator it =
-		reasons.find(status_);
+		reasons_.find(status_);
 
-	if (it != reasons.end())
+	if (it != reasons_.end())
 		return it->second;
 
 	return "Unknown Status";
@@ -124,6 +113,12 @@ std::string Response::getReason() const
 
 std::string Response::serialize() const
 {
-	return version_ + " " + std::to_string(status_) + " " + getReason() + LINE
-		+ serializeHeaders() + LINE + body_;
+	return version_ + " " + std::to_string(status_) + " " + getReason() + LINE +
+		   serializeHeaders() + LINE + body_;
+}
+
+Response &Response::addHeader(const std::string &name, const std::string &value)
+{
+	Message::addHeader(name, value);
+	return *this;
 }
