@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Connection.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/07 16:49:06 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/18 16:27:56 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,8 @@
 
 #include "CloseFd.hpp"
 #include "EpollHandler.hpp"
+#include "Message.hpp"
+#include "RequestHandlers.hpp"
 #include <string>
 #include <sys/types.h>
 
@@ -41,16 +43,18 @@ class Connection : public EpollHandler
 
 	private:
 		void receive(void);
-		void make_response(void);
 		void send(void);
+		void queue_response(const Response& response);
+		void finish();
 
 		std::vector<uint8_t> request_buffer_;
 		std::vector<uint8_t> response_buffer_;
+		std::size_t response_offset_ = 0;
 		enum class State
 		{
 			RECEIVING,
 			// RECEIVING_FINISHED,
-			BUILTING,
+			// BUILTING,
 			// BUILT_FINISHED,
 			SENDING,
 			// SENDING_FINISHED,

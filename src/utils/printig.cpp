@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   printig.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/15 13:59:22 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/19 18:03:34 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/19 01:02:15 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 #include "logging.hpp"
 #include <netdb.h>
 
-/* 
+/*
 	mostly ai generated
 */
 
@@ -188,7 +188,7 @@ static void print_location(std::ostream &os, const LocationConfig &config, size_
 {
 	const std::string pad = make_indent(indent);
 
-	os << pad << "location " << config.location_path.string() << " {\n";
+	os << pad << "location " << config.location_path << " {\n";
 	Config::print_default_directives(os, config, indent + 1);
 	os << pad << "}\n";
 }

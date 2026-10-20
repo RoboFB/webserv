@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+         #
+#    By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/03/10 10:21:00 by rgohrig           #+#    #+#              #
-#    Updated: 2026/08/24 17:57:29 by rgohrig          ###   ########.fr        #
+#    Updated: 2026/10/19 00:14:03 by modiepge         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -21,7 +21,7 @@ NAME :=				webserv
 COMPILER :=			c++
 PROFILE_FLAGS :=	-pg -g
 FAST_FLAGS :=		-O2 #-march=native -O3 -flto # O2 should be enough
-LINKER_FLAGS :=		
+LINKER_FLAGS :=
 COMPILE_FLAGS :=	-MMD -MP # MMD & MD for dependencies
 
 CFLAGS :=			-Wall -Werror -Wextra -std=c++17 $(FAST_FLAGS) $(LINKER_FLAGS) $(COMPILE_FLAGS)
@@ -39,9 +39,9 @@ DEBUG_OBJ :=		$(SRC:%.cpp=$(DIR_OBJ)/%_debug.o)
 
 
 
-HEADERS :=			-I ./include -I ./include/utils -I ./include/server -I ./include/server_config
+HEADERS :=			-I ./include -I ./include/utils -I ./include/server -I ./include/server_config -I ./include/message -I ./include/routing -I ./include/cgi -I ./include/http
 
-LIBS :=				
+LIBS :=
 
 DEPENDENCIES := 	$(OBJ:.o=.d) $(DEBUG_OBJ:.o=.d)
 
@@ -127,7 +127,7 @@ debug_run: debug_stop debug_all
 debug_stop:
 	@pkill -x $(DEBUG_NAME) > /dev/null 2>&1 && echo "🛑 stopped $(DEBUG_NAME)" || true
 
-.PHONY: both debug_all debug_fclean debug debug_run debug_stop 
+.PHONY: both debug_all debug_fclean debug debug_run debug_stop
 
 # ----------------------------- Profile ----------------------------------------
 

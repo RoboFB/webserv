@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/25 13:53:09 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/19 01:07:38 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Message.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 11:23:43 by modiepge          #+#    #+#             */
-/*   Updated: 2026/08/12 18:34:30 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/18 23:58:32 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,14 +80,14 @@ void Request::setTarget(const std::string &target)
 	this->target_ = target;
 }
 
-std::filesystem::path Request::getTarget() const
+std::string Request::getTarget() const
 {
 	return target_;
 }
 
 std::string Request::serialize() const
 {
-	return methods_to_string(method_) + " " + target_.string() + " " + version_ + LINE
+	return methods_to_string(method_) + " " + target_ + " " + version_ + LINE
 		+ serializeHeaders() + LINE + body_;
 }
 
@@ -100,7 +100,7 @@ Response::Response(int status)
 
 void Response::setStatus(int status)
 {
-	if (reasons.find(status) == reasons.end())
+	if (status < 100 || status > 599)
 		this->status_ = 500;
 	else
 		this->status_ = status;
@@ -113,11 +113,13 @@ int Response::getStatus() const
 
 std::string Response::getReason() const
 {
-	std::map<int, std::string>::const_iterator it = reasons.find(status_);
+	const std::map<int, std::string>::const_iterator it =
+		reasons.find(status_);
 
-	if (it == reasons.end())
-		return reasons.at(500);
-	return it->second;
+	if (it != reasons.end())
+		return it->second;
+
+	return "Unknown Status";
 }
 
 std::string Response::serialize() const

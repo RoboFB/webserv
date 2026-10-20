@@ -32,3 +32,6 @@ webserv
 
 #debug executable files
 webserv_debug
+
+#local unit tests
+/tests/

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/02 16:20:36 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/21 02:02:15 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,8 @@ class Server
 		Server(const Server &) = delete;
 		Server &operator=(const Server &) = delete;
 		Server &operator=(Server &&) = delete;
+
+		const Location* find_location(const std::string& request_path) const;
 
 		void add_sockets(std::vector<std::unique_ptr<EpollHandler>> &all_fds,
 						 const CloseFd &epoll_fd) const;

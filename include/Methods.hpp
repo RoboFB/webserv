@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Methods.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 18:28:34 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/29 10:38:38 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/09/19 23:36:22 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,10 +16,10 @@
 
 enum class Methods
 {
-	NONE =    0b00000, // "NONE" or if not specified
-	GET =    0b00001, // "GET"
-	POST =   0b00010, // "POST"
-	DELETE = 0b00100  // "DELETE"	
+	NONE =		0b00000, // "NONE" or if not specified
+	GET =		0b00001, // "GET"
+	POST =		0b00010, // "POST"
+	DELETE =	0b00100  // "DELETE"
 };
 
 inline Methods operator|(Methods a, Methods b) {
