@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/20 22:27:05 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/22 13:22:10 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,7 @@
 
 #include "CloseFd.hpp"
 #include "EpollHandler.hpp"
-#include "Message.hpp"
-#include <string>
+#include "Response.hpp"
 #include <sys/types.h>
 
 #include <vector>

@@ -6,13 +6,13 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/20 22:16:52 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/22 13:13:51 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Message.hpp"
-#include "Server.hpp"
+#include "Request.hpp"
 #include "Resolver.hpp"
+
 #include <optional>
 #include <fstream>
 #include <sstream>
@@ -84,8 +84,7 @@ Response make_error_response(int status)
 		std::to_string(status) + " " + Response(status).getReason() + "\n";
 
 	Response response(status);
-	response.setVersion("HTTP/1.1")
-		.addHeader("Content-Type", "text/plain; charset=utf-8")
+	response.addHeader("Content-Type", "text/plain; charset=utf-8")
 		.addHeader("Content-Length", std::to_string(body.size()))
 		.addHeader("Connection", "close")
 		.setBody(body);
@@ -95,10 +94,7 @@ Response make_error_response(int status)
 static Response make_empty_response(int status)
 {
 	Response response(status);
-
-	response.setVersion("HTTP/1.1")
-		.addHeader("Content-Length", "0")
-		.addHeader("Connection", "close");
+	response.addHeader("Content-Length", "0").addHeader("Connection", "close");
 	return response;
 }
 
@@ -173,8 +169,7 @@ Response Request::handle_get(const Location &location,
 	const std::string body = contents.str();
 
 	Response response(200);
-	response.setVersion("HTTP/1.1")
-		.addHeader("Content-Type", mime_type_for(file_path))
+	response.addHeader("Content-Type", mime_type_for(file_path))
 		.addHeader("Content-Length", std::to_string(body.size()))
 		.addHeader("Connection", "close")
 		.setBody(body);

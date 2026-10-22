@@ -6,16 +6,13 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 18:49:51 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/20 21:44:38 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/21 13:57:22 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-#include "Message.hpp"
-#include <cstddef>
-#include <cstdint>
-#include <vector>
+#include "Request.hpp"
 
 enum class ParseStatus
 {
