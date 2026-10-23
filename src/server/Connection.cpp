@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Connection.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
+/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/18 19:54:17 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/20 18:34:08 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,9 +14,9 @@
 #include "AllServer.hpp"
 #include "logging.hpp"
 #include "RequestParser.hpp"
+#include "Message.hpp"
 
 #include <sys/epoll.h>
-#include <unistd.h>
 #include <array>
 #include <cstring>
 #include <cerrno>
@@ -36,7 +36,7 @@ void Connection::finish()
 	state_ = State::FINISHED;
 }
 
-void Connection::queue_response(const Response& response)
+void Connection::queue_response(const Response &response)
 {
 	const std::string serialized = response.serialize();
 	response_buffer_.assign(serialized.begin(), serialized.end());
@@ -64,10 +64,8 @@ void Connection::receive()
 		finish();
 		return;
 	}
-	request_buffer_.insert(
-		request_buffer_.end(),
-		temporary_buffer.begin(),
-		temporary_buffer.begin() + bytes_read);
+	request_buffer_.insert(request_buffer_.end(), temporary_buffer.begin(),
+						   temporary_buffer.begin() + bytes_read);
 	const RequestParsing parsed = request_parsing(request_buffer_);
 	if (parsed.status == ParseStatus::INCOMPLETE)
 		return;
@@ -76,28 +74,25 @@ void Connection::receive()
 		queue_response(make_error_response(400));
 		return;
 	}
-	request_buffer_.erase(
-		request_buffer_.begin(),
-		request_buffer_.begin() + parsed.bytes);
-	queue_response(handle_request(parsed.message, *server_));
+	request_buffer_.erase(request_buffer_.begin(),
+						  request_buffer_.begin() + parsed.bytes);
+	queue_response(parsed.message.handle_request(*server_));
 }
 
 Connection::~Connection() {}
 
 void Connection::send()
 {
-	if (response_offset_ >= response_buffer_.size()) {
+	if (response_offset_ >= response_buffer_.size())
+	{
 		finish();
 		return;
 	}
-	const std::size_t remaining =
-		response_buffer_.size() - response_offset_;
-	const ssize_t bytes_sent = ::send(
-		fd_,
-		response_buffer_.data() + response_offset_,
-		remaining,
-		0);
-	if (bytes_sent < 0) {
+	const std::size_t remaining = response_buffer_.size() - response_offset_;
+	const ssize_t bytes_sent =
+		::send(fd_, response_buffer_.data() + response_offset_, remaining, 0);
+	if (bytes_sent < 0)
+	{
 		if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
 			return;
 		LOG(LOG_ERROR, "send: " + std::string(std::strerror(errno)));
@@ -114,7 +109,7 @@ void Connection::send()
 		finish();
 }
 
-void Connection::on_epoll_event(AllServers& servers, uint32_t events)
+void Connection::on_epoll_event(AllServers &servers, uint32_t events)
 {
 	(void)servers;
 
