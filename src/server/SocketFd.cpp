@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/04 18:33:30 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/26 16:08:25 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,11 @@ SocketFd::SocketFd(const struct addrinfo *one_addr, const Server *server,
 				   const CloseFd &epoll_fd)
 	: EpollHandler(server, init_socket(one_addr), epoll_fd)
 {
+	const int enable_reuse = true;
+	if (::setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, &enable_reuse,
+					 sizeof(enable_reuse)) < 0)
+		throw std::runtime_error(std::string("setsockopt: ") +
+								 std::strerror(errno));
 	if (::bind(fd_, one_addr->ai_addr, one_addr->ai_addrlen) < 0)
 	{
 		int bind_errno = errno;
@@ -48,10 +53,8 @@ CloseFd SocketFd::init_socket(const struct addrinfo *one_addr) const
 		::socket(one_addr->ai_family, one_addr->ai_socktype | SOCK_NONBLOCK,
 				 one_addr->ai_protocol);
 	if (init_fd < 0)
-	{
 		throw std::runtime_error(std::string("socket: ") +
 								 std::strerror(errno));
-	}
 	return init_fd;
 }
 
@@ -59,7 +62,7 @@ SocketFd::~SocketFd() {}
 
 void SocketFd::listen(void) const
 {
-	if (::listen(fd_, backlog_) < 0)
+	if (::listen(fd_, SOMAXCONN) < 0)
 	{
 		throw std::runtime_error(std::string("listen: ") +
 								 std::strerror(errno));
@@ -77,9 +80,8 @@ std::unique_ptr<Connection> SocketFd::accept(void) const
 		fd_, reinterpret_cast<struct sockaddr *>(&client_addr), &addr_len);
 	if (client_fd_ < 0)
 	{
-		LOG(LOG_ERROR, "accept: " + std::string(std::strerror(errno)));
-		// throw std::runtime_error(std::string("accept: ") +
-		// std::strerror(errno));
+		LOG(LOG_DEBUG, "accept: " + std::string(std::strerror(errno)));
+		return nullptr;
 	}
 	return std::make_unique<Connection>(server_, std::move(client_fd_),
 										epoll_fd_);
@@ -90,6 +92,13 @@ void SocketFd::on_epoll_event(AllServers &servers, uint32_t events)
 	if (!(events & EPOLL_EVENTS::EPOLLIN))
 		return;
 	std::unique_ptr<Connection> new_connection = accept();
+	if (new_connection == nullptr)
+		return;
 	new_connection->add_to_epoll();
 	servers.add_handel(std::move(new_connection));
+}
+
+bool SocketFd::is_timeout() const
+{
+	return false;
 }

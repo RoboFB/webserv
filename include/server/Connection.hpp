@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/22 13:22:10 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/26 16:21:27 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@
 
 #include <vector>
 #include <cstdint>
+#include <chrono>
 
 class Server;
 
@@ -38,6 +39,7 @@ class Connection : public EpollHandler
 		~Connection() override;
 
 		void on_epoll_event(AllServers &servers, uint32_t events) override;
+		bool is_timeout() const override;
 
 	private:
 		void receive(void);
@@ -58,4 +60,6 @@ class Connection : public EpollHandler
 			// SENDING_FINISHED,
 			FINISHED
 		} state_;
+
+		std::chrono::steady_clock::time_point last_activity_;
 };

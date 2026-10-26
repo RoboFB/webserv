@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/29 00:00:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/04 18:27:06 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/26 16:07:06 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,6 @@
 #include "CloseFd.hpp"
 #include <cstdint>
 
-class SocketFd;
 class AllServers;
 class Server;
 
@@ -33,6 +32,7 @@ class EpollHandler
 		virtual ~EpollHandler() = default;
 
 		virtual void on_epoll_event(AllServers &servers, uint32_t events) = 0;
+		virtual bool is_timeout() const = 0;
 
 		void add_to_epoll();
 		void modify_epoll(uint32_t events);

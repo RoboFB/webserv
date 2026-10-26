@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/04 16:57:19 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/26 16:08:06 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,10 +47,9 @@ class SocketFd : public EpollHandler
 		std::unique_ptr<Connection> accept(void) const;
 
 		void on_epoll_event(AllServers &servers, uint32_t events) override;
+		bool is_timeout() const override;
 
 	private:
-		static constexpr int backlog_ = 10;
-
 		CloseFd init_socket(const struct addrinfo *one_addr) const;
 
 		void accept_connection(AllServers &servers) const;
