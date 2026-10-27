@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
+/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/21 02:02:15 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/27 14:17:16 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,13 +24,15 @@ class Server
 {
 	public:
 		Server(Server &&) = default;
-		Server(ServerConfig &server_config);
+		Server(ServerConfigPars &server_config);
 
 		Server(const Server &) = delete;
 		Server &operator=(const Server &) = delete;
 		Server &operator=(Server &&) = delete;
 
-		const Location* find_location(const std::string& request_path) const;
+		~Server() = default;
+
+		const Location *find_location(const std::string &request_path) const;
 
 		void add_sockets(std::vector<std::unique_ptr<EpollHandler>> &all_fds,
 						 const CloseFd &epoll_fd) const;

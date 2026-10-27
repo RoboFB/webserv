@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:38:24 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/20 15:41:31 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 13:58:51 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,9 +15,10 @@
 #include <algorithm>
 #include <cstring>
 
-void Config::append_addrinfo(AddrInfoPtr &addr_list,
-							 const std::string &address_str,
-							 const std::string &port_str, const Token &token)
+void ConfigPars::append_addrinfo(AddrInfoPtr &addr_list,
+								 const std::string &address_str,
+								 const std::string &port_str,
+								 const Token &token)
 {
 	addrinfo hints{};
 	hints.ai_flags = AI_PASSIVE; // fill in my IP for me
@@ -57,7 +58,8 @@ ipv6 not supported yet, but should be in the future
 
 default: 0.0.0.0:8000; and 0.0.0.0:80;
 */
-void Config::fill_listen(TokenIterator &head_token, DefaultConfig &fill_config)
+void ConfigPars::fill_listen(TokenIterator &head_token,
+							 DefaultConfigPars &fill_config)
 {
 	Token token = get_next_word(head_token);
 
@@ -78,7 +80,7 @@ void Config::fill_listen(TokenIterator &head_token, DefaultConfig &fill_config)
 	if (validate_port(port_str) == -1)
 		throw ConfigParseException("invalid port number", token);
 
-	append_addrinfo(reinterpret_cast<ServerConfig &>(fill_config).listen,
+	append_addrinfo(reinterpret_cast<ServerConfigPars &>(fill_config).listen,
 					address_str, port_str, token);
 
 	skip_next(head_token, TokenType::SEMICOLON);
@@ -88,8 +90,8 @@ void Config::fill_listen(TokenIterator &head_token, DefaultConfig &fill_config)
 /*
 default: off
 */
-void Config::fill_autoindex(TokenIterator &head_token,
-							DefaultConfig &fill_config)
+void ConfigPars::fill_autoindex(TokenIterator &head_token,
+								DefaultConfigPars &fill_config)
 {
 	Token token = get_next_word(head_token);
 
@@ -114,7 +116,8 @@ void Config::fill_autoindex(TokenIterator &head_token,
 /*
 Default: root html;
 */
-void Config::fill_root(TokenIterator &head_token, DefaultConfig &fill_config)
+void ConfigPars::fill_root(TokenIterator &head_token,
+						   DefaultConfigPars &fill_config)
 {
 	Token token = get_next_word(head_token);
 
@@ -128,7 +131,8 @@ void Config::fill_root(TokenIterator &head_token, DefaultConfig &fill_config)
 /*
 converts "3G" "20M" "1024k" "10" in Bytes (size_t)
 */
-size_t Config::parse_max_body_size(std::string number_str, const Token &token)
+size_t ConfigPars::parse_max_body_size(std::string number_str,
+									   const Token &token)
 {
 	size_t x = number_str.rfind("iB");
 	if (x != std::string::npos)
@@ -188,8 +192,8 @@ size_t Config::parse_max_body_size(std::string number_str, const Token &token)
 Default:
 client_max_body_size 1m
 */
-void Config::fill_client_max_body_size(TokenIterator &head_token,
-									   DefaultConfig &fill_config)
+void ConfigPars::fill_client_max_body_size(TokenIterator &head_token,
+										   DefaultConfigPars &fill_config)
 {
 	Token token = get_next_word(head_token);
 	fill_config.client_max_body_size = parse_max_body_size(token.word, token);
@@ -197,7 +201,8 @@ void Config::fill_client_max_body_size(TokenIterator &head_token,
 	return;
 }
 
-void Config::fill_index(TokenIterator &head_token, DefaultConfig &fill_config)
+void ConfigPars::fill_index(TokenIterator &head_token,
+							DefaultConfigPars &fill_config)
 {
 	Token token = get_next_word(head_token);
 
@@ -231,8 +236,8 @@ limit_except POST;
 limit_except DELETE;
 
 */
-void Config::fill_limit_except(TokenIterator &head_token,
-							   DefaultConfig &fill_config)
+void ConfigPars::fill_limit_except(TokenIterator &head_token,
+								   DefaultConfigPars &fill_config)
 {
 	Token token = get_next_word(head_token);
 	while (true)
@@ -259,7 +264,8 @@ BIG TODO:
 */
 
 // TODO: implement return directive
-void Config::fill_return(TokenIterator &head_token, DefaultConfig &fill_config)
+void ConfigPars::fill_return(TokenIterator &head_token,
+							 DefaultConfigPars &fill_config)
 {
 	Token token = get_next_word(head_token);
 
@@ -285,8 +291,8 @@ void Config::fill_return(TokenIterator &head_token, DefaultConfig &fill_config)
 }
 
 // TODO: implement error_page directive
-void Config::fill_error_page(TokenIterator &head_token,
-							 DefaultConfig &fill_config)
+void ConfigPars::fill_error_page(TokenIterator &head_token,
+								 DefaultConfigPars &fill_config)
 {
 	// LOG(LOG_DEBUG, "NOICE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 

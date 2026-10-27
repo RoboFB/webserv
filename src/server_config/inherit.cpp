@@ -6,11 +6,13 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/19 16:51:33 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/25 13:55:06 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 14:04:23 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "Config.hpp"
 #include "ConfigStructs.hpp"
+#include "normalFucntions.hpp"
 
 template <typename T>
 static void h_inherit_field(const std::optional<T> &parent,
@@ -33,8 +35,8 @@ static void h_inherit_field(const Methods &parent, Methods &child)
 		child = parent;
 }
 
-static void h_inherit_default_to_default(const DefaultConfig &parent,
-										 DefaultConfig &child)
+static void h_inherit_default_to_default(const DefaultConfigPars &parent,
+										 DefaultConfigPars &child)
 {
 	h_inherit_field(parent.error_codes, child.error_codes);
 	h_inherit_field(parent.error_page_path, child.error_page_path);
@@ -48,16 +50,16 @@ static void h_inherit_default_to_default(const DefaultConfig &parent,
 }
 
 // set also the defaults at the end
-static void h_inherit_server_to_location(const ServerConfig &parent,
-										 LocationConfig &child)
+static void h_inherit_server_to_location(const ServerConfigPars &parent,
+										 LocationConfigPars &child)
 {
 	h_inherit_default_to_default(parent, child);
 
 	// set_default_values(child);
 }
 
-static void h_inherit_http_to_server(const HttpConfig &parent,
-									 ServerConfig &child)
+static void h_inherit_http_to_server(const HttpConfigPars &parent,
+									 ServerConfigPars &child)
 {
 	h_inherit_default_to_default(parent, child);
 
@@ -67,17 +69,24 @@ static void h_inherit_http_to_server(const HttpConfig &parent,
 	}
 }
 
-static void h_inherit_main_to_http(const MainConfig &parent, HttpConfig &child)
+static void h_inherit_main_to_http(const MainConfigPars &parent,
+								   HttpConfigPars &child)
 {
 	(void)parent; // unused for now, but might be used in the future
 
-	for (ServerConfig &server : child.servers_confs)
+	for (ServerConfigPars &server : child.servers_confs)
 	{
 		h_inherit_http_to_server(child, server);
 	}
 }
 
-void inherit_all_config(MainConfig &parent_config)
+void inherit_all_config(MainConfigPars &parent_config)
 {
 	h_inherit_main_to_http(parent_config, parent_config.http_conf);
+}
+
+MainConfigPars::MainConfigPars(int argc, const char *argv[]) : http_conf()
+{
+	const std::filesystem::path config_file = check_input_args(argc, argv);
+	ConfigPars config{config_file, *this};
 }

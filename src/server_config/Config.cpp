@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
+/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 12:29:08 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/19 01:07:52 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/27 13:58:51 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,8 +16,8 @@
 #include "printing.hpp"
 #include <sstream>
 
-Config::Config(const std::filesystem::path &config_file_path,
-			   MainConfig &main_conf)
+ConfigPars::ConfigPars(const std::filesystem::path &config_file_path,
+					   MainConfigPars &main_conf)
 	: config_file_path_(config_file_path), main_conf_(main_conf)
 {
 	try
@@ -40,9 +40,9 @@ Config::Config(const std::filesystem::path &config_file_path,
 	return;
 }
 
-Config::~Config() {}
+ConfigPars::~ConfigPars() {}
 
-std::string Config::to_string() const
+std::string ConfigPars::to_string() const
 {
 	std::stringstream config_stream;
 
@@ -50,7 +50,7 @@ std::string Config::to_string() const
 	return config_stream.str();
 }
 
-const ServerConfig &Config::get_server_context(size_t index) const
+const ServerConfigPars &ConfigPars::get_server_context(size_t index) const
 {
 	return main_conf_.http_conf.servers_confs.at(index);
 }

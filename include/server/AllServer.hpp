@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/26 15:42:20 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 14:33:37 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,13 +22,19 @@
 class AllServers
 {
 	public:
-		AllServers(MainConfig &main_config);
+		AllServers(const AllServers &) = delete;
+		AllServers(AllServers &&) = delete;
+		AllServers &operator=(const AllServers &) = delete;
+		AllServers &operator=(AllServers &&) = delete;
+
+		AllServers(MainConfigPars &&main_config);
+		~AllServers(); // calls stop_all()
 
 		Server &at(size_t index);
 
 		void wait_epoll(void);
 		// adds to all_fds_
-		void add_handel(std::unique_ptr<EpollHandler> &&new_handel);
+		void add_handler(std::unique_ptr<EpollHandler> &&new_handler);
 
 		void check_timeouts(void);
 		void cleanup_all_fds(void);
@@ -37,6 +43,7 @@ class AllServers
 
 	private:
 		int init_epoll(void) const;
+		void stop_all(void);
 
 		std::vector<Server> all_servers_;
 		CloseFd epoll_fd_; // epoll file descriptor for all servers

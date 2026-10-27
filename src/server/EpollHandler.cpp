@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/29 00:00:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/07 15:39:56 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 12:46:44 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,11 +56,6 @@ void EpollHandler::remove_from_epoll() const
 		LOG(LOG_ERROR,
 			"epoll_ctl remove: " + std::string(std::strerror(errno)));
 	}
-}
-
-void EpollHandler::set_remove_me(void)
-{
-	remove_me_ = true;
 }
 
 bool EpollHandler::is_remove_me(void) const

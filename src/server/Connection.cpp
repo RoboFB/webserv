@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/26 16:26:17 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 12:57:55 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,15 +27,7 @@ Connection::Connection(const Server *server, CloseFd &&fd,
 	: EpollHandler(server, std::move(fd), epoll_fd), state_(State::RECEIVING),
 	  last_activity_(std::chrono::steady_clock::now())
 {
-}
-
-void Connection::finish()
-{
-	if (state_ == State::FINISHED)
-		return;
-	remove_from_epoll();
-	set_remove_me();
-	state_ = State::FINISHED;
+	this->add_to_epoll();
 }
 
 void Connection::queue_response(const Response &response)
@@ -55,7 +47,7 @@ void Connection::receive()
 		::recv(fd_, temporary_buffer.data(), temporary_buffer.size(), 0);
 	if (bytes_read == 0)
 	{
-		finish();
+		stop_listening();
 		return;
 	}
 	if (bytes_read < 0)
@@ -63,7 +55,7 @@ void Connection::receive()
 		// if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
 		// 	return;
 		LOG(LOG_ERROR, "recv: " + std::string(std::strerror(errno)));
-		finish();
+		stop_listening();
 		return;
 	}
 	request_buffer_.insert(request_buffer_.end(), temporary_buffer.begin(),
@@ -81,13 +73,11 @@ void Connection::receive()
 	queue_response(parsed.message.handle_request(*server_));
 }
 
-Connection::~Connection() {}
-
 void Connection::send()
 {
 	if (response_offset_ >= response_buffer_.size())
 	{
-		finish();
+		stop_listening();
 		return;
 	}
 	const std::size_t remaining = response_buffer_.size() - response_offset_;
@@ -99,17 +89,17 @@ void Connection::send()
 		// if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
 		// 	return;
 		LOG(LOG_ERROR, "send: " + std::string(std::strerror(errno)));
-		finish();
+		stop_listening();
 		return;
 	}
 	if (bytes_sent == 0)
 	{
-		finish();
+		stop_listening();
 		return;
 	}
 	response_offset_ += static_cast<std::size_t>(bytes_sent);
 	if (response_offset_ == response_buffer_.size())
-		finish();
+		stop_listening();
 }
 
 void Connection::on_epoll_event(AllServers &servers, uint32_t events)
@@ -137,4 +127,13 @@ bool Connection::is_timeout() const
 {
 	return std::chrono::steady_clock::now() - last_activity_ >
 		   std::chrono::seconds(CONNECTION_TIMEOUT_S);
+}
+
+void Connection::stop_listening(void)
+{
+	state_ = State::FINISHED;
+	if (remove_me_)
+		return;
+	remove_from_epoll();
+	remove_me_ = true;
 }
