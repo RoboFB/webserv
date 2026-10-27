@@ -6,13 +6,13 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/18 20:54:35 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/20 21:23:49 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 16:33:40 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-#include "RequestParser.hpp"
+#include "Request.hpp"
 
 #include <string>
 #include <vector>
@@ -30,6 +30,3 @@ struct BodyParsing
 		{
 		}
 };
-
-BodyParsing parse_body(const std::vector<uint8_t> &buffer,
-					   const Headers &headers, std::size_t body_start);

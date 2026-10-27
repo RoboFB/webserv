@@ -6,15 +6,13 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 12:57:55 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 16:43:05 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Connection.hpp"
 #include "AllServer.hpp"
 #include "logging.hpp"
-#include "RequestParser.hpp"
-#include "Message.hpp"
 #include "MagicValues.hpp"
 
 #include <sys/epoll.h>
@@ -30,11 +28,9 @@ Connection::Connection(const Server *server, CloseFd &&fd,
 	this->add_to_epoll();
 }
 
-void Connection::queue_response(const Response &response)
+void Connection::queue_response()
 {
-	const std::string serialized = response.serialize();
-	response_buffer_.assign(serialized.begin(), serialized.end());
-	response_offset_ = 0;
+	response_.serialize();
 	state_ = State::SENDING;
 	modify_epoll(EPOLLOUT);
 }
@@ -58,32 +54,33 @@ void Connection::receive()
 		stop_listening();
 		return;
 	}
-	request_buffer_.insert(request_buffer_.end(), temporary_buffer.begin(),
-						   temporary_buffer.begin() + bytes_read);
-	const RequestParsing parsed = request_parsing(request_buffer_);
-	if (parsed.status == ParseStatus::INCOMPLETE)
+
+	request_.buffer_.insert(request_.buffer_.end(), temporary_buffer.begin(),
+							temporary_buffer.begin() + bytes_read);
+	const ParseStatus parsed = request_.request_parsing();
+	if (parsed == ParseStatus::INCOMPLETE)
 		return;
-	if (parsed.status == ParseStatus::BAD)
+	if (parsed == ParseStatus::BAD)
 	{
-		queue_response(make_error_response(400));
+		response_ = make_error_response(400);
+		queue_response();
 		return;
 	}
-	request_buffer_.erase(request_buffer_.begin(),
-						  request_buffer_.begin() + parsed.bytes);
-	queue_response(parsed.message.handle_request(*server_));
+	request_.buffer_.clear();
+	response_ = request_.handle_request(*server_);
+	queue_response();
 }
 
 void Connection::send()
 {
-	if (response_offset_ >= response_buffer_.size())
+	if (response_.offset_ >= response_.buffer_.size())
 	{
 		stop_listening();
 		return;
 	}
-	const std::size_t remaining = response_buffer_.size() - response_offset_;
 	const ssize_t bytes_sent =
-		::send(fd_, response_buffer_.data() + response_offset_, remaining,
-			   MSG_NOSIGNAL);
+		::send(fd_, response_.buffer_.data() + response_.offset_,
+			   response_.buffer_.size() - response_.offset_, MSG_NOSIGNAL);
 	if (bytes_sent < 0)
 	{
 		// if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
@@ -97,8 +94,8 @@ void Connection::send()
 		stop_listening();
 		return;
 	}
-	response_offset_ += static_cast<std::size_t>(bytes_sent);
-	if (response_offset_ == response_buffer_.size())
+	response_.offset_ += static_cast<std::size_t>(bytes_sent);
+	if (response_.offset_ == response_.buffer_.size())
 		stop_listening();
 }
 

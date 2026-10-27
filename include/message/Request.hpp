@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/21 13:56:55 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 16:23:36 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,12 +24,20 @@ struct URITarget
 		std::string query;
 };
 
+enum class ParseStatus
+{
+	INCOMPLETE,
+	BAD,
+	COMPLETE
+};
+
 class Request : public Message
 {
 	private:
 		Methods method_;
 		std::string target_; // this needs to be a string because it is a URI,
 							 // so that we may interpret things like ?key=value
+		bool head_done_ = false;
 
 		bool is_version_valid() const;
 		bool is_target_valid() const;
@@ -39,7 +47,13 @@ class Request : public Message
 		Request();
 		Request(Methods method, const std::string &target);
 		std::string getTarget() const;
-		std::string serialize() const;
+		void serialize() override;
+
+		// ParseStatus Request::parse_request_head()
+
+		ParseStatus parse_request_head();
+		ParseStatus parse_body();
+		ParseStatus request_parsing();
 
 		URITarget split_uri_target() const;
 		Response handle_request(const Server &server) const;

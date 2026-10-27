@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 12:55:24 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 16:04:53 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include "CloseFd.hpp"
 #include "EpollHandler.hpp"
 #include "Response.hpp"
+#include "Request.hpp"
 #include <sys/types.h>
 
 #include <vector>
@@ -40,17 +41,19 @@ class Connection : public EpollHandler
 
 		void on_epoll_event(AllServers &servers, uint32_t events) override;
 		bool is_timeout() const override;
-		void stop_listening(void) override;
+		void stop_listening() override;
 
 	private:
-		void receive(void);
-		void send(void);
-		void queue_response(const Response &response);
+		void receive();
+		void send();
+		void queue_response();
 		void finish();
 
-		std::vector<uint8_t> request_buffer_;
-		std::vector<uint8_t> response_buffer_;
-		std::size_t response_offset_ = 0;
+		// std::vector<uint8_t> request_buffer_;
+		Request request_;
+		Response response_;
+		// std::vector<uint8_t> response_buffer_;
+		// std::size_t response_offset_ = 0;
 		enum class State
 		{
 			RECEIVING,

@@ -6,12 +6,13 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/22 13:25:09 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 16:54:41 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <map>
 #include <vector>
@@ -54,13 +55,16 @@ class Message
 		std::string serializeHeaders() const;
 
 	public:
+		std::size_t offset_;
+		std::vector<uint8_t> buffer_;
+
 		Message(const std::string &version = "HTTP/1.0");
 		virtual ~Message();
 		Message &addHeader(const std::string &name, const std::string &value);
 		const Headers &getHeaders() const;
 		void setBody(const std::string &body);
 		const std::string &getBody() const;
-		virtual std::string serialize() const = 0;
+		virtual void serialize() = 0;
 };
 
 int hex_value(char character);

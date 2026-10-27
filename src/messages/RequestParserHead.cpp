@@ -6,11 +6,11 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/18 21:28:57 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/22 13:39:03 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 16:20:51 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "RequestParserHead.hpp"
+#include "Request.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -29,32 +29,26 @@ static std::size_t header_length(const std::vector<uint8_t> &buffer)
 	return (found - buffer.begin()) + delimiter.size();
 }
 
-HeaderParsing parse_request_head(const std::vector<uint8_t> &buffer)
+ParseStatus Request::parse_request_head()
 {
-	HeaderParsing result;
-	const std::size_t head_length = header_length(buffer);
+	const std::size_t head_length = header_length(buffer_);
 	if (head_length == std::string::npos)
 	{
-		if (buffer.size() <= max_header_size)
-			result.status = ParseStatus::INCOMPLETE;
-		return result;
+		if (buffer_.size() <= max_header_size)
+			return ParseStatus::INCOMPLETE;
+		return ParseStatus::BAD;
 	}
 	if (head_length > max_header_size)
-		return result;
+		return ParseStatus::BAD;
 
-	Request request;
-	const std::string block(buffer.begin(), buffer.begin() + head_length - 2);
+	const std::string block(buffer_.begin(), buffer_.begin() + head_length - 2);
 	const std::size_t request_line_end = block.find(LINE);
 	if (request_line_end == std::string::npos ||
-		!request.parse_request_line(block.substr(0, request_line_end)) ||
-		!request.parse_headers(block, request_line_end + 2) ||
-		!request.has_required_host())
+		!parse_request_line(block.substr(0, request_line_end)) ||
+		!parse_headers(block, request_line_end + 2) || !has_required_host())
 	{
-		result.request = request;
-		return result;
+		return ParseStatus::BAD;
 	}
-	result.request = request;
-	result.body_start = head_length;
-	result.status = ParseStatus::COMPLETE;
-	return result;
+	offset_ = head_length;
+	return ParseStatus::COMPLETE;
 }

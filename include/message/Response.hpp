@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/21 13:54:32 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 15:45:43 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,7 +44,7 @@ class Response : public Message
 		Response();
 		Response(int status);
 		std::string getReason() const;
-		std::string serialize() const;
+		void serialize() override;
 
 		Response &addHeader(const std::string &name, const std::string &value);
 };

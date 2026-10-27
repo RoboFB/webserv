@@ -1,31 +1,30 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   RequestParser.hpp                                  :+:      :+:    :+:   */
+/*   Cgi.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/20 18:49:51 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/21 13:57:22 by rgohrig          ###   ########.fr       */
+/*   Created: 2026/10/27 14:45:38 by rgohrig           #+#    #+#             */
+/*   Updated: 2026/10/27 16:43:53 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
+#include "Cgi.hpp"
 
-#include "Request.hpp"
+// Cgi::Cgi(const Server *server, CloseFd &&fd, const CloseFd &epoll_fd)
+// 	: EpollHandler(server, std::move(fd), epoll_fd)
+// {
+// }
 
-enum class ParseStatus
+void Cgi::on_epoll_event(AllServers &servers, uint32_t events)
 {
-	INCOMPLETE,
-	BAD,
-	COMPLETE
-};
-
-struct RequestParsing
+	(void)servers;
+	(void)events;
+}
+bool Cgi::is_timeout() const
 {
-		ParseStatus status = ParseStatus::BAD;
-		Request message;
-		std::size_t bytes = 0;
-};
+	return false;
+}
 
-RequestParsing request_parsing(const std::vector<uint8_t> &buffer);
+void Cgi::stop_listening(void) {}
