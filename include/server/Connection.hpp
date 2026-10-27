@@ -6,12 +6,13 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 16:04:53 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 18:23:01 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
+#include "Cgi.hpp"
 #include "CloseFd.hpp"
 #include "EpollHandler.hpp"
 #include "Response.hpp"
@@ -51,6 +52,7 @@ class Connection : public EpollHandler
 
 		// std::vector<uint8_t> request_buffer_;
 		Request request_;
+		std::optional<Cgi> cgi_;
 		Response response_;
 		// std::vector<uint8_t> response_buffer_;
 		// std::size_t response_offset_ = 0;

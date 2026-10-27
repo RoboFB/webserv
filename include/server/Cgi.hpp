@@ -6,13 +6,14 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/27 14:46:20 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 14:51:57 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 17:25:20 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 #include "EpollHandler.hpp"
+#include "Request.hpp"
 
 class Cgi : public EpollHandler
 {
@@ -23,7 +24,9 @@ class Cgi : public EpollHandler
 		Cgi(Cgi &&) = delete;
 		Cgi &operator=(Cgi &&) = delete;
 
-		Cgi(const Server *server, CloseFd &&fd, const CloseFd &epoll_fd);
+		Cgi(const Server *server, const CloseFd &epoll_fd,
+			const Request &cgi_request);
+
 		~Cgi() override = default;
 
 		void on_epoll_event(AllServers &servers, uint32_t events) override;
@@ -31,7 +34,5 @@ class Cgi : public EpollHandler
 		void stop_listening(void) override;
 
 	private:
-		CloseFd cgi_connection_fd_;
-
 		// std::chrono::steady_clock::time_point last_activity_;
 };

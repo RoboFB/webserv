@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 16:43:05 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 18:19:46 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,7 @@ void Connection::queue_response()
 {
 	response_.serialize();
 	state_ = State::SENDING;
-	modify_epoll(EPOLLOUT);
+	modify_epoll(EPOLL_EVENTS::EPOLLOUT);
 }
 
 void Connection::receive()
