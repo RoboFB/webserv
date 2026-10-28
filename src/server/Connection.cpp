@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 18:19:46 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 16:42:00 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,17 +22,10 @@
 
 Connection::Connection(const Server *server, CloseFd &&fd,
 					   const CloseFd &epoll_fd)
-	: EpollHandler(server, std::move(fd), epoll_fd), state_(State::RECEIVING),
-	  last_activity_(std::chrono::steady_clock::now())
+	: EpollHandler(server, std::move(fd), epoll_fd), cgi_(nullptr),
+	  state_(State::READ_HEAD), last_activity_(std::chrono::steady_clock::now())
 {
-	this->add_to_epoll();
-}
-
-void Connection::queue_response()
-{
-	response_.serialize();
-	state_ = State::SENDING;
-	modify_epoll(EPOLL_EVENTS::EPOLLOUT);
+	add_to_epoll();
 }
 
 void Connection::receive()
@@ -43,7 +36,7 @@ void Connection::receive()
 		::recv(fd_, temporary_buffer.data(), temporary_buffer.size(), 0);
 	if (bytes_read == 0)
 	{
-		stop_listening();
+		set_state(State::FINISHED);
 		return;
 	}
 	if (bytes_read < 0)
@@ -51,7 +44,7 @@ void Connection::receive()
 		// if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
 		// 	return;
 		LOG(LOG_ERROR, "recv: " + std::string(std::strerror(errno)));
-		stop_listening();
+		set_state(State::FINISHED);
 		return;
 	}
 
@@ -62,20 +55,20 @@ void Connection::receive()
 		return;
 	if (parsed == ParseStatus::BAD)
 	{
-		response_ = make_error_response(400);
-		queue_response();
+		response_.convert_to_error(400);
+		set_state(State::WRITE);
 		return;
 	}
 	request_.buffer_.clear();
-	response_ = request_.handle_request(*server_);
-	queue_response();
+	handle_request(request_, response_, *server_);
+	set_state(State::WRITE);
 }
 
 void Connection::send()
 {
 	if (response_.offset_ >= response_.buffer_.size())
 	{
-		stop_listening();
+		set_state(State::FINISHED);
 		return;
 	}
 	const ssize_t bytes_sent =
@@ -86,38 +79,68 @@ void Connection::send()
 		// if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
 		// 	return;
 		LOG(LOG_ERROR, "send: " + std::string(std::strerror(errno)));
-		stop_listening();
+		set_state(State::FINISHED);
 		return;
 	}
 	if (bytes_sent == 0)
 	{
-		stop_listening();
+		set_state(State::FINISHED);
 		return;
 	}
 	response_.offset_ += static_cast<std::size_t>(bytes_sent);
 	if (response_.offset_ == response_.buffer_.size())
-		stop_listening();
+		set_state(State::FINISHED);
 }
 
 void Connection::on_epoll_event(AllServers &servers, uint32_t events)
 {
 	(void)servers;
+	if (events & (EPOLLERR | EPOLLHUP))
+		return set_state(State::FINISHED);
 
-	LOG(LOG_DEBUG, " state: " + std::to_string(static_cast<int>(state_)));
 	switch (state_)
 	{
-	case State::RECEIVING:
-		if (events & EPOLL_EVENTS::EPOLLIN)
+	case State::READ_HEAD:
+	case State::READ_BODY:
+		if (events & EPOLLIN)
 			receive();
 		break;
-	case State::SENDING:
-		if (events & EPOLL_EVENTS::EPOLLOUT)
+	case State::WAIT_CGI: // wait for cgi to finish and then send response
+		break;
+	case State::WRITE:
+		if (events & EPOLLOUT)
 			send();
 		break;
-	case State::FINISHED:
+	case State::FINISHED: // should not happen, but if it does, just ignore it
 		break;
 	}
+
+	// IN_TO_OUT has no epoll event to wait for, so run it right after the
+	// read that finished the request
+}
+
+void Connection::set_state(State new_state)
+{
 	last_activity_ = std::chrono::steady_clock::now();
+	state_ = new_state;
+	switch (state_)
+	{
+	case State::READ_HEAD:
+		modify_epoll(EPOLL_EVENTS::EPOLLIN);
+		break;
+	case State::READ_BODY:
+		break;
+	case State::WAIT_CGI:
+		modify_epoll(EPOLL_EVENTS::EPOLLRDHUP);
+		break;
+	case State::WRITE:
+		response_.serialize();
+		modify_epoll(EPOLL_EVENTS::EPOLLOUT);
+		break;
+	case State::FINISHED:
+		stop_listening();
+		break;
+	}
 }
 
 bool Connection::is_timeout() const
@@ -128,7 +151,6 @@ bool Connection::is_timeout() const
 
 void Connection::stop_listening(void)
 {
-	state_ = State::FINISHED;
 	if (remove_me_)
 		return;
 	remove_from_epoll();

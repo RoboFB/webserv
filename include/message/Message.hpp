@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/27 16:54:41 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 15:51:40 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,8 +61,8 @@ class Message
 		Message(const std::string &version = "HTTP/1.0");
 		virtual ~Message();
 		Message &addHeader(const std::string &name, const std::string &value);
+		Message &setBody(const std::string &body);
 		const Headers &getHeaders() const;
-		void setBody(const std::string &body);
 		const std::string &getBody() const;
 		virtual void serialize() = 0;
 };

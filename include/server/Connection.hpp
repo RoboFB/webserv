@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 18:23:01 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 16:19:55 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,26 +46,27 @@ class Connection : public EpollHandler
 
 	private:
 		void receive();
+		void make_response();
 		void send();
 		void queue_response();
 		void finish();
 
 		// std::vector<uint8_t> request_buffer_;
 		Request request_;
-		std::optional<Cgi> cgi_;
+		const Cgi *cgi_;
 		Response response_;
 		// std::vector<uint8_t> response_buffer_;
 		// std::size_t response_offset_ = 0;
-		enum class State
-		{
-			RECEIVING,
-			// RECEIVING_FINISHED,
-			// BUILTING,
-			// BUILT_FINISHED,
-			SENDING,
-			// SENDING_FINISHED,
-			FINISHED
-		} state_;
 
+		enum State
+		{
+			READ_HEAD,
+			READ_BODY,
+			WAIT_CGI,
+			WRITE,
+			FINISHED
+
+		} state_;
 		std::chrono::steady_clock::time_point last_activity_;
+		void set_state(State new_state);
 };

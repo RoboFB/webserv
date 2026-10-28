@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/27 16:23:36 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 15:42:59 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,15 +56,22 @@ class Request : public Message
 		ParseStatus request_parsing();
 
 		URITarget split_uri_target() const;
-		Response handle_request(const Server &server) const;
-		Response handle_get(const Location &location,
-							const std::string &request_path) const;
-		Response handle_post(const Location &location,
-							 const std::string &request_path) const;
-		Response handle_delete(const Location &location,
-							   const std::string &request_path) const;
 
 		bool parse_request_line(const std::string &line);
 		bool parse_headers(const std::string &block, std::size_t cursor);
 		bool has_required_host() const;
+
+		Methods get_method() const
+		{
+			return method_;
+		}
 };
+
+void handle_request(const Request &request, Response &response,
+					const Server &server);
+void handle_get(Response &response, const Location &location,
+				const std::string &request_path);
+void handle_post(const std::string &data_str_body, Response &response,
+				 const Location &location, const std::string &request_path);
+void handle_delete(Response &response, const Location &location,
+				   const std::string &request_path);

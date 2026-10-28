@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 14:35:24 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 13:24:16 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,7 +88,7 @@ void AllServers::wait_epoll(void)
 			continue;
 		}
 
-		uint32_t &event = events_buffer_array[i].events;
+		const uint32_t &event = events_buffer_array[i].events;
 		if (event & EPOLL_EVENTS::EPOLLERR || event & EPOLL_EVENTS::EPOLLHUP)
 		{
 			LOG(LOG_ERROR, "epoll_wait: EPOLLERR or EPOLLHUP on fd ");
