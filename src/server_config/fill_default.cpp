@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:38:24 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 13:58:51 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 19:06:01 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -213,19 +213,6 @@ void ConfigPars::fill_index(TokenIterator &head_token,
 	return;
 }
 
-// void Config::fill_server_name(TokenIterator &head_token,
-// 					DefaultConfig &fill_config)
-// {
-// 	Token token = get_next_word(head_token);
-
-// 	if (token.word.empty()) // todo: maybe more error handling
-// 		throw ConfigParseException("empty server name", token);
-// 	fill_config.server_names.push_back(token.word);
-
-// 	skip_next(head_token, TokenType::SEMICOLON);
-// 	return;
-// }
-
 /*
 
 default: limit_except NONE; Breaking to nginx but the easiest to implement and
@@ -258,9 +245,30 @@ void ConfigPars::fill_limit_except(TokenIterator &head_token,
 }
 
 /*
-BIG TODO:
-- fix and implement all the fill_context functions for the directives
+default: empty
+*/
+void ConfigPars::fill_cgi(TokenIterator &head_token,
+						  DefaultConfigPars &fill_config)
+{
+	Token token_extension = get_next_word(head_token);
 
+	if (token_extension.word != ".py" && token_extension.word != ".php")
+		throw ConfigParseException(
+			"invalid cgi extension, expected '.py' or '.php'", token_extension);
+
+	Token token_path = get_next_word(head_token);
+	fill_config.cgi_interpers[token_extension.word] = token_path.word;
+
+	skip_next(head_token, TokenType::SEMICOLON);
+	return;
+}
+
+/*
+*******************************************************************************
+BIG BIG TODO:
+- fix and implement all the fill_context functions for the directives
+- ...
+*******************************************************************************
 */
 
 // TODO: implement return directive
@@ -314,3 +322,16 @@ void ConfigPars::fill_error_page(TokenIterator &head_token,
 	skip_next(head_token, TokenType::SEMICOLON);
 	return;
 }
+
+// void Config::fill_server_name(TokenIterator &head_token,
+// 					DefaultConfig &fill_config)
+// {
+// 	Token token = get_next_word(head_token);
+
+// 	if (token.word.empty()) // todo: maybe more error handling
+// 		throw ConfigParseException("empty server name", token);
+// 	fill_config.server_names.push_back(token.word);
+
+// 	skip_next(head_token, TokenType::SEMICOLON);
+// 	return;
+// }

@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/27 14:46:20 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 17:25:20 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 16:59:57 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,19 +15,19 @@
 #include "EpollHandler.hpp"
 #include "Request.hpp"
 
-class Cgi : public EpollHandler
+class CgiHandler : public EpollHandler
 {
 	public:
-		Cgi(const Cgi &) = delete;
-		Cgi &operator=(const Cgi &) = delete;
+		CgiHandler(const CgiHandler &) = delete;
+		CgiHandler &operator=(const CgiHandler &) = delete;
 
-		Cgi(Cgi &&) = delete;
-		Cgi &operator=(Cgi &&) = delete;
+		CgiHandler(CgiHandler &&) = delete;
+		CgiHandler &operator=(CgiHandler &&) = delete;
 
-		Cgi(const Server *server, const CloseFd &epoll_fd,
-			const Request &cgi_request);
+		CgiHandler(const Server *server, const CloseFd &epoll_fd,
+				   const Request &cgi_request);
 
-		~Cgi() override = default;
+		~CgiHandler() override = default;
 
 		void on_epoll_event(AllServers &servers, uint32_t events) override;
 		bool is_timeout() const override;

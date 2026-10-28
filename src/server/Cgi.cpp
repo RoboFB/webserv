@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/27 14:45:38 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/28 13:40:16 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 16:59:57 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,8 +18,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-Cgi::Cgi(const Server *server, const CloseFd &epoll_fd,
-		 const Request &cgi_request)
+CgiHandler::CgiHandler(const Server *server, const CloseFd &epoll_fd,
+					   const Request &cgi_request)
 	: EpollHandler(server, -1, epoll_fd)
 {
 	(void)cgi_request;
@@ -66,7 +66,7 @@ Cgi::Cgi(const Server *server, const CloseFd &epoll_fd,
 	}
 }
 
-void Cgi::on_epoll_event(AllServers &servers, uint32_t events)
+void CgiHandler::on_epoll_event(AllServers &servers, uint32_t events)
 {
 	if (events & EPOLL_EVENTS::EPOLLIN)
 	{
@@ -82,12 +82,12 @@ void Cgi::on_epoll_event(AllServers &servers, uint32_t events)
 	(void)events;
 }
 
-bool Cgi::is_timeout() const
+bool CgiHandler::is_timeout() const
 {
 	return false;
 }
 
-void Cgi::stop_listening(void)
+void CgiHandler::stop_listening(void)
 {
 	if (remove_me_)
 		return;

@@ -6,19 +6,19 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 12:29:08 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 13:58:51 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 19:28:07 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
 
-#include "logging.hpp"
 #include "printing.hpp"
-#include <sstream>
 
-ConfigPars::ConfigPars(const std::filesystem::path &config_file_path,
-					   MainConfigPars &main_conf)
-	: config_file_path_(config_file_path), main_conf_(main_conf)
+ConfigPars::ConfigPars(MainConfigPars &main_conf) : main_conf_(main_conf) {}
+
+ConfigPars::~ConfigPars() {}
+
+void ConfigPars::pars_all(const std::filesystem::path &config_file_path)
 {
 	try
 	{
@@ -34,23 +34,6 @@ ConfigPars::ConfigPars(const std::filesystem::path &config_file_path,
 	}
 	catch (const ConfigParseException &e)
 	{
-		throw ConfigParseException(config_file_path_.string() + ":" + e.what());
+		throw ConfigParseException(config_file_path.string() + ":" + e.what());
 	}
-	LOG(LOG_DEBUG, this->to_string());
-	return;
-}
-
-ConfigPars::~ConfigPars() {}
-
-std::string ConfigPars::to_string() const
-{
-	std::stringstream config_stream;
-
-	config_stream << "# " << config_file_path_.string() << "\n\n" << main_conf_;
-	return config_stream.str();
-}
-
-const ServerConfigPars &ConfigPars::get_server_context(size_t index) const
-{
-	return main_conf_.http_conf.servers_confs.at(index);
 }

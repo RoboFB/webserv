@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 18:36:32 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 14:02:03 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 17:38:33 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,7 @@ struct DefaultConfigPars
 {
 		std::vector<int> error_codes; // todo
 		std::vector<std::filesystem::path> indexs_paths;
+		CGIConfigMap cgi_interpers;
 		std::optional<std::filesystem::path> error_page_path; // todo
 		std::optional<std::filesystem::path> root_path;
 		std::optional<std::filesystem::path> return_path; // todo
@@ -38,7 +39,6 @@ struct DefaultConfigPars
 struct LocationConfigPars : public DefaultConfigPars
 {
 		std::string location_path;
-		std::optional<CGIConfig> cgi;
 
 		LocationConfigPars() : DefaultConfigPars() {};
 };

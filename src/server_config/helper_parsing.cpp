@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/13 16:19:19 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 13:58:51 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 19:35:45 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,8 +63,8 @@ void ConfigPars::skip_next(std::vector<Token>::const_iterator &head_token,
 	return;
 }
 
-DirectiveLookup ConfigPars::find_directive_lookup(const Token &token,
-												  ConfigContext context)
+ConfigPars::DirectiveLookup
+ConfigPars::find_directive_lookup(const Token &token, ConfigContext context)
 {
 	if (token.type != TokenType::WORD)
 		throw ConfigParseException("expected a word", token);

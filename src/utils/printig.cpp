@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/15 13:59:22 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 13:58:51 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 19:18:23 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -254,9 +254,4 @@ std::ostream &operator<<(std::ostream &os, const HttpConfigPars &config)
 std::ostream &operator<<(std::ostream &os, const MainConfigPars &config)
 {
 	return os << config.http_conf;
-}
-
-std::ostream &operator<<(std::ostream &os, const ConfigPars &config)
-{
-	return os << config.to_string();
 }

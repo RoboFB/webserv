@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/19 16:51:33 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 14:04:23 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 19:19:04 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,20 @@ static void h_inherit_field(const std::vector<T> &parent, std::vector<T> &child)
 		child = parent;
 }
 
+static void h_inherit_field(const CGIConfigMap &parent, CGIConfigMap &child)
+{
+	// inherit single values
+	//  for (const auto &pair : parent)
+	//  {
+	//  	if (child.find(pair.first) == child.end())
+	//  		child[pair.first] = pair.second;
+	//  }
+
+	// inherit only if child empty
+	if (child.empty() && !parent.empty())
+		child = parent;
+}
+
 static void h_inherit_field(const Methods &parent, Methods &child)
 {
 	if (child == Methods::NONE && parent != Methods::NONE)
@@ -47,6 +61,7 @@ static void h_inherit_default_to_default(const DefaultConfigPars &parent,
 	h_inherit_field(parent.return_code, child.return_code);
 	h_inherit_field(parent.return_path, child.return_path);
 	h_inherit_field(parent.limit_except, child.limit_except);
+	h_inherit_field(parent.cgi_interpers, child.cgi_interpers);
 }
 
 // set also the defaults at the end
@@ -88,5 +103,6 @@ void inherit_all_config(MainConfigPars &parent_config)
 MainConfigPars::MainConfigPars(int argc, const char *argv[]) : http_conf()
 {
 	const std::filesystem::path config_file = check_input_args(argc, argv);
-	ConfigPars config{config_file, *this};
+	ConfigPars config{*this};
+	config.pars_all(config_file);
 }

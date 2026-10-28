@@ -6,19 +6,21 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/25 13:33:13 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 13:58:30 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 18:05:24 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Location.hpp"
 #include "MagicValues.hpp"
 
+#include "ConfigStructs.hpp"
+
 Location::Location(const LocationConfigPars &from)
 	: location_path(from.location_path), error_codes(from.error_codes),
-	  indexs_paths(from.indexs_paths),
-	  error_page_path(from.error_page_path.value_or("./example")),
-	  root_path(from.root_path.value_or(".")), // todo
-	  return_path(from.return_path.value_or("./example")), cgi(from.cgi),
+	  cgi_interpers(from.cgi_interpers), indexs_paths(from.indexs_paths),
+	  error_page_path(from.error_page_path.value_or("./example")), // todo
+	  root_path(from.root_path.value_or(".")),
+	  return_path(from.return_path.value_or("./example")),
 	  client_max_body_size(
 		  from.client_max_body_size.value_or(BODY_SIZE_DEFAULT)), // todo
 	  return_code(from.return_code.value_or(888)), // todo

@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/28 16:19:55 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 16:59:57 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,7 @@ class Connection : public EpollHandler
 
 		// std::vector<uint8_t> request_buffer_;
 		Request request_;
-		const Cgi *cgi_;
+		const CgiHandler *cgi_;
 		Response response_;
 		// std::vector<uint8_t> response_buffer_;
 		// std::size_t response_offset_ = 0;

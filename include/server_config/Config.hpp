@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 13:58:51 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 19:35:16 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,15 +55,7 @@ enum class ConfigContext
 	DEFAULT = 0b01110
 };
 
-class ConfigPars;
 using TokenIterator = std::vector<Token>::const_iterator;
-
-struct DirectiveLookup
-{
-		ConfigContext allowed_contexts;
-		std::string_view word;
-		void (ConfigPars::*fill_context)(TokenIterator &, DefaultConfigPars &);
-};
 
 class ConfigPars
 {
@@ -73,11 +65,8 @@ class ConfigPars
 		ConfigPars &operator=(const ConfigPars &) = delete;
 		ConfigPars &operator=(ConfigPars &&) = delete;
 
-		ConfigPars(const std::filesystem::path &config_file_path,
-				   MainConfigPars &main_conf);
+		ConfigPars(MainConfigPars &main_conf);
 		~ConfigPars();
-
-		const ServerConfigPars &get_server_context(size_t index) const;
 
 		std::string to_string() const;
 
@@ -87,9 +76,16 @@ class ConfigPars
 											 const DefaultConfigPars &config,
 											 size_t indent);
 
-	private:
-		const std::filesystem::path &config_file_path_;
+		void pars_all(const std::filesystem::path &config_file_path);
 
+	private:
+		struct DirectiveLookup
+		{
+				ConfigContext allowed_contexts;
+				std::string_view word;
+				void (ConfigPars::*fill_context)(TokenIterator &,
+												 DefaultConfigPars &);
+		};
 		// config structs
 		MainConfigPars &main_conf_;
 
@@ -120,8 +116,8 @@ class ConfigPars
 						   std::vector<LocationConfigPars> &fill_config);
 		void fill_listen(TokenIterator &head_token,
 						 DefaultConfigPars &fill_config);
-		void fill_server_name(TokenIterator &head_token,
-							  DefaultConfigPars &fill_config);
+		// void fill_server_name(TokenIterator &head_token,
+		// 					  DefaultConfigPars &fill_config);
 		void fill_limit_except(TokenIterator &head_token,
 							   DefaultConfigPars &fill_config);
 		void fill_error_page(TokenIterator &head_token,
@@ -136,6 +132,8 @@ class ConfigPars
 						 DefaultConfigPars &fill_config);
 		void fill_index(TokenIterator &head_token,
 						DefaultConfigPars &fill_config);
+		void fill_cgi(TokenIterator &head_token,
+					  DefaultConfigPars &fill_config);
 
 		static constexpr std::array<DirectiveLookup, 12> directive_lookup = {
 			// sub_conf directives
@@ -172,6 +170,8 @@ class ConfigPars
 							&ConfigPars::fill_index}, // fill_index_context,
 			DirectiveLookup{ConfigContext::DEFAULT, "return",
 							&ConfigPars::fill_return},
+			DirectiveLookup{ConfigContext::DEFAULT, "cgi",
+							&ConfigPars::fill_cgi},
 		};
 };
 
