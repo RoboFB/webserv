@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
+/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/19 01:19:50 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/27 13:58:30 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,10 +14,10 @@
 
 #include "SocketFd.hpp"
 
-Server::Server(ServerConfig &server_config)
+Server::Server(ServerConfigPars &server_config)
 	: locations_(), addr_listen_list_(std::move(server_config.listen))
 {
-	for (LocationConfig &location_config : server_config.locations_confs)
+	for (LocationConfigPars &location_config : server_config.locations_confs)
 	{
 		locations_.push_back(Location(location_config));
 	}
@@ -34,21 +34,28 @@ void Server::add_sockets(std::vector<std::unique_ptr<EpollHandler>> &all_fds,
 	}
 }
 
-static bool is_location_match(const std::string& request_path, const std::string& location_path) {
+static bool is_location_match(const std::string &request_path,
+							  const std::string &location_path)
+{
 	if (location_path == "/")
 		return (!request_path.empty() && request_path[0] == '/');
 	if (request_path.compare(0, location_path.size(), location_path) != 0)
 		return (false);
-	return (request_path.size() == location_path.size() || request_path[location_path.size()] == '/');
+	return (request_path.size() == location_path.size() ||
+			request_path[location_path.size()] == '/');
 }
 
-// this finds a location based on the request path relative to the configured server settings, it can fail
-const Location* Server::find_location(const std::string& request_path) const {
-	const Location* best_match = nullptr;
-	for (const Location& location : locations_) {
+// this finds a location based on the request path relative to the configured
+// server settings, it can fail
+const Location *Server::find_location(const std::string &request_path) const
+{
+	const Location *best_match = nullptr;
+	for (const Location &location : locations_)
+	{
 		if (!is_location_match(request_path, location.location_path))
 			continue;
-		if (best_match == nullptr || location.location_path.size() > best_match->location_path.size())
+		if (best_match == nullptr ||
+			location.location_path.size() > best_match->location_path.size())
 			best_match = &location;
 	}
 	return (best_match);

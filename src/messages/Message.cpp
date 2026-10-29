@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 11:23:43 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/22 13:23:55 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 15:51:32 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,9 +28,10 @@ Message::getHeaders() const
 	return headers_;
 }
 
-void Message::setBody(const std::string &body)
+Message &Message::setBody(const std::string &body)
 {
 	this->body_ = body;
+	return *this;
 }
 
 const std::string &Message::getBody() const

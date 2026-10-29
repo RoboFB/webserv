@@ -6,15 +6,14 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/20 18:34:08 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 16:42:00 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Connection.hpp"
 #include "AllServer.hpp"
 #include "logging.hpp"
-#include "RequestParser.hpp"
-#include "Message.hpp"
+#include "MagicValues.hpp"
 
 #include <sys/epoll.h>
 #include <array>
@@ -23,26 +22,10 @@
 
 Connection::Connection(const Server *server, CloseFd &&fd,
 					   const CloseFd &epoll_fd)
-	: EpollHandler(server, std::move(fd), epoll_fd), state_(State::RECEIVING)
+	: EpollHandler(server, std::move(fd), epoll_fd), cgi_(nullptr),
+	  state_(State::READ_HEAD), last_activity_(std::chrono::steady_clock::now())
 {
-}
-
-void Connection::finish()
-{
-	if (state_ == State::FINISHED)
-		return;
-	remove_from_epoll();
-	set_remove_me();
-	state_ = State::FINISHED;
-}
-
-void Connection::queue_response(const Response &response)
-{
-	const std::string serialized = response.serialize();
-	response_buffer_.assign(serialized.begin(), serialized.end());
-	response_offset_ = 0;
-	state_ = State::SENDING;
-	modify_epoll(EPOLLOUT);
+	add_to_epoll();
 }
 
 void Connection::receive()
@@ -53,78 +36,123 @@ void Connection::receive()
 		::recv(fd_, temporary_buffer.data(), temporary_buffer.size(), 0);
 	if (bytes_read == 0)
 	{
-		finish();
+		set_state(State::FINISHED);
 		return;
 	}
 	if (bytes_read < 0)
 	{
-		if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
-			return;
+		// if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+		// 	return;
 		LOG(LOG_ERROR, "recv: " + std::string(std::strerror(errno)));
-		finish();
+		set_state(State::FINISHED);
 		return;
 	}
-	request_buffer_.insert(request_buffer_.end(), temporary_buffer.begin(),
-						   temporary_buffer.begin() + bytes_read);
-	const RequestParsing parsed = request_parsing(request_buffer_);
-	if (parsed.status == ParseStatus::INCOMPLETE)
-		return;
-	if (parsed.status == ParseStatus::BAD)
-	{
-		queue_response(make_error_response(400));
-		return;
-	}
-	request_buffer_.erase(request_buffer_.begin(),
-						  request_buffer_.begin() + parsed.bytes);
-	queue_response(parsed.message.handle_request(*server_));
-}
 
-Connection::~Connection() {}
+	request_.buffer_.insert(request_.buffer_.end(), temporary_buffer.begin(),
+							temporary_buffer.begin() + bytes_read);
+	const ParseStatus parsed = request_.request_parsing();
+	if (parsed == ParseStatus::INCOMPLETE)
+		return;
+	if (parsed == ParseStatus::BAD)
+	{
+		response_.convert_to_error(400);
+		set_state(State::WRITE);
+		return;
+	}
+	request_.buffer_.clear();
+	handle_request(request_, response_, *server_);
+	set_state(State::WRITE);
+}
 
 void Connection::send()
 {
-	if (response_offset_ >= response_buffer_.size())
+	if (response_.offset_ >= response_.buffer_.size())
 	{
-		finish();
+		set_state(State::FINISHED);
 		return;
 	}
-	const std::size_t remaining = response_buffer_.size() - response_offset_;
 	const ssize_t bytes_sent =
-		::send(fd_, response_buffer_.data() + response_offset_, remaining, 0);
+		::send(fd_, response_.buffer_.data() + response_.offset_,
+			   response_.buffer_.size() - response_.offset_, MSG_NOSIGNAL);
 	if (bytes_sent < 0)
 	{
-		if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
-			return;
+		// if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+		// 	return;
 		LOG(LOG_ERROR, "send: " + std::string(std::strerror(errno)));
-		finish();
+		set_state(State::FINISHED);
 		return;
 	}
 	if (bytes_sent == 0)
 	{
-		finish();
+		set_state(State::FINISHED);
 		return;
 	}
-	response_offset_ += static_cast<std::size_t>(bytes_sent);
-	if (response_offset_ == response_buffer_.size())
-		finish();
+	response_.offset_ += static_cast<std::size_t>(bytes_sent);
+	if (response_.offset_ == response_.buffer_.size())
+		set_state(State::FINISHED);
 }
 
 void Connection::on_epoll_event(AllServers &servers, uint32_t events)
 {
 	(void)servers;
+	if (events & (EPOLLERR | EPOLLHUP))
+		return set_state(State::FINISHED);
 
-	LOG(LOG_DEBUG, " state: " + std::to_string(static_cast<int>(state_)));
 	switch (state_)
 	{
-	case State::RECEIVING:
-		if (events & EPOLL_EVENTS::EPOLLIN)
+	case State::READ_HEAD:
+	case State::READ_BODY:
+		if (events & EPOLLIN)
 			receive();
 		break;
-	case State::SENDING:
-		if (events & EPOLL_EVENTS::EPOLLOUT)
+	case State::WAIT_CGI: // wait for cgi to finish and then send response
+		break;
+	case State::WRITE:
+		if (events & EPOLLOUT)
 			send();
 		break;
-	case State::FINISHED:
+	case State::FINISHED: // should not happen, but if it does, just ignore it
 		break;
 	}
+
+	// IN_TO_OUT has no epoll event to wait for, so run it right after the
+	// read that finished the request
+}
+
+void Connection::set_state(State new_state)
+{
+	last_activity_ = std::chrono::steady_clock::now();
+	state_ = new_state;
+	switch (state_)
+	{
+	case State::READ_HEAD:
+		modify_epoll(EPOLL_EVENTS::EPOLLIN);
+		break;
+	case State::READ_BODY:
+		break;
+	case State::WAIT_CGI:
+		modify_epoll(EPOLL_EVENTS::EPOLLRDHUP);
+		break;
+	case State::WRITE:
+		response_.serialize();
+		modify_epoll(EPOLL_EVENTS::EPOLLOUT);
+		break;
+	case State::FINISHED:
+		stop_listening();
+		break;
+	}
+}
+
+bool Connection::is_timeout() const
+{
+	return std::chrono::steady_clock::now() - last_activity_ >
+		   std::chrono::seconds(CONNECTION_TIMEOUT_S);
+}
+
+void Connection::stop_listening(void)
+{
+	if (remove_me_)
+		return;
+	remove_from_epoll();
+	remove_me_ = true;
 }

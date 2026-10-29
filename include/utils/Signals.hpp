@@ -1,31 +1,20 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   RequestParser.hpp                                  :+:      :+:    :+:   */
+/*   Signals.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/20 18:49:51 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/21 13:57:22 by rgohrig          ###   ########.fr       */
+/*   Created: 2026/10/27 12:12:59 by rgohrig           #+#    #+#             */
+/*   Updated: 2026/10/27 12:15:45 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-#include "Request.hpp"
+#include <atomic>
 
-enum class ParseStatus
-{
-	INCOMPLETE,
-	BAD,
-	COMPLETE
-};
+extern std::atomic_bool g_stop_server;
 
-struct RequestParsing
-{
-		ParseStatus status = ParseStatus::BAD;
-		Request message;
-		std::size_t bytes = 0;
-};
-
-RequestParsing request_parsing(const std::vector<uint8_t> &buffer);
+void init_signal_handling();
+void reset_signal_handling();

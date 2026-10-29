@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+         #
+#    By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/03/10 10:21:00 by rgohrig           #+#    #+#              #
-#    Updated: 2026/10/19 00:14:03 by modiepge         ###   ########.fr        #
+#    Updated: 2026/10/28 19:44:34 by rgohrig          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -17,6 +17,12 @@
 # ----------------------------- GENERAL ----------------------------------------
 
 NAME :=				webserv
+
+# only the top-level make sets -j, sub-makes inherit it via the jobserver
+ifeq ($(MAKELEVEL),0)
+MAKEFLAGS +=		-j$(shell nproc)
+endif
+MAKEFLAGS +=		--no-print-directory
 
 COMPILER :=			c++
 PROFILE_FLAGS :=	-pg -g
@@ -41,7 +47,7 @@ DEBUG_OBJ :=		$(SRC:%.cpp=$(DIR_OBJ)/%_debug.o)
 
 HEADERS :=			-I ./include -I ./include/utils -I ./include/server -I ./include/server_config -I ./include/message -I ./include/routing -I ./include/cgi -I ./include/http
 
-LIBS :=
+LIBS :=				-lstdc++
 
 DEPENDENCIES := 	$(OBJ:.o=.d) $(DEBUG_OBJ:.o=.d)
 
@@ -91,12 +97,12 @@ fclean: clean debug_fclean
 	@rm -f $(NAME)
 	@echo 🧹🧹🧹 cleaned $(NAME)
 
-re: fclean all
+# sequential on purpose: with -j, "re: fclean all" would clean and build at once
+re:
+	@$(MAKE) fclean
+	@$(MAKE) all
 
-# alternative re for parallel builds
-# re:
-# 	@$(MAKE) --no-print-directory fclean
-# 	@$(MAKE) --no-print-directory all
+.PHONY: all run stop clean fclean re
 
 # ----------------------------- Debug ------------------------------------------
 
@@ -142,8 +148,8 @@ profile:
 # ----------------------------- Clangd -----------------------------------------
 
 compile_commands:
-	@(compiledb -n make && echo "👀 compile_commands.json updated") || echo "👀 compiledb failed"
+	@(MAKEFLAGS= compiledb -n make && echo "👀 compile_commands.json updated") || echo "👀 compiledb failed"
 
 # ----------------------------- Phony ------------------------------------------
 
-.PHONY: all clean fclean re profile stop run compile_commands
+.PHONY: profile compile_commands

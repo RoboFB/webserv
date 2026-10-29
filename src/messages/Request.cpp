@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/21 13:55:07 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/22 13:48:47 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 16:03:16 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,10 +31,17 @@ URITarget Request::split_uri_target() const
 					 target_.substr(query_start + 1)};
 }
 
-std::string Request::serialize() const
+void Request::serialize()
 {
-	return methods_to_string(method_) + " " + target_ + " " + version_ + LINE +
-		   serializeHeaders() + LINE + body_;
+	const std::string method_string = methods_to_string(method_) + " " +
+									  target_ + " " + version_ + LINE +
+									  serializeHeaders() + LINE;
+
+	offset_ = 0;
+	buffer_.clear();
+	buffer_.reserve(method_string.size() + body_.size());
+	buffer_.insert(buffer_.end(), method_string.begin(), method_string.end());
+	buffer_.insert(buffer_.end(), body_.begin(), body_.end());
 }
 
 bool Request::is_version_valid() const

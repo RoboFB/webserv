@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/04 16:57:19 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 13:22:13 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,17 +41,19 @@ class SocketFd : public EpollHandler
 
 		SocketFd(const struct addrinfo *one_addr, const Server *server,
 				 const CloseFd &epoll_fd);
-		~SocketFd() override;
-
-		void listen(void) const;
-		std::unique_ptr<Connection> accept(void) const;
+		~SocketFd() override = default;
 
 		void on_epoll_event(AllServers &servers, uint32_t events) override;
+		bool is_timeout() const override;
+		void stop_listening(void) override;
 
 	private:
-		static constexpr int backlog_ = 10;
+		void init_socket(const struct addrinfo *one_addr);
+		void init_setsockopt(void);
+		void init_bind(const struct addrinfo *one_addr);
+		void init_listen(void) const;
 
-		CloseFd init_socket(const struct addrinfo *one_addr) const;
+		void accept(AllServers &servers) const;
 
-		void accept_connection(AllServers &servers) const;
+		// void accept_connection(AllServers &servers) const;
 };

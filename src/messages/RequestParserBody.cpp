@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/18 20:29:59 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/20 21:24:00 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/27 16:34:22 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,23 +118,32 @@ static BodyParsing parse_chunked_body(const std::vector<uint8_t> &buffer,
 
 /*	Read and fill in body, either chunked or predictable lenght
  */
-BodyParsing parse_body(const std::vector<uint8_t> &buffer,
-					   const Headers &headers, std::size_t body_start)
+ParseStatus Request::parse_body()
 {
-	const Headers::const_iterator transfer = headers.find("transfer-encoding");
-	const Headers::const_iterator length = headers.find("content-length");
-	if (transfer != headers.end() && length != headers.end())
-		return BodyParsing();
-	if (transfer != headers.end())
+	const Headers::const_iterator transfer = headers_.find("transfer-encoding");
+	const Headers::const_iterator length = headers_.find("content-length");
+	BodyParsing result;
+
+	if (transfer != headers_.end() && length != headers_.end())
+		return ParseStatus::BAD;
+	if (transfer != headers_.end())
 	{
 		if (transfer->second.size() != 1 ||
 			ascii_lowercase(transfer->second[0]) != "chunked")
-			return BodyParsing();
-		return parse_chunked_body(buffer, body_start);
+			return ParseStatus::BAD;
+		result = parse_chunked_body(buffer_, offset_);
 	}
-	if (length == headers.end())
-		return BodyParsing(ParseStatus::COMPLETE, "", body_start);
-	if (length->second.size() != 1)
-		return BodyParsing();
-	return parse_content_length_body(buffer, body_start, length->second[0]);
+	else if (length == headers_.end())
+		result = BodyParsing(ParseStatus::COMPLETE, "", offset_);
+	else if (length->second.size() != 1)
+		return ParseStatus::BAD;
+	else
+		result = parse_content_length_body(buffer_, offset_, length->second[0]);
+
+	if (result.status == ParseStatus::COMPLETE)
+	{
+		body_ = std::move(result.body);
+		offset_ = result.bytes;
+	}
+	return result.status;
 }

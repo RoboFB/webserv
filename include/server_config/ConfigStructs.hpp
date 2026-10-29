@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigStructs.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
+/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 18:36:32 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/19 01:01:15 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/28 17:38:33 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,10 +20,11 @@
 #include <optional>
 #include <vector>
 
-struct DefaultConfig
+struct DefaultConfigPars
 {
 		std::vector<int> error_codes; // todo
 		std::vector<std::filesystem::path> indexs_paths;
+		CGIConfigMap cgi_interpers;
 		std::optional<std::filesystem::path> error_page_path; // todo
 		std::optional<std::filesystem::path> root_path;
 		std::optional<std::filesystem::path> return_path; // todo
@@ -32,38 +33,39 @@ struct DefaultConfig
 		std::optional<bool> autoindex;
 		Methods limit_except;
 
-		DefaultConfig() : limit_except(Methods::NONE) {};
+		DefaultConfigPars() : limit_except(Methods::NONE) {};
 };
 
-struct LocationConfig : public DefaultConfig
+struct LocationConfigPars : public DefaultConfigPars
 {
 		std::string location_path;
-		std::optional<CGIConfig> cgi;
 
-		LocationConfig() : DefaultConfig() {};
+		LocationConfigPars() : DefaultConfigPars() {};
 };
 
-struct ServerConfig : public DefaultConfig
+struct ServerConfigPars : public DefaultConfigPars
 {
-		std::vector<LocationConfig> locations_confs;
+		std::vector<LocationConfigPars> locations_confs;
 
 		AddrInfoPtr listen; // address:port linked list of listen addresses
 		// std::string					server_name; // later need to be
 		// implemented on header level (www.example.com, example.com, etc.)
 
-		ServerConfig() : DefaultConfig(), listen(nullptr) {};
+		ServerConfigPars() : DefaultConfigPars(), listen(nullptr) {};
 };
 
-struct HttpConfig : public DefaultConfig
+struct HttpConfigPars : public DefaultConfigPars
 {
-		std::vector<ServerConfig> servers_confs;
+		std::vector<ServerConfigPars> servers_confs;
 
-		HttpConfig() : DefaultConfig() {};
+		HttpConfigPars() : DefaultConfigPars() {};
 };
 
-struct MainConfig
+struct MainConfigPars
 {
-		HttpConfig http_conf;
+		HttpConfigPars http_conf;
+
+		MainConfigPars(int argc, const char *argv[]);
 };
 
-void inherit_all_config(MainConfig &parent_config);
+void inherit_all_config(MainConfigPars &parent_config);

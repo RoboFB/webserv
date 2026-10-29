@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
+/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/19 01:07:38 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/28 19:35:16 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,43 +55,39 @@ enum class ConfigContext
 	DEFAULT = 0b01110
 };
 
-class Config;
 using TokenIterator = std::vector<Token>::const_iterator;
 
-struct DirectiveLookup
-{
-		ConfigContext allowed_contexts;
-		std::string_view word;
-		void (Config::*fill_context)(TokenIterator &, DefaultConfig &);
-};
-
-class Config
+class ConfigPars
 {
 	public:
-		Config(const Config &) = delete;
-		Config(Config &&) = default;
-		Config &operator=(const Config &) = delete;
-		Config &operator=(Config &&) = delete;
+		ConfigPars(const ConfigPars &) = delete;
+		ConfigPars(ConfigPars &&) = default;
+		ConfigPars &operator=(const ConfigPars &) = delete;
+		ConfigPars &operator=(ConfigPars &&) = delete;
 
-		Config(const std::filesystem::path &config_file_path,
-			   MainConfig &main_conf);
-		~Config();
-
-		const ServerConfig &get_server_context(size_t index) const;
+		ConfigPars(MainConfigPars &main_conf);
+		~ConfigPars();
 
 		std::string to_string() const;
 
 		// walks directive_lookup below for the directive names, so they're
 		// written once, not duplicated in printig.cpp
 		static void print_default_directives(std::ostream &os,
-											 const DefaultConfig &config,
+											 const DefaultConfigPars &config,
 											 size_t indent);
 
-	private:
-		const std::filesystem::path &config_file_path_;
+		void pars_all(const std::filesystem::path &config_file_path);
 
+	private:
+		struct DirectiveLookup
+		{
+				ConfigContext allowed_contexts;
+				std::string_view word;
+				void (ConfigPars::*fill_context)(TokenIterator &,
+												 DefaultConfigPars &);
+		};
 		// config structs
-		MainConfig &main_conf_;
+		MainConfigPars &main_conf_;
 
 		DirectiveLookup find_directive_lookup(const Token &token,
 											  ConfigContext context);
@@ -111,27 +107,33 @@ class Config
 
 		size_t parse_max_body_size(std::string number_str, const Token &token);
 
-		void set_default_values(DefaultConfig &child);
+		void set_default_values(DefaultConfigPars &child);
 
 		void fill_main(TokenIterator &head_token);
 		void fill_http(TokenIterator &head_token);
 		void fill_server(TokenIterator &head_token);
 		void fill_location(TokenIterator &head_token,
-						   std::vector<LocationConfig> &fill_config);
-		void fill_listen(TokenIterator &head_token, DefaultConfig &fill_config);
-		void fill_server_name(TokenIterator &head_token,
-							  DefaultConfig &fill_config);
+						   std::vector<LocationConfigPars> &fill_config);
+		void fill_listen(TokenIterator &head_token,
+						 DefaultConfigPars &fill_config);
+		// void fill_server_name(TokenIterator &head_token,
+		// 					  DefaultConfigPars &fill_config);
 		void fill_limit_except(TokenIterator &head_token,
-							   DefaultConfig &fill_config);
+							   DefaultConfigPars &fill_config);
 		void fill_error_page(TokenIterator &head_token,
-							 DefaultConfig &fill_config);
+							 DefaultConfigPars &fill_config);
 		void fill_client_max_body_size(TokenIterator &head_token,
-									   DefaultConfig &fill_config);
+									   DefaultConfigPars &fill_config);
 		void fill_autoindex(TokenIterator &head_token,
-							DefaultConfig &fill_config);
-		void fill_root(TokenIterator &head_token, DefaultConfig &fill_config);
-		void fill_return(TokenIterator &head_token, DefaultConfig &fill_config);
-		void fill_index(TokenIterator &head_token, DefaultConfig &fill_config);
+							DefaultConfigPars &fill_config);
+		void fill_root(TokenIterator &head_token,
+					   DefaultConfigPars &fill_config);
+		void fill_return(TokenIterator &head_token,
+						 DefaultConfigPars &fill_config);
+		void fill_index(TokenIterator &head_token,
+						DefaultConfigPars &fill_config);
+		void fill_cgi(TokenIterator &head_token,
+					  DefaultConfigPars &fill_config);
 
 		static constexpr std::array<DirectiveLookup, 12> directive_lookup = {
 			// sub_conf directives
@@ -144,29 +146,32 @@ class Config
 
 			// Server only
 			DirectiveLookup{ConfigContext::SERVER, "listen",
-							&Config::fill_listen}, // fill_listen_context,
+							&ConfigPars::fill_listen}, // fill_listen_context,
 			// DirectiveLookup{ConfigContext::SERVER,    "server_name",
 			// &Config::fill_server_name}, // fill_server_name_context,
 
 			// Default
 			DirectiveLookup{
 				ConfigContext::DEFAULT, "limit_except",
-				&Config::fill_limit_except}, // fill_limit_except_context,
+				&ConfigPars::fill_limit_except}, // fill_limit_except_context,
 			DirectiveLookup{
 				ConfigContext::DEFAULT, "error_page",
-				&Config::fill_error_page}, // fill_error_page_context,
+				&ConfigPars::fill_error_page}, // fill_error_page_context,
 			DirectiveLookup{
 				ConfigContext::DEFAULT, "client_max_body_size",
-				&Config::
+				&ConfigPars::
 					fill_client_max_body_size}, // fill_client_max_body_size_context,
-			DirectiveLookup{ConfigContext::DEFAULT, "autoindex",
-							&Config::fill_autoindex}, // fill_autoindex_context,
+			DirectiveLookup{
+				ConfigContext::DEFAULT, "autoindex",
+				&ConfigPars::fill_autoindex}, // fill_autoindex_context,
 			DirectiveLookup{ConfigContext::DEFAULT, "root",
-							&Config::fill_root}, // fill_root_context,
+							&ConfigPars::fill_root}, // fill_root_context,
 			DirectiveLookup{ConfigContext::DEFAULT, "index",
-							&Config::fill_index}, // fill_index_context,
+							&ConfigPars::fill_index}, // fill_index_context,
 			DirectiveLookup{ConfigContext::DEFAULT, "return",
-							&Config::fill_return},
+							&ConfigPars::fill_return},
+			DirectiveLookup{ConfigContext::DEFAULT, "cgi",
+							&ConfigPars::fill_cgi},
 		};
 };
 

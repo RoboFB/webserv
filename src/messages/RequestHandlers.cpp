@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/22 13:13:51 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 16:48:55 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,54 +78,14 @@ static std::string mime_type_for(const std::filesystem::path &path)
 		return "application/octet-stream";
 }
 
-Response make_error_response(int status)
-{
-	const std::string body =
-		std::to_string(status) + " " + Response(status).getReason() + "\n";
-
-	Response response(status);
-	response.addHeader("Content-Type", "text/plain; charset=utf-8")
-		.addHeader("Content-Length", std::to_string(body.size()))
-		.addHeader("Connection", "close")
-		.setBody(body);
-	return (response);
-}
-
-static Response make_empty_response(int status)
-{
-	Response response(status);
-	response.addHeader("Content-Length", "0").addHeader("Connection", "close");
-	return response;
-}
-
-static std::string allowed_methods(Methods methods)
-{
-	std::string result;
-
-	if (is_method(methods, Methods::GET))
-		result += "GET";
-	if (is_method(methods, Methods::POST))
-		result += (result.empty() ? "" : ", ") + std::string("POST");
-	if (is_method(methods, Methods::DELETE))
-		result += (result.empty() ? "" : ", ") + std::string("DELETE");
-
-	return result;
-}
-
-static Response make_method_not_allowed_response(const Location &location)
-{
-	return make_empty_response(405).addHeader(
-		"Allow", allowed_methods(location.limit_except));
-}
-
-Response Request::handle_get(const Location &location,
-							 const std::string &request_path) const
+void handle_get(Response &response, const Location &location,
+				const std::string &request_path)
 {
 	const ResolvedPath resolved_path =
 		resolve_resource_path(location, request_path);
 
 	if (resolved_path.status != ResolveStatus::OK)
-		return make_error_response(403);
+		return response.convert_to_error(403);
 
 	std::error_code error;
 	const std::filesystem::file_status status =
@@ -133,13 +93,13 @@ Response Request::handle_get(const Location &location,
 	if (!std::filesystem::exists(status))
 	{
 		if (error == std::make_error_code(std::errc::no_such_file_or_directory))
-			return make_error_response(404);
+			return response.convert_to_error(404);
 
-		return make_error_response(403);
+		return response.convert_to_error(403);
 	}
 
 	if (error)
-		return make_error_response(403);
+		return response.convert_to_error(403);
 
 	std::filesystem::path file_path = resolved_path.path;
 
@@ -149,44 +109,44 @@ Response Request::handle_get(const Location &location,
 			find_index_file(location, file_path);
 
 		if (!index_file)
-			return make_error_response(403);
+			return response.convert_to_error(403);
 
 		file_path = *index_file;
 	}
 	else if (!std::filesystem::is_regular_file(status))
-		return make_error_response(403);
+		return response.convert_to_error(403);
 
-	std::ifstream file(file_path.string().c_str(), std::ios::binary);
+	std::ifstream file(file_path, std::ios::binary);
 	if (!file)
-		return make_error_response(403);
+		return response.convert_to_error(403);
 
 	std::ostringstream contents;
 	contents << file.rdbuf();
 
 	if (file.bad())
-		return make_error_response(500);
+		return response.convert_to_error(500);
 
 	const std::string body = contents.str();
 
-	Response response(200);
+	response.set_status(200);
 	response.addHeader("Content-Type", mime_type_for(file_path))
 		.addHeader("Content-Length", std::to_string(body.size()))
 		.addHeader("Connection", "close")
 		.setBody(body);
-	return response;
+	return;
 }
 
-Response Request::handle_post(const Location &location,
-							  const std::string &request_path) const
+void handle_post(const std::string &data_str_body, Response &response,
+				 const Location &location, const std::string &request_path)
 {
-	if (getBody().size() > location.client_max_body_size)
-		return make_error_response(413);
+	if (data_str_body.size() > location.client_max_body_size)
+		return response.convert_to_error(413);
 
 	const ResolvedPath resolved_path =
 		resolve_resource_path(location, request_path);
 
 	if (resolved_path.status != ResolveStatus::OK)
-		return make_error_response(403);
+		return response.convert_to_error(403);
 
 	std::error_code error;
 	const std::filesystem::file_status existing_status =
@@ -195,75 +155,77 @@ Response Request::handle_post(const Location &location,
 	const bool existed = !error && std::filesystem::exists(existing_status);
 
 	if (existed && !std::filesystem::is_regular_file(existing_status))
-		return make_error_response(403);
+		return response.convert_to_error(403);
 
 	error.clear();
 	const std::filesystem::file_status parent_status =
 		std::filesystem::status(resolved_path.path.parent_path(), error);
 
 	if (error || !std::filesystem::is_directory(parent_status))
-		return make_error_response(404);
+		return response.convert_to_error(404);
 
 	std::ofstream file(resolved_path.path.string().c_str(),
 					   std::ios::binary | std::ios::trunc);
 
 	if (!file)
-		return make_error_response(403);
+		return response.convert_to_error(403);
 
-	file.write(getBody().data(),
-			   static_cast<std::streamsize>(getBody().size()));
+	file.write(data_str_body.data(),
+			   static_cast<std::streamsize>(data_str_body.size()));
 
 	if (!file)
-		return make_error_response(500);
+		return response.convert_to_error(500);
 
-	return make_empty_response(existed ? 204 : 201);
+	return response.set_status(existed ? 204 : 201);
 }
 
-Response Request::handle_delete(const Location &location,
-								const std::string &request_path) const
+void handle_delete(Response &response, const Location &location,
+				   const std::string &request_path)
 {
 	const ResolvedPath resolved_path =
 		resolve_resource_path(location, request_path);
 
 	if (resolved_path.status != ResolveStatus::OK)
-		return make_error_response(403);
+		return response.convert_to_error(403);
 
 	std::error_code error;
 	const std::filesystem::file_status status =
 		std::filesystem::status(resolved_path.path, error);
 
 	if (error || !std::filesystem::exists(status))
-		return make_error_response(404);
+		return response.convert_to_error(404);
 
 	if (!std::filesystem::is_regular_file(status))
-		return make_error_response(403);
+		return response.convert_to_error(403);
 
 	if (!std::filesystem::remove(resolved_path.path, error) || error)
-		return make_error_response(500);
+		return response.convert_to_error(500);
 
-	return make_empty_response(204);
+	return response.set_status(204);
 }
 
-Response Request::handle_request(const Server &server) const
+void handle_request(const Request &request, Response &response,
+					const Server &server)
 {
-	const std::string &request_path = split_uri_target().path;
+	const std::string &request_path = request.split_uri_target().path;
 	const Location *location = server.find_location(request_path);
 
 	if (location == NULL)
-		return make_error_response(404);
+		return response.convert_to_error(404);
 
-	if (!is_method(location->limit_except, method_))
-		return make_method_not_allowed_response(*location);
+	if (!is_method(location->limit_except, request.get_method()))
+		return response.convert_to_not_allowed(*location);
 
-	switch (method_)
+	switch (request.get_method())
 	{
 	case Methods::GET:
-		return handle_get(*location, request_path);
+		return handle_get(response, *location, request_path);
 	case Methods::POST:
-		return handle_post(*location, request_path);
+		return handle_post(request.getBody(), response, *location,
+						   request_path);
 	case Methods::DELETE:
-		return handle_delete(*location, request_path);
+		return handle_delete(response, *location, request_path);
 	default:
-		return make_error_response(501);
+		return response.convert_to_error(501);
 	}
 }

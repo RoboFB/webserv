@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   printig.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
+/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/15 13:59:22 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/19 01:02:15 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/10/28 19:18:23 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,9 +26,9 @@ std::string addr_to_string(const struct addrinfo *info)
 
 	char host[NI_MAXHOST];
 	char service[NI_MAXSERV];
-	int result = getnameinfo(info->ai_addr, info->ai_addrlen,
-		host, sizeof(host), service, sizeof(service),
-		NI_NUMERICHOST | NI_NUMERICSERV);
+	int result =
+		getnameinfo(info->ai_addr, info->ai_addrlen, host, sizeof(host),
+					service, sizeof(service), NI_NUMERICHOST | NI_NUMERICSERV);
 	if (result != 0)
 		return gai_strerror(result);
 
@@ -49,32 +49,34 @@ void debug_print_tokens(const std::vector<Token> &tokens)
 	LOG(LOG_DEBUG, log_all_tokens.str());
 }
 
-
 std::ostream &operator<<(std::ostream &os, const TokenType &token)
 {
 	switch (token)
 	{
-	case TokenType::WORD:			os << "WORD       "; return os;
-	case TokenType::OPEN_BRACE:		os << "OPEN_BRACE "; return os;
-	case TokenType::CLOSE_BRACE:	os << "CLOSE_BRACE"; return os;
-	case TokenType::SEMICOLON:		os << "SEMICOLON  "; return os;
-	default: 						os << "UNKNOWN    "; return os;
+	case TokenType::WORD:
+		os << "WORD       ";
+		return os;
+	case TokenType::OPEN_BRACE:
+		os << "OPEN_BRACE ";
+		return os;
+	case TokenType::CLOSE_BRACE:
+		os << "CLOSE_BRACE";
+		return os;
+	case TokenType::SEMICOLON:
+		os << "SEMICOLON  ";
+		return os;
+	default:
+		os << "UNKNOWN    ";
+		return os;
 	}
 }
 
 std::ostream &operator<<(std::ostream &os, const Token &token)
 {
-	os	<< token.type
-		<< " "
-    	<< token.line
-        << ":"
-        << token.column
-		<< " \t"
-		<< token.word;
-		return os;
+	os << token.type << " " << token.line << ":" << token.column << " \t"
+	   << token.word;
+	return os;
 }
-
-
 
 static std::string make_indent(size_t level)
 {
@@ -86,7 +88,8 @@ static std::string listen_to_string(const AddrInfoPtr &listen)
 {
 	std::string result;
 
-	for (const addrinfo *current = listen.get(); current != nullptr; current = current->ai_next)
+	for (const addrinfo *current = listen.get(); current != nullptr;
+		 current = current->ai_next)
 	{
 		if (!result.empty())
 			result += ' ';
@@ -95,13 +98,16 @@ static std::string listen_to_string(const AddrInfoPtr &listen)
 	return result;
 }
 
-static void print_root(std::ostream &os, const DefaultConfig &config, size_t indent)
+static void print_root(std::ostream &os, const DefaultConfigPars &config,
+					   size_t indent)
 {
 	if (config.root_path)
-		os << make_indent(indent) << "root " << config.root_path->string() << ";\n";
+		os << make_indent(indent) << "root " << config.root_path->string()
+		   << ";\n";
 }
 
-static void print_index(std::ostream &os, const DefaultConfig &config, size_t indent)
+static void print_index(std::ostream &os, const DefaultConfigPars &config,
+						size_t indent)
 {
 	if (config.indexs_paths.empty())
 		return;
@@ -111,7 +117,8 @@ static void print_index(std::ostream &os, const DefaultConfig &config, size_t in
 	os << ";\n";
 }
 
-static void print_autoindex(std::ostream &os, const DefaultConfig &config, size_t indent)
+static void print_autoindex(std::ostream &os, const DefaultConfigPars &config,
+							size_t indent)
 {
 	if (config.autoindex)
 	{
@@ -124,19 +131,25 @@ static void print_autoindex(std::ostream &os, const DefaultConfig &config, size_
 		os << make_indent(indent) << "autoindex not set;\n";
 }
 
-static void print_client_max_body_size(std::ostream &os, const DefaultConfig &config, size_t indent)
+static void print_client_max_body_size(std::ostream &os,
+									   const DefaultConfigPars &config,
+									   size_t indent)
 {
 	if (config.client_max_body_size)
-		os << make_indent(indent) << "client_max_body_size " << config.client_max_body_size.value() << ";\n";
+		os << make_indent(indent) << "client_max_body_size "
+		   << config.client_max_body_size.value() << ";\n";
 }
 
-static void print_limit_except(std::ostream &os, const DefaultConfig &config, size_t indent)
+static void print_limit_except(std::ostream &os,
+							   const DefaultConfigPars &config, size_t indent)
 {
 	if (config.limit_except != Methods::NONE)
-		os << make_indent(indent) << "limit_except " << methods_to_string(config.limit_except) << ";\n";
+		os << make_indent(indent) << "limit_except "
+		   << methods_to_string(config.limit_except) << ";\n";
 }
 
-static void print_error_page(std::ostream &os, const DefaultConfig &config, size_t indent)
+static void print_error_page(std::ostream &os, const DefaultConfigPars &config,
+							 size_t indent)
 {
 	if (config.error_codes.empty() && !config.error_page_path)
 		return;
@@ -148,7 +161,8 @@ static void print_error_page(std::ostream &os, const DefaultConfig &config, size
 	os << ";\n";
 }
 
-static void print_return(std::ostream &os, const DefaultConfig &config, size_t indent)
+static void print_return(std::ostream &os, const DefaultConfigPars &config,
+						 size_t indent)
 {
 	if (!config.return_code && !config.return_path)
 		return;
@@ -158,9 +172,12 @@ static void print_return(std::ostream &os, const DefaultConfig &config, size_t i
 	os << ";\n";
 }
 
-// picks the print function by the directive's own name out of directive_lookup, so the set of
-// directive names lives in exactly one place (the parser's table) instead of being repeated here
-static void print_directive_by_name(std::ostream &os, const DefaultConfig &config, size_t indent, std::string_view name)
+// picks the print function by the directive's own name out of directive_lookup,
+// so the set of directive names lives in exactly one place (the parser's table)
+// instead of being repeated here
+static void print_directive_by_name(std::ostream &os,
+									const DefaultConfigPars &config,
+									size_t indent, std::string_view name)
 {
 	if (name == "root")
 		print_root(os, config, indent);
@@ -178,28 +195,33 @@ static void print_directive_by_name(std::ostream &os, const DefaultConfig &confi
 		print_return(os, config, indent);
 }
 
-void Config::print_default_directives(std::ostream &os, const DefaultConfig &config, size_t indent)
+void ConfigPars::print_default_directives(std::ostream &os,
+										  const DefaultConfigPars &config,
+										  size_t indent)
 {
 	for (const auto &entry : directive_lookup)
 		print_directive_by_name(os, config, indent, entry.word);
 }
 
-static void print_location(std::ostream &os, const LocationConfig &config, size_t indent)
+static void print_location(std::ostream &os, const LocationConfigPars &config,
+						   size_t indent)
 {
 	const std::string pad = make_indent(indent);
 
 	os << pad << "location " << config.location_path << " {\n";
-	Config::print_default_directives(os, config, indent + 1);
+	ConfigPars::print_default_directives(os, config, indent + 1);
 	os << pad << "}\n";
 }
 
-static void print_server(std::ostream &os, const ServerConfig &config, size_t indent)
+static void print_server(std::ostream &os, const ServerConfigPars &config,
+						 size_t indent)
 {
 	const std::string pad = make_indent(indent);
 
 	os << pad << "server {\n"
-	   << make_indent(indent + 1) << "listen " << listen_to_string(config.listen) << ";\n";
-	Config::print_default_directives(os, config, indent + 1);
+	   << make_indent(indent + 1) << "listen "
+	   << listen_to_string(config.listen) << ";\n";
+	ConfigPars::print_default_directives(os, config, indent + 1);
 	for (const auto &location : config.locations_confs)
 	{
 		os << '\n';
@@ -208,12 +230,13 @@ static void print_server(std::ostream &os, const ServerConfig &config, size_t in
 	os << pad << "}\n";
 }
 
-static void print_http(std::ostream &os, const HttpConfig &config, size_t indent)
+static void print_http(std::ostream &os, const HttpConfigPars &config,
+					   size_t indent)
 {
 	const std::string pad = make_indent(indent);
 
 	os << pad << "http {\n";
-	Config::print_default_directives(os, config, indent + 1);
+	ConfigPars::print_default_directives(os, config, indent + 1);
 	for (const auto &server : config.servers_confs)
 	{
 		os << '\n';
@@ -222,18 +245,13 @@ static void print_http(std::ostream &os, const HttpConfig &config, size_t indent
 	os << pad << "}\n";
 }
 
-std::ostream &operator<<(std::ostream &os, const HttpConfig &config)
+std::ostream &operator<<(std::ostream &os, const HttpConfigPars &config)
 {
 	print_http(os, config, 0);
 	return os;
 }
 
-std::ostream &operator<<(std::ostream &os, const MainConfig &config)
+std::ostream &operator<<(std::ostream &os, const MainConfigPars &config)
 {
 	return os << config.http_conf;
-}
-
-std::ostream &operator<<(std::ostream &os, const Config &config)
-{
-	return os << config.to_string();
 }

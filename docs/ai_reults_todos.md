@@ -1,283 +1,388 @@
-# webserv – Stand & TODOs (AI-Review, 2026-10-26)
+# webserv – Stand, Design & TODOs (AI-Review, 2026-10-28)
 
-Basis: kompletter Code auf Branch `rgohrig-2` (Commit `783c69f`) gelesen, gebaut
-(`make` warning-frei) und mit `curl`/`nc` gegen eine Test-Config angetestet.
+Ersetzt die alte Review vom 2026-10-26 **und** `docs/isue.md` (State-Machine-Design).
 
-**Kurzfazit:** Das Fundament (Config-Parser, epoll-Loop, Request-Parser,
-GET/POST/DELETE für statische Dateien, Pfad-Sicherheit) steht und ist
-ordentlich. Für die Abgabe fehlen aber noch **mehr als nur CGI + Tests**:
-`autoindex`, `return` (Redirects), `error_page` und Timeouts sind zwar teils
-im Config-Parser vorhanden, haben aber **keine Runtime-Implementierung**. Dazu
-kommt ein **harter Subject-Verstoß** (errno-Check nach recv/send).
+Basis: Branch `rgohrig-2`, Commit `6dad107` (+ ungetrackt: `scripts/smoke_test.sh`).
+Gebaut (`make re`, `make both` warning-frei) und mit `curl`/`nc` angetestet.
 
-Grobe Schätzung bis abgabereif: ca. **55–65 % geschafft**. CGI ist der größte
-Einzelblock (~30 % der Restarbeit), danach Timeouts/Resilience, die fehlenden
-Config-Features und Tests/Demo-Configs.
+**Kurzfazit:** Seit der letzten Review sind die meisten Quick-Wins erledigt
+(errno-Checks, `MSG_NOSIGNAL`, `SO_REUSEADDR`, `SOMAXCONN`, Signal-Handler,
+einfacher Timeout, `accept`-Fehler) und der Umbau zur State-Machine hat
+begonnen. Größter offener Block bleibt **CGI** (nur Config-Parsing + ein
+fork-Gerüst). Danach: `autoindex`, `return`, `error_page`, implizite Location,
+Status-Codes, Upload (multipart) und Demo-Configs.
+
+Grobe Schätzung bis abgabereif: ca. **60–70 % geschafft**.
 
 ---
 
-## 1. Smoke-Test-Ergebnisse (was tatsächlich läuft)
+## 1. Smoke-Test-Ergebnisse (Stand jetzt)
+
+Automatisiert: `make && ./scripts/smoke_test.sh` (15 Checks, alle grün,
+auch mit `./webserv_debug`/ASan).
 
 | Request | Ergebnis | Bewertung |
 |---|---|---|
-| `GET /` , `GET /assets/style.css` | 200 | ✅ |
-| `GET /nothere` | 404 (text/plain) | ✅ |
-| `POST /` bei `limit_except GET` | 405 + `Allow`-Header | ✅ |
-| `POST --data hello /up/a.txt` | 201, Datei angelegt | ✅ |
-| POST über `client_max_body_size` | 413 | ✅ (aber erst nach komplettem Empfang, s.u.) |
-| `DELETE /up/a.txt` | 204 | ✅ |
-| Chunked POST | 201, korrekt entchunkt | ✅ |
-| `GET /../../etc/passwd` (path-as-is) | 403 | ✅ |
+| `GET /`, 404, Path-Traversal (403) | 200 / 404 / 403 | ✅ |
+| `POST` neu / existiert / chunked | 201 / 204 / 201 | ✅ |
+| `DELETE` / nochmal | 204 / 404 | ✅ |
+| POST über `client_max_body_size` | 413 | ✅ (aber erst nach komplettem Empfang) |
+| Müll-Request | 400 | ✅ |
+| 5 MB Download, byte-identisch | 200 | ✅ |
+| 20 parallele Requests | alle 200, Server lebt | ✅ |
+| Stille Verbindung (`nc`) | nach 10 s geschlossen | ✅ (ohne 408, s.u.) |
 | `autoindex on` auf Verzeichnis | **403** | ❌ nicht implementiert |
-| `location /redir { return 301 ...; }` | **200** (liefert index.html) | ❌ `return` wird ignoriert |
-| `error_page 404 /nope.html;` | **Config-Parse-Fehler, Server startet nicht** | ❌ Parser-Bug |
-| Server-Block ohne `location` | **404 für alles** | ❌ server-level `root` wird nie benutzt |
+| `location /redir { return 301 ...; }` | **403** | ❌ `return` wird ignoriert |
+| `error_page 404 /e.html;` | **Config-Fehler, Server startet nicht** | ❌ Parser-Bug |
+| `index a.html b.html;` | **Config-Fehler** | ❌ nur ein Wert |
+| `cgi .bla ...;` (42-Tester) | **Config-Fehler** | ❌ Whitelist `.py`/`.php` |
+| Server-Block ohne `location` | **404 für alles** | ❌ server-`root` ungenutzt |
 | `HEAD` / `PUT` | 400 | ⚠️ sollte 405 bzw. 501 sein |
-| Idle-Verbindung (nc, nichts senden) | **hängt ewig** | ❌ kein Timeout |
-| 3× großen Download (50 MB) abbrechen | Server lebt weiter | ✅ (SIGPIPE-Risiko besteht trotzdem, s.u.) |
+| `HTTP/2.0` im Request | 400 | ⚠️ sollte 505 sein |
+| Verzeichnis ohne `/` (`/dir`) | 403 | ⚠️ sollte 301 auf `/dir/` sein |
 
 ---
 
-## 2. KRITISCH – Muss vor Abgabe (Subject-Verstöße / Pflicht-Features)
+## 2. Erledigt seit der letzten Review
+
+- errno-Checks nach `recv`/`send` entfernt (nur noch auskommentiert – ganz löschen).
+- `send(..., MSG_NOSIGNAL)`, SIGPIPE-/SIGINT-Handler, sauberes Beenden über
+  `g_stop_server`.
+- `epoll_wait == -1` beendet den Server nicht mehr (nur Log).
+- `SO_REUSEADDR`, `listen(fd, SOMAXCONN)`.
+- `SocketFd::accept()` legt bei Fehler keine Connection mehr an.
+- Einfacher Timeout: `last_activity_` + `check_timeouts()` im Main-Loop.
+- `handle_*` aus `Request` herausgelöst: freie Funktionen, die eine
+  `Response &` befüllen (`convert_to_error/empty/not_allowed`).
+- `Connection::set_state()` eingeführt, `state_` wird nur noch dort gesetzt
+  (`grep -n "state_ =" src/` → 1 Treffer). `stop_listening()` setzt keinen
+  State mehr.
+- `cgi .py|.php <interpreter>;`-Direktive geparst und vererbt (`cgi_interpers`).
+- `.gitignore` aufgeräumt (kein nginx-Block, `config/*.conf` nicht mehr ignoriert).
+- Makefile: parallel (`-j` nur im Top-Level-make), `re` sequenziell, saubere Ausgabe.
+- Eigenes Testskript `scripts/smoke_test.sh` (**noch nicht committed!**).
+
+---
+
+## 3. Ziel-Design: Connection-State-Machine
+
+Die Event-Loop (`EpollHandler` + `data.ptr`, `CloseFd`, `unique_ptr` in
+`all_fds_`, verzögertes Löschen über `remove_me_`) ist gut und bleibt. Es geht
+um die Schicht darüber.
+
+### Problem (Rest)
+
+- `handle_request()` ist **synchron** und gibt immer eine fertige Response.
+  Für CGI (eigener Prozess, asynchron) braucht es einen zweiten Ausgang.
+- Die `Location` ist erst nach dem kompletten Parse bekannt → 405 / `return` /
+  413 kommen erst, wenn der ganze Body schon im RAM liegt.
+- Fehler werden noch pro Funktion behandelt statt über eine Stelle.
+- `CgiHandler` kennt die `Connection` nicht und kann seine Ausgabe nirgends
+  hinschicken.
+
+### Zustände
+
+```
+READ_HEAD ──Header komplett──> Location finden, Methode/return/Limit prüfen
+   │                                 │
+   │                       Body? ──ja──> READ_BODY ──fertig──┐
+   │                                 └─nein─────────────────┤
+   │                                                         v
+   │                                            handle_request() (synchron)
+   │                                        statisch ──┐    │ CGI
+   │                                                   v    v
+   └──Fehler (fail)──────────────────────────────> WRITE <── WAIT_CGI
+                                                     │
+                                                  FINISHED
+```
+
+| Zustand | epoll-Maske | Was passiert | Timeout |
+|---|---|---|---|
+| `READ_HEAD` | `EPOLLIN` | recv, Header parsen | kurz → 408 |
+| `READ_BODY` | `EPOLLIN` | recv, Body-Limit **laufend** prüfen → 413 | kurz → 408 |
+| `WAIT_CGI` | `EPOLLRDHUP` | warten, bis `CgiHandler` sich meldet | lang → Kind killen, 504 |
+| `WRITE` | `EPOLLOUT` | send mit Offset | normal → schließen |
+| `FINISHED` | – | aus epoll raus, Löschen nach der Loop | – |
+
+Die Verarbeitung (`handle_request`) ist **kein eigener Zustand mit
+epoll-Event**: sie läuft direkt in `receive()`, sobald der Request komplett
+ist. (Ein eigener State `PROCESS` / `IN_TO_OUT` ginge auch, muss dann aber
+direkt nach `receive()` aufgerufen werden – auf ein epoll-Event zu warten
+hängt, weil der Client nichts mehr schickt.)
+
+**Aktueller Stand im Code:** `READ_HEAD`, `READ_BODY`, `WAIT_CGI`, `WRITE`,
+`FINISHED` existieren. `set_state(WRITE)` ruft selbst `response_.serialize()`.
+`READ_BODY` wird nie gesetzt (Parser kennt die Phase intern über `head_done_`),
+`WAIT_CGI` wird nie betreten.
+
+### Regeln
+
+1. **`state_` nur über `set_state()`.** (✅ erfüllt) Damit können Zustand und
+   epoll-Maske nie auseinanderlaufen.
+2. **Jeder Fehler über `fail(status)`.** Eine Stelle, die `response_` komplett
+   neu baut (keine Header-Reste) und `set_state(WRITE)` aufruft. Dort greift
+   später auch `error_page`.
+3. **Location direkt nach dem Header bestimmen** (`const Location *location_`).
+   Dann sind 405, `return` und 413 (über `Content-Length`, bei chunked laufend)
+   sofort prüfbar.
+4. **Kein Socket/Pipe-I/O außerhalb des passenden epoll-Events.** Nach
+   `set_state(WRITE)` nicht sofort `send()` – erst beim nächsten `EPOLLOUT`.
+   Reguläre Dateien lesen/schreiben ist erlaubt.
+5. **In `on_epoll_event` nach State dispatchen *und* das Event-Bit prüfen**
+   (`EPOLLIN` nur in `READ_*`, `EPOLLOUT` nur in `WRITE`). `EPOLLHUP`/`EPOLLERR`
+   kommen unabhängig von der Maske.
+
+### Handler-Schnittstelle (Request → Response | CGI)
+
+`handle_request` bekommt `Request`, `Location` und die `Response &` – **nicht**
+die `Connection` (sonst kann der Handler wieder State ändern / I/O machen). Er
+meldet zurück, was als Nächstes passiert:
+
+```cpp
+enum class HandlerResult { RESPONSE_READY, START_CGI };
+
+struct CgiJob
+{
+	std::filesystem::path script;
+	std::filesystem::path interpreter;
+};
+
+HandlerResult handle_request(const Request &request, const Location &location,
+							 Response &response, CgiJob &job);
+```
+
+CGI-Erkennung: **nach** der Pfad-Auflösung inkl. Index-Datei die Extension in
+`location.cgi_interpers` suchen. Bei POST **vor** dem Upload-Pfad prüfen
+(POST auf `form.py` führt das Skript aus, überschreibt es nicht).
+
+### CGI-Ownership
+
+- `CgiHandler` wird wie alle Handler über `AllServers::add_handler()` in
+  `all_fds_` verwaltet, **nicht** als Member in `Connection`.
+- `Connection` hält `CgiHandler *cgi_`, `CgiHandler` hält `Connection *connection_`.
+- Wer zuerst stirbt, sagt dem anderen Bescheid:
+  - Connection schließt (Client weg / Timeout) → `cgi_->abort()`: Kind killen,
+    Pipe zu, `cgi_->connection_ = nullptr`.
+  - CGI fertig → `connection_->on_cgi_done(...)` (füllt `response_`, `WRITE`).
+  - CGI-Fehler / Exit≠0 → `connection_->fail(502)`, Timeout → `fail(504)`.
+- Rohzeiger sind innerhalb einer Loop-Iteration sicher, weil erst danach in
+  `cleanup_all_fds()` gelöscht wird. Beim Abmelden den Zeiger der Gegenseite
+  auf `nullptr` setzen.
+- Zombies: `waitpid(pid, &status, WNOHANG)` beim EOF der Pipe bzw. im Timeout.
+- Faustregel: Handler ist synchron → gibt Ergebnis zurück. CGI ist asynchron →
+  ruft zurück, aber nur über `on_cgi_done()` / `fail()`.
+
+---
+
+## 4. KRITISCH – Muss vor Abgabe
 
 Sortiert nach Wichtigkeit.
 
-1. **errno-Check nach `recv`/`send` entfernen** – *klein, aber Note 0-Risiko*
-   - [Connection.cpp](../src/server/Connection.cpp) `receive()` und `send()`
-     prüfen `errno == EAGAIN/EINTR/EWOULDBLOCK`. Subject: *"Checking the value
-     of errno ... after performing a read or write operation is strictly
-     forbidden."*
-   - Fix: bei `< 0` einfach Verbindung schließen (epoll garantiert ja
-     Readiness). Kein `strerror(errno)`-Logging dort.
+1. **CGI komplett** – *größter Block*
+   - [x] Direktive `cgi <ext> <interpreter>;` + Vererbung.
+   - [ ] Validierung anpassen: **jede** Extension der Form `.xyz` erlauben
+         (42-Tester braucht `.bla`), statt Whitelist `.py`/`.php`. Interpreter:
+         absoluter Pfad + `access(path, X_OK)` beim Parsen. Doppelte Extension
+         im selben Block → Fehler.
+   - [ ] CGI-Erkennung im Handler + `HandlerResult`/`CgiJob` (s. 3.).
+   - [ ] `CgiHandler` (Gerüst in [Cgi.cpp](../src/server/Cgi.cpp): socketpair +
+         fork, argv/env hartkodiert, `exit(99)` bei execve-Fehler):
+     - [ ] argv = Interpreter + Skriptpfad, `chdir()` ins Skript-Verzeichnis.
+     - [ ] Env: `REQUEST_METHOD`, `QUERY_STRING` (`split_uri_target`),
+           `CONTENT_LENGTH`, `CONTENT_TYPE`, `SCRIPT_FILENAME`, `SCRIPT_NAME`,
+           `PATH_INFO`, `SERVER_PROTOCOL`, `GATEWAY_INTERFACE=CGI/1.1`,
+           `SERVER_NAME/PORT`, `REMOTE_ADDR`, `HTTP_*`, `REDIRECT_STATUS=200`
+           (php-cgi).
+     - [ ] Body (schon entchunkt) über die Pipe schreiben – **nur nach
+           `EPOLLOUT`**, nicht direkt nach `fork` – dann `shutdown(SHUT_WR)`
+           als EOF für das Skript.
+     - [ ] Ausgabe lesen bis EOF, Header-Block parsen (`Status:`,
+           `Content-Type:`, `Location:`), Rest = Body.
+     - [ ] Ownership/Abmelden, `waitpid(WNOHANG)`, 502/504, Kind killen bei
+           Client-Abbruch (s. 3.).
+     - [ ] `is_timeout()` implementieren (aktuell immer `false`).
+   - Hinweis PHP: `/usr/bin/php-cgi` verwenden, nicht `php` (CLI gibt keine
+     CGI-Header aus).
 
-2. **CGI komplett** – *größter Block*
-   - Aktuell existiert nur `struct CGIConfig` ([CGIConfig.hpp](../include/cgi/CGIConfig.hpp))
-     und das Feld `Location::cgi`. Es gibt **keine Config-Direktive** dafür
-     (nicht in `directive_lookup`), keinen fork/execve, nichts zur Laufzeit.
-   - Teilaufgaben:
-     - [ ] Config-Direktive(n), z.B. `cgi .py /usr/bin/python3;` (+ optional
-           `cgi_timeout`) in [Config.hpp](../include/server_config/Config.hpp)
-           `directive_lookup` + `fill_cgi`; in `inherit.cpp` vererben.
-     - [ ] In `handle_request`: wenn Extension der aufgelösten Datei in
-           `cgi->interpreter_by_extension` → CGI statt statischer Datei.
-     - [ ] `pipe()` ×2, `fork()`, im Kind `dup2`, `chdir()` ins Script-Verzeichnis
-           (*"correct directory for relative path access"*), `execve`.
-     - [ ] Env-Variablen: `REQUEST_METHOD`, `QUERY_STRING` (Split existiert schon
-           in `Request::split_uri_target`), `CONTENT_LENGTH`, `CONTENT_TYPE`,
-           `SCRIPT_FILENAME`, `SCRIPT_NAME`, `PATH_INFO`, `SERVER_PROTOCOL`,
-           `GATEWAY_INTERFACE=CGI/1.1`, `SERVER_NAME/PORT`, `REMOTE_ADDR`,
-           `HTTP_*` für alle Header, `REDIRECT_STATUS=200` (für php-cgi).
-     - [ ] **Pipes non-blocking und über dieselbe epoll-Instanz**: neue
-           `EpollHandler`-Unterklassen (z.B. `CgiWritePipe` für stdin,
-           `CgiReadPipe` für stdout), die auf die `Connection` zurückzeigen.
-           Body ist schon entchunkt → einfach reinschreiben, dann Pipe
-           schließen (EOF).
-     - [ ] `Connection`-State erweitern (`WAITING_CGI`), Connection darf nicht
-           auf EPOLLIN warten während CGI läuft.
-     - [ ] CGI-Output parsen: Header-Block (`Status:`, `Content-Type:`,
-           `Location:`), Rest = Body; ohne `Content-Length` endet er bei EOF.
-     - [ ] Timeout (`timeout_ms` ist im Struct schon da) → `kill` + 504.
-     - [ ] `waitpid(..., WNOHANG)` zum Einsammeln (keine Zombies), Exit≠0 → 502.
-     - [ ] Wenn Client während CGI abhaut: Kind killen, Pipes schließen.
-   - Achtung: `SIGCHLD`/Signale unterbrechen `epoll_wait` → siehe Punkt 4.
+2. **`EPOLLHUP` in `AllServers::wait_epoll` nicht vorab abfangen**
+   - Aktuell: bei `EPOLLERR|EPOLLHUP` sofort `stop_listening()`, der Handler
+     wird nie gefragt. Bei CGI kommt das Ende als `EPOLLIN|EPOLLHUP` mit noch
+     ungelesenen Daten → **letzter Teil jeder CGI-Ausgabe ginge verloren**.
+   - Fix: Event an den Handler durchreichen, der entscheidet (Connection
+     macht das in `on_epoll_event` schon selbst).
 
-3. **Timeouts – "A request should never hang indefinitely"**
-   - Es gibt keinerlei Timeout. Eine offene, stille Verbindung bleibt für
-     immer (getestet). Bei Stresstest / Slowloris läuft das voll.
-   - Fix: `last_activity_` (z.B. `std::chrono::steady_clock`) in `Connection`,
-     im Main-Loop nach `wait_epoll()` alle Connections prüfen (Timeout von
-     `EPOLL_TIMEOUT_MS = 1000` passt dafür schon) → 408 senden oder schließen.
-     Gleiches für CGI-Prozesse.
+3. **Server darf nie abstürzen**
+   - [ ] `on_epoll_event` pro Event in `try/catch` (`std::exception` → Handler
+         stoppen, später `fail(500)`). Ohne explizites `throw` werfen trotzdem:
+         `std::bad_alloc` (jedes `insert`/String-Concat/`make_unique`),
+         später `std::stoul`, `.at()`, filesystem ohne `error_code`.
+   - [ ] SIGPIPE-Handler ruft `LOG(...)` → nicht async-signal-safe
+         (alloziert). Besser `signal(SIGPIPE, SIG_IGN)` – `MSG_NOSIGNAL` gibt
+         es schon, für CGI-Pipes zählt das Ignorieren.
+   - [ ] Optional: SIGTERM wie SIGINT behandeln.
 
-4. **Server darf nie abstürzen** – mehrere kleine Löcher
-   - `epoll_wait` == -1 wirft Exception → `main` beendet den Server. Bei
-     `EINTR` (Signal, später SIGCHLD von CGI) einfach weitermachen.
-     ([AllServer.cpp](../src/server/AllServer.cpp) `wait_epoll`)
-   - Jede Exception aus einem Handler (z.B. `std::bad_alloc`, eine
-     filesystem-Exception) fliegt bis `main` und beendet den Server. →
-     `on_epoll_event` in `wait_epoll` pro Event in `try/catch` packen, bei
-     Fehler 500 senden bzw. Verbindung schließen.
-   - **SIGPIPE**: `send()` ohne `MSG_NOSIGNAL` und kein `signal(SIGPIPE,
-     SIG_IGN)`. Schreibt man auf einen vom Client geschlossenen Socket, kann
-     der Prozess getötet werden. Im Test nicht reproduziert, aber reines Glück.
-     → `MSG_NOSIGNAL` bei `send` (oder SIGPIPE ignorieren). Später auch beim
-     Schreiben in CGI-Pipes relevant!
-   - `SocketFd::accept()` gibt bei Fehler trotzdem eine `Connection` mit
-     fd -1 zurück, die nie aufgeräumt wird → `nullptr` zurückgeben und in
-     `on_epoll_event` prüfen.
-   - Optional sauberes Beenden bei SIGINT/SIGTERM (Flag setzen, Loop verlassen).
+4. **Timeouts pro Zustand**
+   - Aktuell: 10 s ab letztem State-Wechsel, egal welcher State, Verbindung
+     wird still geschlossen.
+   - [ ] `last_activity_` auch in `receive()`/`send()` bei Bytes > 0
+         aktualisieren – sonst wird ein langsamer, aber laufender Upload nach
+         10 s gekillt.
+   - [ ] `READ_*` → 408 senden, `WAIT_CGI` → Kind killen + 504.
 
-5. **`autoindex` (Directory Listing) implementieren**
-   - Wird geparst und im `Location` gespeichert, aber
-     [RequestHandlers.cpp](../src/messages/RequestHandlers.cpp) `handle_get`
-     gibt bei Verzeichnis ohne Index-Datei immer 403 zurück.
-   - Fix: wenn `location.autoindex` → HTML-Liste mit `opendir/readdir`
-     (erlaubt) bzw. `std::filesystem::directory_iterator` erzeugen.
+5. **Location nach dem Header + `client_max_body_size` früh prüfen**
+   - Parser in `parse_head()` / `parse_body()` trennen, nach dem Header
+     `location_` bestimmen, dann 405 / `return` / 413 (über `Content-Length`,
+     bei chunked laufend). Erst danach `READ_BODY`.
+   - Aktuell landet ein 2-GB-Upload komplett im RAM, bevor 413 kommt.
 
-6. **`return` (HTTP-Redirect) zur Laufzeit**
-   - Parser füllt `return_code`/`return_path`, `Location` hat Platzhalter
-     (`888`, `"./example"`) und `handle_request` ignoriert es komplett.
-   - Fix: in `handle_request` direkt nach `find_location`: wenn `return_code`
-     gesetzt → Response mit Code + `Location:`-Header. Platzhalter durch
-     `std::optional` ersetzen.
+6. **`return` (Redirect) zur Laufzeit**
+   - Parser füllt `return_code`/`return_path`, `Location` setzt Platzhalter
+     (`888`, `"./example"`), Handler ignoriert es → 403.
+   - Fix: `std::optional` in `Location`, direkt nach Location-Lookup Response
+     mit Code + `Location:`-Header. `fill_return`: `std::stoi` in try → sauberer
+     Config-Fehler mit Zeile/Spalte, Code-Bereich prüfen.
 
-7. **`error_page` – Parser-Bug + Runtime fehlt**
-   - Parser-Bug in [fill_default.cpp](../src/server_config/fill_default.cpp)
-     `fill_error_page`: die Schleife ruft `get_next_word()` bis kein Wort mehr
-     kommt → das wirft beim `;` sofort *"expected a word"*. **Jede Config mit
-     `error_page` startet nicht.**
-   - Datenmodell passt nicht: aktuell *eine* Liste Codes + *ein* Pfad pro
-     Block. Mehrere `error_page`-Zeilen überschreiben sich. Besser
-     `std::map<int, std::filesystem::path>`.
-   - Runtime: `make_error_response(status)` muss die Location kennen und ggf.
-     die konfigurierte Seite laden (Fallback: eingebaute Default-Seite).
-   - Default-Fehlerseiten: aktuell Plain-Text `404 Not Found`. Reicht formal,
-     schöner wäre eine kleine generierte HTML-Seite.
+7. **`autoindex`**
+   - Geparst, aber `handle_get` gibt bei Verzeichnis ohne Index immer 403.
+   - Fix: HTML-Liste per `opendir/readdir` bzw. `directory_iterator` – als
+     reine Funktion `path → std::string`, gut parallel machbar.
 
-8. **Server-Block ohne `location` liefert immer 404**
-   - [Server.cpp](../src/server/Server.cpp) baut `Location`s nur aus
-     `locations_confs`; `root`/`index` auf Server-Ebene werden nie benutzt.
-   - Fix: wenn keine `location /` existiert, implizit eine aus den
-     Server-Werten anlegen (so verhält sich auch nginx).
+8. **`error_page` – Parser-Bug + Runtime**
+   - [fill_default.cpp](../src/server_config/fill_default.cpp)
+     `fill_error_page`: Schleife ruft `get_next_word()` bis kein Wort kommt →
+     wirft beim `;` *"expected a word"*. **Jede Config mit `error_page`
+     startet nicht.**
+   - Datenmodell: statt einer Code-Liste + einem Pfad →
+     `std::map<int, std::filesystem::path>` (mehrere Zeilen möglich).
+   - Runtime: in `fail(status)` konfigurierte Seite laden, sonst eingebaute
+     Default-Seite (gern kleines HTML statt Plain-Text).
 
-9. **Upload-Speicherort + Browser-Upload (multipart)**
-   - Subject: *"Uploading files ... is authorized, and storage location is
-     provided."* Aktuell: POST schreibt den Raw-Body an den aufgelösten Pfad.
-     Mit `curl --data` klappt das, ein **HTML-Formular aus dem Browser schickt
-     aber `multipart/form-data`** → würde als Rohdatei inkl. Boundaries
-     gespeichert, bei POST auf ein Verzeichnis gibt's 403.
-   - Fix: Direktive wie `upload_store <dir>;` (oder POST-auf-Verzeichnis =
-     Upload dorthin) + simplen multipart-Parser (Boundary aus
-     `Content-Type`, `filename=` aus `Content-Disposition`).
-   - Für die Evaluation (Browser-Demo) praktisch Pflicht.
+9. **Server-Block ohne `location` → immer 404**
+   - [Server.cpp](../src/server/Server.cpp) baut Locations nur aus
+     `locations_confs`. Fix: wenn keine `location /` existiert, implizit eine
+     aus den Server-Werten anlegen (wie nginx).
 
-10. **`client_max_body_size` früh prüfen**
-    - Aktuell wird der komplette Body erst in den RAM gelesen, *dann* 413.
-      Ein 2-GB-Upload landet komplett im Speicher. → Nach dem Header-Parse
-      `Content-Length` gegen das Limit der Location prüfen, bei Chunked
-      laufend. Dafür muss die Location schon beim Parsen bekannt sein
-      (Parser bekommt `Server&`/Limit mit).
+10. **Upload (multipart) + Speicherort**
+    - Browser-Formulare schicken `multipart/form-data` → würde aktuell
+      inkl. Boundaries gespeichert; POST auf Verzeichnis → 403.
+    - Fix: `upload_store <dir>;` (oder POST-auf-Verzeichnis = Upload dorthin)
+      + simpler multipart-Parser (Boundary aus `Content-Type`, `filename=` aus
+      `Content-Disposition`). Für die Browser-Demo praktisch Pflicht.
 
-11. **Tests + Demo-Configs + Demo-Website** (Subject: *"You must provide
-    configuration files and default files to test and demonstrate that every
-    feature works"*)
-    - [ ] Pro Feature eine Demo-Config in `config/` (mehrere Ports, Uploads,
-          Redirect, autoindex, error_page, CGI py/php, Body-Limit).
+11. **Tests + Demo-Configs + Demo-Website**
+    - [x] Eigenes Testskript `scripts/smoke_test.sh` – **committen** und pro
+          neuem Feature eine `check`-Zeile ergänzen.
+    - [ ] Pro Feature eine Demo-Config in `config/`. Die vorhandenen Configs
+          verweisen auf `./html/...` bzw. `/var/www/html` – das gibt es nicht,
+          nur `www/`.
     - [ ] `www/` erweitern: Upload-Formular, Fehlerseiten, Ordner für
-          autoindex, `cgi-bin/` mit `.py`-Skripten (GET+POST, Query-String,
+          autoindex, `cgi-bin/` mit `.py`/`.php` (GET+POST, Query-String,
           Endlosschleife für Timeout-Test).
-    - [ ] Eigenes Testskript (Python mit `socket`/`http.client` oder Bash+curl)
-          – Subject verlangt explizit eigene Tests, nicht nur ein Tool.
-    - [ ] 42-Tester (`tests/tester`, `tests/cgi_tester`) durchlaufen lassen.
-    - [ ] Stresstest mit `siege -b` (Availability ≥ 99.5 % erwartet).
-    - Hinweis: `/tests/` steht in `.gitignore` → eigene Testskripte woanders
-      ablegen oder die Zeile anpassen.
+    - [ ] 42-Tester (`tests/tester`, `tests/cgi_tester`, braucht `.bla`),
+          Stresstest `siege -b` (≥ 99.5 %).
 
-12. **README.md fertig schreiben** (Pflichtabschnitte Description /
-    Instructions / Resources + AI-Usage). Aktuell nur Platzhaltertext.
+12. **README.md** (Description / Instructions / Resources + AI-Usage).
 
 ---
 
-## 3. WICHTIG, aber kleiner (sollte rein, je < 1h)
+## 5. WICHTIG, aber kleiner (je < 1h)
 
-- [ ] **`SO_REUSEADDR`** auf Listen-Sockets ([SocketFd.cpp](../src/server/SocketFd.cpp)),
-      sonst nach Neustart "Address already in use" (steht auch in `docs/todos.md`).
-- [ ] **`backlog_ = 10`** ist für Stresstests zu klein → `SOMAXCONN`.
-- [ ] **Status-Codes genauer**: unbekannte/nicht unterstützte Methode
-      (`HEAD`, `PUT`) → aktuell 400. Besser 405 (mit `Allow`) bzw. 501.
-      Falsche HTTP-Version → 505 statt 400. (Der 42-Tester prüft u.a. `HEAD`.)
-- [ ] **Response-Version inkonsistent**: `Response()` setzt `HTTP/1.1`,
-      `Response(int)` ruft den Basis-Ctor nicht explizit → `HTTP/1.0`.
-      Einheitlich machen ([Response.cpp](../src/messages/Response.cpp)).
-- [ ] **Verzeichnis ohne `/` am Ende** (`/dir` statt `/dir/`) → 301 auf `/dir/`,
-      sonst brechen relative Links in Index-Seiten/autoindex.
-- [ ] **`index` mit mehreren Werten**: `index a.html b.html;` wirft
-      Parse-Fehler (`fill_index` liest nur ein Wort).
-- [ ] **`fill_return`**: `std::stoi` ohne try → bei Müll kein schöner
-      Config-Fehler mit Zeile/Spalte. Code-Bereich prüfen (300–399 / 444 …).
-- [ ] **`Location.cpp`-Platzhalter** (`999`, `888`, `"./example"`, `// todo`)
-      aufräumen – auf `std::optional` umstellen.
-- [ ] **`LOG(LOG_DEBUG, "t")`** in `main` bei jedem Loop entfernen.
-- [ ] **Zwei `server` mit gleichem `listen`** → `bind` schlägt fehl, Server
-      startet nicht. Entweder klare Fehlermeldung oder Sockets teilen
-      (Virtual Hosts sind laut Subject optional).
+- [ ] **Status-Codes**: `HEAD`/`PUT` → 405 (mit `Allow`) bzw. 501 statt 400;
+      falsche HTTP-Version → 505 statt 400.
+- [ ] **Verzeichnis ohne `/`** (`/dir`) → 301 auf `/dir/`.
+- [ ] **`index` mit mehreren Werten** (`fill_index` liest nur ein Wort).
+- [ ] **`Location`-Platzhalter** (`999`, `888`, `"./example"`, `// todo`) auf
+      `std::optional` umstellen.
 - [ ] **MIME-Typen** ergänzen (`.gif`, `.ico`, `.pdf`, `.mp4`, `.webp`, …) –
-      Browser-Kompatibilität (Favicon!).
-- [ ] **`.gitignore` aufräumen**: enthält am Ende einen kompletten
-      nginx-Config-Block, und die `config/*.conf` stehen drin, obwohl sie
-      getrackt sind (neue Configs würden nicht committed!).
+      aktuell 8.
+- [ ] **Datei lesen in `handle_get`**: `contents << file.rdbuf()` + `file.bad()`
+      erkennt Lesefehler nicht zuverlässig und kopiert 4×. Besser: `file_size`
+      → `std::string body(size)` → `file.read` → `gcount()` prüfen,
+      `setBody(std::move(body))` (setBody per Value).
+- [ ] **Zwei `server` mit gleichem `listen`** → `bind` schlägt fehl. Klare
+      Fehlermeldung oder Socket teilen.
+- [ ] **Aufräumen in `Connection`**: `enum State` → `enum class`,
+      auskommentierte errno-Zeilen und Buffer-Member löschen, veralteter
+      `IN_TO_OUT`-Kommentar am Ende von `on_epoll_event`, deklarierte aber nie
+      definierte `make_response()` / `queue_response()` / `finish()` entfernen.
+- [ ] **`Response.hpp`** inkludiert `Location.hpp` nur für eine Referenz →
+      Forward-Declaration `class Location;`.
+- [ ] **`LOG(LOG_DEBUG, "tick")`** in `main` bei jedem Loop entfernen.
+- [ ] **`MAX_EVENTS 10`** ist klein (funktioniert, aber mehr Loop-Runden unter
+      Last) → z.B. 64.
 
 ---
 
-## 4. NICE TO HAVE (nicht nötig für Abgabe)
+## 6. NICE TO HAVE
 
-- Keep-Alive / Pipelining (aktuell immer `Connection: close` → für
-  HTTP/1.0-Verhalten völlig ok).
-- Große Dateien streamen statt komplett in RAM zu laden (aktuell 3 Kopien:
-  Datei → `body_` → `serialize()` → `response_buffer_`). Für Eval-Größen ok.
-- Request-Parser inkrementell machen (aktuell wird bei jedem `recv` der ganze
-  Buffer von vorne geparst → O(n²) bei großen Uploads; mit `std::search` über
-  den Header bei jedem Chunk). Wird erst bei großen Bodies spürbar.
-- `server_name` / Virtual Hosts (laut Subject out of scope, Gerüst existiert).
-- `Date`/`Server`-Header, `Last-Modified`.
-- IPv6 im `listen`.
-- Mehrere CGI-Interpreter, Cookies/Session-Demo (Bonus).
-- Bonus-Teil des Subjects (Cookies/Session, mehrere CGI) – erst wenn
-  Mandatory 100 % sitzt.
+- Keep-Alive / Pipelining (aktuell immer `Connection: close` – ok).
+- Große Dateien in `WRITE` stückweise streamen statt komplett in RAM.
+- Request-Parser inkrementell (aktuell bei jedem `recv` von vorne → O(n²) bei
+  großen Uploads).
+- `server_name` / Virtual Hosts (Gerüst existiert).
+- `Date`/`Server`/`Last-Modified`-Header, IPv6 im `listen`.
+- Bonus (Cookies/Session, mehrere CGI) – erst wenn Mandatory 100 % sitzt.
 
 ---
 
-## 5. Was gut ist (so lassen)
+## 7. Was gut ist (so lassen)
 
-- **Config-Pipeline** (Lexer → Parser mit `directive_lookup`-Tabelle →
-  Vererbung über `std::optional`): sauber, gute Fehlermeldungen mit
-  Zeile/Spalte, leicht erweiterbar (neue Direktive = 1 Tabelleneintrag +
-  `fill_*`). Ideal, um `cgi`, `upload_store` usw. nachzurüsten.
-- **epoll-Architektur**: `EpollHandler`-Basisklasse mit `data.ptr`,
-  `SocketFd`/`Connection` als Unterklassen, deferred cleanup über
-  `remove_me_` + `cleanup_all_fds()`. Genau das richtige Muster, um CGI-Pipes
-  als weitere Handler einzuhängen.
+- **Config-Pipeline**: Lexer → Parser mit `directive_lookup`-Tabelle →
+  Vererbung über `std::optional`; gute Fehlermeldungen mit Zeile/Spalte. Neue
+  Direktive = 1 Tabelleneintrag + `fill_*`.
+- **epoll-Architektur**: `EpollHandler` mit `data.ptr`, deferred cleanup über
+  `remove_me_`. Genau das richtige Muster für CGI-Pipes als weitere Handler.
 - **RAII für fds** (`CloseFd`, `AddrInfoPtr`), rule-of-five explizit.
-- **Request-Parser**: Header-Limit (8 KiB), Content-Length *und* Chunked
-  (inkl. Trailer, Overflow-Check), Konflikt CL+TE → 400, Host-Pflicht bei
-  HTTP/1.1, Header-Namen-Validierung. Solide.
-- **Pfad-Auflösung/Sicherheit** ([Resolver.cpp](../src/routing/Resolver.cpp)):
-  Percent-Decoding, `..`-Ablehnung, `weakly_canonical` + Root-Check → kein
-  Directory-Traversal (getestet).
-- **Location-Matching**: Longest-Prefix mit Segmentgrenze (`/up` matcht nicht
-  `/upload`). Korrekt.
-- GET/POST/DELETE mit sinnvollen Codes (200/201/204/403/404/405/413).
-- Build: warning-frei mit `-Wall -Wextra -Werror`, Debug-Build mit
-  ASan/UBSan.
+- **Request-Parser**: Header-Limit, Content-Length *und* chunked, CL+TE → 400,
+  Host-Pflicht bei HTTP/1.1.
+- **Pfad-Sicherheit** ([Resolver.cpp](../src/routing/Resolver.cpp)):
+  Percent-Decoding, `..`-Ablehnung, `weakly_canonical` + Root-Check.
+- **Location-Matching**: Longest-Prefix mit Segmentgrenze.
+- **`set_state()`** als einzige Stelle für State + epoll-Maske.
 
 ---
 
-## 6. Empfohlene Reihenfolge (nächste Schritte)
+## 8. Empfohlene Reihenfolge
 
-1. **Quick-Wins, ~1–2 h**: errno-Checks raus, `MSG_NOSIGNAL`, EINTR,
-   try/catch pro Event, `accept`-Fehler, `SO_REUSEADDR`, backlog.
-2. **Fehlende Config-Features, ~1 Tag**: `error_page` (Parser + Runtime),
-   `return`, `autoindex`, implizite Location, Directory-Redirect, Status-Codes.
-3. **Timeouts, ~2–3 h** (wird für CGI sowieso gebraucht).
-4. **CGI, ~2–4 Tage**: Config-Direktive → fork/execve → Pipes in epoll →
-   Output-Parsing → Timeout/Kill/waitpid.
-5. **Upload**: Body-Limit früh prüfen + multipart + Upload-Ordner.
-6. **Demo-Configs + `www/` + Testskript**, dann 42-Tester, cgi_tester, siege.
-7. **README** + Aufräumen (Platzhalter, `.gitignore`, Debug-Logs).
+1. **Sofort (~1h)**: `smoke_test.sh` committen, `EPOLLHUP` an Handler
+   durchreichen, `try/catch` pro Event, `SIG_IGN` für SIGPIPE.
+2. **State-Machine fertig (~0.5–1 Tag)**: `fail(status)`, Location nach dem
+   Header, frühes 413, `return`, `HandlerResult`/`CgiJob`. Danach sind
+   `autoindex`, Directory-Redirect und Status-Codes lokale Änderungen im
+   Handler.
+3. **CGI (~2–3 Tage)**, in dünnen Scheiben: Erkennung im Handler (erst nur
+   „würde CGI starten“ + 501) → GET-Skript mit Ausgabe → Ownership/Zeiger →
+   POST-Body → `waitpid`, 502/504, Kill.
+4. **Timeouts pro State** (408 / 504) – mit der State-Machine wenige Zeilen.
+5. **Upload**: multipart + Upload-Ordner.
+6. **Demo-Configs + `www/` + Testskript erweitern**, dann 42-Tester,
+   cgi_tester, siege.
+7. **README** + Aufräumen.
+
+### Parallel machbar (unabhängig vom Connection-Umbau)
+
+Eine Person macht 2.–4. (alles in `Connection`/`Handler`). Parallel ohne
+Konflikte:
+- `error_page`-Parser-Fix + `std::map`-Datenmodell
+- `index` mit mehreren Werten, `return` als `std::optional` + Validierung
+- `cgi`-Validierung (`.bla`, `access(X_OK)`)
+- autoindex-HTML-Generator (`path → std::string`)
+- multipart-Parser (`body + boundary → Dateien`)
+- MIME-Typen, Demo-Configs, `www/`
 
 ---
 
-## 7. Sonstige Infos / Stolperfallen
+## 9. Stolperfallen
 
-- `docs/todos.md` ist veraltet (fast alles noch `[ ]`, obwohl vieles fertig
-  ist) – entweder mit dieser Liste ersetzen oder abhaken.
-- `CLAUDE.md` beschreibt den Runtime-Stand als "hardcoded canned response" –
-  das ist überholt, der echte Request-Pfad (`Connection` →
-  `request_parsing` → `handle_request`) ist live.
-- Regel zur Eval: jeder `recv`/`send`/`read`/`write` auf Socket **oder
-  CGI-Pipe** nur nach epoll-Readiness aus *demselben* `epoll_wait`. Beim
-  CGI-Bau besonders aufpassen (nicht direkt nach `fork` in die Pipe schreiben!).
-- `fork` nur für CGI – auch nicht für "Hilfsprozesse".
-- Configs in `config/` verweisen auf `./html/...`, das Verzeichnis gibt es
-  nicht (nur `www/`). Für die Eval müssen die Demo-Configs mit dem
-  mitgelieferten Content funktionieren.
+- Jeder `recv`/`send`/`read`/`write` auf Socket **oder CGI-Pipe** nur nach
+  epoll-Readiness aus *demselben* `epoll_wait`. Nicht direkt nach `fork` in
+  die Pipe schreiben, nicht direkt nach `set_state(WRITE)` senden.
+- errno nach read/write prüfen ist verboten (auch nicht für Logging-Logik
+  benutzen, die Verhalten ändert).
+- `fork` nur für CGI.
+- `docs/todos.md` ist veraltet → durch diese Datei ersetzen oder abhaken.
+- `CLAUDE.md` beschreibt den Runtime-Stand als „hardcoded canned response“ –
+  überholt.
+- Makefile: `MAKEFLAGS += -j` nur bei `MAKELEVEL == 0`; kein
+  `--output-sync` (puffert sonst die Server-Ausgabe bei `make run/debug`);
+  kein `+` vor `compiledb -n make` (Endlosrekursion).

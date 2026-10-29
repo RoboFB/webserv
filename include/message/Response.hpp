@@ -6,13 +6,15 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/21 13:54:32 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 16:41:12 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 #include "Message.hpp"
+
+class Location;
 
 class Response : public Message
 {
@@ -38,13 +40,15 @@ class Response : public Message
 			{504, "Gateway Timeout"},
 			{505, "HTTP Version Not Supported"}};
 		int status_ = 200;
-		void setStatus(int status);
 
 	public:
 		Response();
-		Response(int status);
 		std::string getReason() const;
-		std::string serialize() const;
+		void serialize() override;
+
+		void set_status(int status);
+		void convert_to_error(int status);
+		void convert_to_not_allowed(const Location &location);
 
 		Response &addHeader(const std::string &name, const std::string &value);
 };

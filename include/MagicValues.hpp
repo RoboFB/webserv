@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 16:11:39 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/09/04 18:35:28 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/26 15:58:41 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,3 +24,4 @@
 
 #define MAX_EVENTS 10
 #define EPOLL_TIMEOUT_MS 1000 // -1 = infinite wait todo: set to better value
+#define CONNECTION_TIMEOUT_S 10 // 10 seconds

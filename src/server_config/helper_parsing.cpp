@@ -6,31 +6,34 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/13 16:19:19 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/08/18 18:49:39 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/28 19:35:45 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
 
 // value & flag (uses bit and comparison)
-constexpr bool Config::has_flag(ConfigContext value, ConfigContext flag)
+constexpr bool ConfigPars::has_flag(ConfigContext value, ConfigContext flag)
 {
-    return (static_cast<uint>(value) & static_cast<uint>(flag));
+	return (static_cast<uint>(value) & static_cast<uint>(flag));
 }
 
-// gets on token and move head, returns at the end eof if it is a  second time callet i thros a error
-Token Config::get_next_token(std::vector<Token>::const_iterator &head_token)
+// gets on token and move head, returns at the end eof if it is a  second time
+// callet i thros a error
+Token ConfigPars::get_next_token(std::vector<Token>::const_iterator &head_token)
 {
 	Token current_token = *head_token;
 
 	if (current_token.type == TokenType::END_OF_FILE)
 		throw ConfigParseException("unexpected end of file", current_token);
 	++head_token;
-    return current_token;
+	return current_token;
 }
 
-// gets on token and move head, returns at the end eof if it is a  second time callet i thros a error
-void Config::is_at_end_of_file(std::vector<Token>::const_iterator &head_token)
+// gets on token and move head, returns at the end eof if it is a  second time
+// callet i thros a error
+void ConfigPars::is_at_end_of_file(
+	std::vector<Token>::const_iterator &head_token)
 {
 	Token current_token = *head_token;
 
@@ -39,17 +42,18 @@ void Config::is_at_end_of_file(std::vector<Token>::const_iterator &head_token)
 }
 
 // gets on token and move head
-Token Config::get_next_word(std::vector<Token>::const_iterator &head_token)
+Token ConfigPars::get_next_word(std::vector<Token>::const_iterator &head_token)
 {
 	Token token = get_next_token(head_token);
 
 	if (token.type != TokenType::WORD)
 		throw ConfigParseException("expected a word", token);
-	
-    return token;
+
+	return token;
 }
 
-void Config::skip_next(std::vector<Token>::const_iterator &head_token, TokenType expected_type)
+void ConfigPars::skip_next(std::vector<Token>::const_iterator &head_token,
+						   TokenType expected_type)
 {
 	Token token = get_next_token(head_token);
 
@@ -59,30 +63,28 @@ void Config::skip_next(std::vector<Token>::const_iterator &head_token, TokenType
 	return;
 }
 
-DirectiveLookup Config::find_directive_lookup(const Token & token, ConfigContext context)
+ConfigPars::DirectiveLookup
+ConfigPars::find_directive_lookup(const Token &token, ConfigContext context)
 {
 	if (token.type != TokenType::WORD)
 		throw ConfigParseException("expected a word", token);
 	for (auto lookup : directive_lookup)
 	{
-		if (has_flag(lookup.allowed_contexts, context) && 
-				lookup.word == token.word)
+		if (has_flag(lookup.allowed_contexts, context) &&
+			lookup.word == token.word)
 			return lookup;
 	}
 	throw ConfigParseException("unknown word, not found in list", token);
 }
 
-
-
-
-/* 
+/*
 if number -> valid -> return number
 if number -> out of range -> -1
 if not number -> -2
 if not used all of the string -> -3
 
 */
-int Config::validate_port(const std::string &str)
+int ConfigPars::validate_port(const std::string &str)
 {
 	try
 	{
