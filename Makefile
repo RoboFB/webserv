@@ -6,7 +6,7 @@
 #    By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/03/10 10:21:00 by rgohrig           #+#    #+#              #
-#    Updated: 2026/10/28 19:44:34 by rgohrig          ###   ########.fr        #
+#    Updated: 2026/10/29 13:19:55 by rgohrig          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -45,7 +45,9 @@ DEBUG_OBJ :=		$(SRC:%.cpp=$(DIR_OBJ)/%_debug.o)
 
 
 
-HEADERS :=			-I ./include -I ./include/utils -I ./include/server -I ./include/server_config -I ./include/message -I ./include/routing -I ./include/cgi -I ./include/http
+HEADERS :=			-I ./include -I ./include/utils -I ./include/server -I ./include/ConfigParser \
+					-I ./include/message -I ./include/routing -I ./include/cgi -I ./include/http \
+					-I ./include/EpollHandler
 
 LIBS :=				-lstdc++
 

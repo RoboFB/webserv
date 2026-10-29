@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/18 20:54:35 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/27 16:33:40 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 13:27:49 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,6 @@
 #include "Request.hpp"
 
 #include <string>
-#include <vector>
 
 // default:  status: BAD, body: empty, bytes: 0
 struct BodyParsing

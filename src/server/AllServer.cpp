@@ -6,14 +6,13 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/28 13:24:16 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 14:02:06 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "AllServer.hpp"
 #include "EpollHandler.hpp"
 #include "MagicValues.hpp"
-#include "SocketFd.hpp"
 #include "logging.hpp"
 
 #include <algorithm>
@@ -23,14 +22,14 @@
 #include <array>
 #include <sys/socket.h>
 
-AllServers::AllServers(MainConfigPars &&main_config) : epoll_fd_(init_epoll())
+AllServers::AllServers(MainConfigParser &&main_config) : epoll_fd_(init_epoll())
 {
 	// SocketFd and Connection retain a pointer to their owning Server.  Create
 	// every Server in its final vector storage before creating those handlers:
 	// using a temporary Server here would leave the handlers with a dangling
 	// pointer once that temporary is moved/destroyed.
 	all_servers_.reserve(main_config.http_conf.servers_confs.size());
-	for (ServerConfigPars &other_server : main_config.http_conf.servers_confs)
+	for (ServerConfigParser &other_server : main_config.http_conf.servers_confs)
 	{
 		all_servers_.emplace_back(other_server);
 	}
@@ -75,7 +74,7 @@ void AllServers::wait_epoll(void)
 									MAX_EVENTS, EPOLL_TIMEOUT_MS);
 	if (events_count == -1)
 	{
-		LOG(LOG_INFO, "epoll_wait: " + std::string(std::strerror(errno)));
+		LOG(LOG_DEBUG, "epoll_wait: " + std::string(std::strerror(errno)));
 	}
 
 	for (int i = 0; i < events_count; ++i)

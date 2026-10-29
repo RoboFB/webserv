@@ -6,11 +6,11 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/27 14:45:38 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/28 16:59:57 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 13:20:56 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Cgi.hpp"
+#include "CgiHandler.hpp"
 #include "logging.hpp"
 
 #include <cstring>

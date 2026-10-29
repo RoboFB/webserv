@@ -6,19 +6,19 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:38:24 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/28 19:06:01 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 13:06:25 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Config.hpp"
+#include "ConfigParser.hpp"
 #include "MagicValues.hpp"
 #include <algorithm>
 #include <cstring>
 
-void ConfigPars::append_addrinfo(AddrInfoPtr &addr_list,
-								 const std::string &address_str,
-								 const std::string &port_str,
-								 const Token &token)
+void ConfigParser::append_addrinfo(AddrInfoPtr &addr_list,
+								   const std::string &address_str,
+								   const std::string &port_str,
+								   const Token &token)
 {
 	addrinfo hints{};
 	hints.ai_flags = AI_PASSIVE; // fill in my IP for me
@@ -30,7 +30,7 @@ void ConfigPars::append_addrinfo(AddrInfoPtr &addr_list,
 	int status =
 		getaddrinfo(address_str.c_str(), port_str.c_str(), &hints, &new_list);
 	if (status != 0)
-		throw ConfigParseException(
+		throw ConfigParserException(
 			"getaddrinfo error: " + std::string(gai_strerror(status)), token);
 
 	if (addr_list.get() == nullptr)
@@ -58,8 +58,8 @@ ipv6 not supported yet, but should be in the future
 
 default: 0.0.0.0:8000; and 0.0.0.0:80;
 */
-void ConfigPars::fill_listen(TokenIterator &head_token,
-							 DefaultConfigPars &fill_config)
+void ConfigParser::fill_listen(TokenIterator &head_token,
+							   DefaultConfigParser &fill_config)
 {
 	Token token = get_next_word(head_token);
 
@@ -69,18 +69,18 @@ void ConfigPars::fill_listen(TokenIterator &head_token,
 	size_t count_colon = std::count(port_str.begin(), port_str.end(), ':');
 	if (count_colon > 1)
 	{
-		throw ConfigParseException("invalid listen format to many colons",
-								   token);
+		throw ConfigParserException("invalid listen format to many colons",
+									token);
 	}
 	else if (count_colon == 1)
 	{
 		std::getline(std::istringstream(port_str), address_str, ':');
 		port_str = port_str.substr(address_str.length() + 1);
 	}
-	if (validate_port(port_str) == -1)
-		throw ConfigParseException("invalid port number", token);
+	if (validate_port(port_str) < 0)
+		throw ConfigParserException("invalid port number", token);
 
-	append_addrinfo(reinterpret_cast<ServerConfigPars &>(fill_config).listen,
+	append_addrinfo(reinterpret_cast<ServerConfigParser &>(fill_config).listen,
 					address_str, port_str, token);
 
 	skip_next(head_token, TokenType::SEMICOLON);
@@ -90,8 +90,8 @@ void ConfigPars::fill_listen(TokenIterator &head_token,
 /*
 default: off
 */
-void ConfigPars::fill_autoindex(TokenIterator &head_token,
-								DefaultConfigPars &fill_config)
+void ConfigParser::fill_autoindex(TokenIterator &head_token,
+								  DefaultConfigParser &fill_config)
 {
 	Token token = get_next_word(head_token);
 
@@ -105,7 +105,7 @@ void ConfigPars::fill_autoindex(TokenIterator &head_token,
 	}
 	else
 	{
-		throw ConfigParseException(
+		throw ConfigParserException(
 			"invalid autoindex value, expected 'on' or 'off'", token);
 	}
 
@@ -116,8 +116,8 @@ void ConfigPars::fill_autoindex(TokenIterator &head_token,
 /*
 Default: root html;
 */
-void ConfigPars::fill_root(TokenIterator &head_token,
-						   DefaultConfigPars &fill_config)
+void ConfigParser::fill_root(TokenIterator &head_token,
+							 DefaultConfigParser &fill_config)
 {
 	Token token = get_next_word(head_token);
 
@@ -131,8 +131,8 @@ void ConfigPars::fill_root(TokenIterator &head_token,
 /*
 converts "3G" "20M" "1024k" "10" in Bytes (size_t)
 */
-size_t ConfigPars::parse_max_body_size(std::string number_str,
-									   const Token &token)
+size_t ConfigParser::parse_max_body_size(std::string number_str,
+										 const Token &token)
 {
 	size_t x = number_str.rfind("iB");
 	if (x != std::string::npos)
@@ -145,7 +145,7 @@ size_t ConfigPars::parse_max_body_size(std::string number_str,
 	{
 		number_str.pop_back();
 		if (number_str.length() == 0)
-			throw ConfigParseException(
+			throw ConfigParserException(
 				"invalid client_max_body_size value, no number before unit",
 				token);
 		switch (std::tolower(unit_letter))
@@ -163,7 +163,7 @@ size_t ConfigPars::parse_max_body_size(std::string number_str,
 			multiplier = BODY_SIZE_G;
 			break;
 		default:
-			throw ConfigParseException(
+			throw ConfigParserException(
 				"wrong modifier client_max_body_size value", token);
 		}
 	}
@@ -176,14 +176,14 @@ size_t ConfigPars::parse_max_body_size(std::string number_str,
 	}
 	catch (const std::exception &e)
 	{
-		throw ConfigParseException("invalid number", token);
+		throw ConfigParserException("invalid number", token);
 	}
 	if (index != number_str.length())
-		throw ConfigParseException("invalid number", token);
+		throw ConfigParserException("invalid number", token);
 	else if (result < 0)
-		throw ConfigParseException("invalid negative number", token);
+		throw ConfigParserException("invalid negative number", token);
 	else if (SIZE_MAX / multiplier < static_cast<size_t>(result))
-		throw ConfigParseException("invalid big number", token);
+		throw ConfigParserException("invalid big number", token);
 
 	return result * multiplier;
 }
@@ -192,8 +192,8 @@ size_t ConfigPars::parse_max_body_size(std::string number_str,
 Default:
 client_max_body_size 1m
 */
-void ConfigPars::fill_client_max_body_size(TokenIterator &head_token,
-										   DefaultConfigPars &fill_config)
+void ConfigParser::fill_client_max_body_size(TokenIterator &head_token,
+											 DefaultConfigParser &fill_config)
 {
 	Token token = get_next_word(head_token);
 	fill_config.client_max_body_size = parse_max_body_size(token.word, token);
@@ -201,8 +201,8 @@ void ConfigPars::fill_client_max_body_size(TokenIterator &head_token,
 	return;
 }
 
-void ConfigPars::fill_index(TokenIterator &head_token,
-							DefaultConfigPars &fill_config)
+void ConfigParser::fill_index(TokenIterator &head_token,
+							  DefaultConfigParser &fill_config)
 {
 	Token token = get_next_word(head_token);
 
@@ -223,15 +223,15 @@ limit_except POST;
 limit_except DELETE;
 
 */
-void ConfigPars::fill_limit_except(TokenIterator &head_token,
-								   DefaultConfigPars &fill_config)
+void ConfigParser::fill_limit_except(TokenIterator &head_token,
+									 DefaultConfigParser &fill_config)
 {
 	Token token = get_next_word(head_token);
 	while (true)
 	{
 		Methods method = string_to_methods(token.word);
 		if (method == Methods::NONE)
-			throw ConfigParseException(
+			throw ConfigParserException(
 				"invalid limit_except needs 'GET', 'POST' or 'DELETE'", token);
 		fill_config.limit_except = fill_config.limit_except | method;
 
@@ -239,7 +239,7 @@ void ConfigPars::fill_limit_except(TokenIterator &head_token,
 		if (token.type == TokenType::SEMICOLON)
 			break;
 		if (token.type != TokenType::WORD)
-			throw ConfigParseException("expected a word", token);
+			throw ConfigParserException("expected a word", token);
 	}
 	return;
 }
@@ -247,13 +247,13 @@ void ConfigPars::fill_limit_except(TokenIterator &head_token,
 /*
 default: empty
 */
-void ConfigPars::fill_cgi(TokenIterator &head_token,
-						  DefaultConfigPars &fill_config)
+void ConfigParser::fill_cgi(TokenIterator &head_token,
+							DefaultConfigParser &fill_config)
 {
 	Token token_extension = get_next_word(head_token);
 
 	if (token_extension.word != ".py" && token_extension.word != ".php")
-		throw ConfigParseException(
+		throw ConfigParserException(
 			"invalid cgi extension, expected '.py' or '.php'", token_extension);
 
 	Token token_path = get_next_word(head_token);
@@ -272,8 +272,8 @@ BIG BIG TODO:
 */
 
 // TODO: implement return directive
-void ConfigPars::fill_return(TokenIterator &head_token,
-							 DefaultConfigPars &fill_config)
+void ConfigParser::fill_return(TokenIterator &head_token,
+							   DefaultConfigParser &fill_config)
 {
 	Token token = get_next_word(head_token);
 
@@ -293,14 +293,14 @@ void ConfigPars::fill_return(TokenIterator &head_token,
 		return;
 	}
 	else
-		throw ConfigParseException("expected a word or a semicolon", token);
+		throw ConfigParserException("expected a word or a semicolon", token);
 
 	return;
 }
 
 // TODO: implement error_page directive
-void ConfigPars::fill_error_page(TokenIterator &head_token,
-								 DefaultConfigPars &fill_config)
+void ConfigParser::fill_error_page(TokenIterator &head_token,
+								   DefaultConfigParser &fill_config)
 {
 	// LOG(LOG_DEBUG, "NOICE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 

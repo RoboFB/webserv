@@ -6,12 +6,12 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/19 16:51:33 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/28 19:19:04 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 13:10:04 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Config.hpp"
-#include "ConfigStructs.hpp"
+#include "ConfigParser.hpp"
+#include "ConfigParserStructs.hpp"
 #include "normalFucntions.hpp"
 
 template <typename T>
@@ -49,8 +49,8 @@ static void h_inherit_field(const Methods &parent, Methods &child)
 		child = parent;
 }
 
-static void h_inherit_default_to_default(const DefaultConfigPars &parent,
-										 DefaultConfigPars &child)
+static void h_inherit_default_to_default(const DefaultConfigParser &parent,
+										 DefaultConfigParser &child)
 {
 	h_inherit_field(parent.error_codes, child.error_codes);
 	h_inherit_field(parent.error_page_path, child.error_page_path);
@@ -65,16 +65,14 @@ static void h_inherit_default_to_default(const DefaultConfigPars &parent,
 }
 
 // set also the defaults at the end
-static void h_inherit_server_to_location(const ServerConfigPars &parent,
-										 LocationConfigPars &child)
+static void h_inherit_server_to_location(const ServerConfigParser &parent,
+										 LocationConfigParser &child)
 {
 	h_inherit_default_to_default(parent, child);
-
-	// set_default_values(child);
 }
 
-static void h_inherit_http_to_server(const HttpConfigPars &parent,
-									 ServerConfigPars &child)
+static void h_inherit_http_to_server(const HttpConfigParser &parent,
+									 ServerConfigParser &child)
 {
 	h_inherit_default_to_default(parent, child);
 
@@ -84,25 +82,39 @@ static void h_inherit_http_to_server(const HttpConfigPars &parent,
 	}
 }
 
-static void h_inherit_main_to_http(const MainConfigPars &parent,
-								   HttpConfigPars &child)
+static void h_inherit_main_to_http(const MainConfigParser &parent,
+								   HttpConfigParser &child)
 {
 	(void)parent; // unused for now, but might be used in the future
 
-	for (ServerConfigPars &server : child.servers_confs)
+	for (ServerConfigParser &server : child.servers_confs)
 	{
 		h_inherit_http_to_server(child, server);
 	}
 }
 
-void inherit_all_config(MainConfigPars &parent_config)
+void MainConfigParser::inherit_all_config()
 {
-	h_inherit_main_to_http(parent_config, parent_config.http_conf);
+	h_inherit_main_to_http(*this, http_conf);
 }
 
-MainConfigPars::MainConfigPars(int argc, const char *argv[]) : http_conf()
+MainConfigParser::MainConfigParser(int argc, const char *argv[]) : http_conf()
 {
 	const std::filesystem::path config_file = check_input_args(argc, argv);
-	ConfigPars config{*this};
-	config.pars_all(config_file);
+	try
+	{
+		std::string complete_string_ =
+			ConfigParser::file_to_string(config_file);
+		std::vector<Token> all_tokens_ =
+			ConfigParser::string_to_tokens(complete_string_);
+		if (all_tokens_.empty())
+			throw ConfigParserException("Empty configuration file.");
+		std::vector<Token>::const_iterator head_token = all_tokens_.cbegin();
+		ConfigParser::fill_main(head_token, *this);
+		inherit_all_config();
+	}
+	catch (const ConfigParserException &e)
+	{
+		throw ConfigParserException(config_file.string() + ":" + e.what());
+	}
 }

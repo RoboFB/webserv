@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ConfigStructs.hpp                                  :+:      :+:    :+:   */
+/*   ConfigParserStructs.hpp                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 18:36:32 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/28 17:38:33 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 13:07:50 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@
 #include <optional>
 #include <vector>
 
-struct DefaultConfigPars
+struct DefaultConfigParser
 {
 		std::vector<int> error_codes; // todo
 		std::vector<std::filesystem::path> indexs_paths;
@@ -33,39 +33,40 @@ struct DefaultConfigPars
 		std::optional<bool> autoindex;
 		Methods limit_except;
 
-		DefaultConfigPars() : limit_except(Methods::NONE) {};
+		DefaultConfigParser() : limit_except(Methods::NONE) {};
 };
 
-struct LocationConfigPars : public DefaultConfigPars
+struct LocationConfigParser : public DefaultConfigParser
 {
 		std::string location_path;
 
-		LocationConfigPars() : DefaultConfigPars() {};
+		LocationConfigParser() : DefaultConfigParser() {};
 };
 
-struct ServerConfigPars : public DefaultConfigPars
+struct ServerConfigParser : public DefaultConfigParser
 {
-		std::vector<LocationConfigPars> locations_confs;
+		std::vector<LocationConfigParser> locations_confs;
 
 		AddrInfoPtr listen; // address:port linked list of listen addresses
 		// std::string					server_name; // later need to be
 		// implemented on header level (www.example.com, example.com, etc.)
 
-		ServerConfigPars() : DefaultConfigPars(), listen(nullptr) {};
+		ServerConfigParser() : DefaultConfigParser(), listen(nullptr) {};
 };
 
-struct HttpConfigPars : public DefaultConfigPars
+struct HttpConfigParser : public DefaultConfigParser
 {
-		std::vector<ServerConfigPars> servers_confs;
+		std::vector<ServerConfigParser> servers_confs;
 
-		HttpConfigPars() : DefaultConfigPars() {};
+		HttpConfigParser() : DefaultConfigParser() {};
 };
 
-struct MainConfigPars
+struct MainConfigParser
 {
-		HttpConfigPars http_conf;
+		HttpConfigParser http_conf;
 
-		MainConfigPars(int argc, const char *argv[]);
+		MainConfigParser(int argc, const char *argv[]);
+
+	private:
+		void inherit_all_config();
 };
-
-void inherit_all_config(MainConfigPars &parent_config);

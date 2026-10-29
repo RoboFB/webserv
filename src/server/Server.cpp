@@ -6,18 +6,18 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 13:58:30 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 13:17:14 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 
-#include "SocketFd.hpp"
+#include "SocketFdHandler.hpp"
 
-Server::Server(ServerConfigPars &server_config)
+Server::Server(ServerConfigParser &server_config)
 	: locations_(), addr_listen_list_(std::move(server_config.listen))
 {
-	for (LocationConfigPars &location_config : server_config.locations_confs)
+	for (LocationConfigParser &location_config : server_config.locations_confs)
 	{
 		locations_.push_back(Location(location_config));
 	}
@@ -30,7 +30,7 @@ void Server::add_sockets(std::vector<std::unique_ptr<EpollHandler>> &all_fds,
 		 current_addr != nullptr; current_addr = current_addr->ai_next)
 	{
 		all_fds.push_back(
-			std::make_unique<SocketFd>(current_addr, this, epoll_fd));
+			std::make_unique<SocketFdHandler>(current_addr, this, epoll_fd));
 	}
 }
 

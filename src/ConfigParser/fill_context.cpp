@@ -6,16 +6,16 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:43:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 13:58:51 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 13:08:26 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Config.hpp"
+#include "ConfigParser.hpp"
 
-void ConfigPars::fill_location(TokenIterator &head_token,
-							   std::vector<LocationConfigPars> &fill_config)
+void ConfigParser::fill_location(TokenIterator &head_token,
+								 std::vector<LocationConfigParser> &fill_config)
 {
-	LocationConfigPars new_conf;
+	LocationConfigParser new_conf;
 
 	new_conf.location_path = get_next_word(head_token).word;
 
@@ -31,21 +31,22 @@ void ConfigPars::fill_location(TokenIterator &head_token,
 			find_directive_lookup(current_token, ConfigContext::LOCATION);
 
 		if (current_lookup.fill_context == nullptr)
-			throw ConfigParseException("programming error : 201",
-									   current_token);
+			throw ConfigParserException("programming error : 201",
+										current_token);
 		else
-			(this->*current_lookup.fill_context)(head_token, new_conf);
+			(*current_lookup.fill_context)(head_token, new_conf);
 	}
 
 	fill_config.push_back(new_conf);
 	return;
 }
 
-void ConfigPars::fill_server(TokenIterator &head_token)
+void ConfigParser::fill_server(TokenIterator &head_token,
+							   std::vector<ServerConfigParser> &fill_config)
 {
 	skip_next(head_token, TokenType::OPEN_BRACE);
 
-	ServerConfigPars new_conf;
+	ServerConfigParser new_conf;
 
 	while (true)
 	{
@@ -59,13 +60,14 @@ void ConfigPars::fill_server(TokenIterator &head_token)
 		if (current_lookup.fill_context == nullptr)
 			fill_location(head_token, new_conf.locations_confs);
 		else
-			(this->*current_lookup.fill_context)(head_token, new_conf);
+			(*current_lookup.fill_context)(head_token, new_conf);
 	}
-	main_conf_.http_conf.servers_confs.push_back(std::move(new_conf));
+	fill_config.push_back(std::move(new_conf));
 	return;
 }
 
-void ConfigPars::fill_http(TokenIterator &head_token)
+void ConfigParser::fill_http(TokenIterator &head_token,
+							 HttpConfigParser &fill_config)
 {
 	skip_next(head_token, TokenType::OPEN_BRACE);
 
@@ -79,20 +81,20 @@ void ConfigPars::fill_http(TokenIterator &head_token)
 			find_directive_lookup(current_token, ConfigContext::HTTP);
 
 		if (current_lookup.fill_context == nullptr)
-			fill_server(head_token);
+			fill_server(head_token, fill_config.servers_confs);
 		else
-			(this->*current_lookup.fill_context)(head_token,
-												 main_conf_.http_conf);
+			(*current_lookup.fill_context)(head_token, fill_config);
 	}
 	return;
 }
 
-void ConfigPars::fill_main(TokenIterator &head_token)
+void ConfigParser::fill_main(TokenIterator &head_token,
+							 MainConfigParser &fill_config)
 {
 	Token current_token = get_next_word(head_token);
 	find_directive_lookup(current_token, ConfigContext::MAIN);
 
-	fill_http(head_token);
+	fill_http(head_token, fill_config.http_conf);
 	is_at_end_of_file(head_token);
 
 	return;

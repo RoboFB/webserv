@@ -6,12 +6,12 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/15 13:59:22 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/28 19:18:23 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 13:09:20 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "printing.hpp"
-#include "Config.hpp"
+#include "ConfigParser.hpp"
 #include "logging.hpp"
 #include <netdb.h>
 
@@ -98,7 +98,7 @@ static std::string listen_to_string(const AddrInfoPtr &listen)
 	return result;
 }
 
-static void print_root(std::ostream &os, const DefaultConfigPars &config,
+static void print_root(std::ostream &os, const DefaultConfigParser &config,
 					   size_t indent)
 {
 	if (config.root_path)
@@ -106,7 +106,7 @@ static void print_root(std::ostream &os, const DefaultConfigPars &config,
 		   << ";\n";
 }
 
-static void print_index(std::ostream &os, const DefaultConfigPars &config,
+static void print_index(std::ostream &os, const DefaultConfigParser &config,
 						size_t indent)
 {
 	if (config.indexs_paths.empty())
@@ -117,7 +117,7 @@ static void print_index(std::ostream &os, const DefaultConfigPars &config,
 	os << ";\n";
 }
 
-static void print_autoindex(std::ostream &os, const DefaultConfigPars &config,
+static void print_autoindex(std::ostream &os, const DefaultConfigParser &config,
 							size_t indent)
 {
 	if (config.autoindex)
@@ -132,7 +132,7 @@ static void print_autoindex(std::ostream &os, const DefaultConfigPars &config,
 }
 
 static void print_client_max_body_size(std::ostream &os,
-									   const DefaultConfigPars &config,
+									   const DefaultConfigParser &config,
 									   size_t indent)
 {
 	if (config.client_max_body_size)
@@ -141,15 +141,15 @@ static void print_client_max_body_size(std::ostream &os,
 }
 
 static void print_limit_except(std::ostream &os,
-							   const DefaultConfigPars &config, size_t indent)
+							   const DefaultConfigParser &config, size_t indent)
 {
 	if (config.limit_except != Methods::NONE)
 		os << make_indent(indent) << "limit_except "
 		   << methods_to_string(config.limit_except) << ";\n";
 }
 
-static void print_error_page(std::ostream &os, const DefaultConfigPars &config,
-							 size_t indent)
+static void print_error_page(std::ostream &os,
+							 const DefaultConfigParser &config, size_t indent)
 {
 	if (config.error_codes.empty() && !config.error_page_path)
 		return;
@@ -161,7 +161,7 @@ static void print_error_page(std::ostream &os, const DefaultConfigPars &config,
 	os << ";\n";
 }
 
-static void print_return(std::ostream &os, const DefaultConfigPars &config,
+static void print_return(std::ostream &os, const DefaultConfigParser &config,
 						 size_t indent)
 {
 	if (!config.return_code && !config.return_path)
@@ -176,7 +176,7 @@ static void print_return(std::ostream &os, const DefaultConfigPars &config,
 // so the set of directive names lives in exactly one place (the parser's table)
 // instead of being repeated here
 static void print_directive_by_name(std::ostream &os,
-									const DefaultConfigPars &config,
+									const DefaultConfigParser &config,
 									size_t indent, std::string_view name)
 {
 	if (name == "root")
@@ -195,25 +195,25 @@ static void print_directive_by_name(std::ostream &os,
 		print_return(os, config, indent);
 }
 
-void ConfigPars::print_default_directives(std::ostream &os,
-										  const DefaultConfigPars &config,
-										  size_t indent)
+void ConfigParser::print_default_directives(std::ostream &os,
+											const DefaultConfigParser &config,
+											size_t indent)
 {
 	for (const auto &entry : directive_lookup)
 		print_directive_by_name(os, config, indent, entry.word);
 }
 
-static void print_location(std::ostream &os, const LocationConfigPars &config,
+static void print_location(std::ostream &os, const LocationConfigParser &config,
 						   size_t indent)
 {
 	const std::string pad = make_indent(indent);
 
 	os << pad << "location " << config.location_path << " {\n";
-	ConfigPars::print_default_directives(os, config, indent + 1);
+	ConfigParser::print_default_directives(os, config, indent + 1);
 	os << pad << "}\n";
 }
 
-static void print_server(std::ostream &os, const ServerConfigPars &config,
+static void print_server(std::ostream &os, const ServerConfigParser &config,
 						 size_t indent)
 {
 	const std::string pad = make_indent(indent);
@@ -221,7 +221,7 @@ static void print_server(std::ostream &os, const ServerConfigPars &config,
 	os << pad << "server {\n"
 	   << make_indent(indent + 1) << "listen "
 	   << listen_to_string(config.listen) << ";\n";
-	ConfigPars::print_default_directives(os, config, indent + 1);
+	ConfigParser::print_default_directives(os, config, indent + 1);
 	for (const auto &location : config.locations_confs)
 	{
 		os << '\n';
@@ -230,13 +230,13 @@ static void print_server(std::ostream &os, const ServerConfigPars &config,
 	os << pad << "}\n";
 }
 
-static void print_http(std::ostream &os, const HttpConfigPars &config,
+static void print_http(std::ostream &os, const HttpConfigParser &config,
 					   size_t indent)
 {
 	const std::string pad = make_indent(indent);
 
 	os << pad << "http {\n";
-	ConfigPars::print_default_directives(os, config, indent + 1);
+	ConfigParser::print_default_directives(os, config, indent + 1);
 	for (const auto &server : config.servers_confs)
 	{
 		os << '\n';
@@ -245,13 +245,13 @@ static void print_http(std::ostream &os, const HttpConfigPars &config,
 	os << pad << "}\n";
 }
 
-std::ostream &operator<<(std::ostream &os, const HttpConfigPars &config)
+std::ostream &operator<<(std::ostream &os, const HttpConfigParser &config)
 {
 	print_http(os, config, 0);
 	return os;
 }
 
-std::ostream &operator<<(std::ostream &os, const MainConfigPars &config)
+std::ostream &operator<<(std::ostream &os, const MainConfigParser &config)
 {
 	return os << config.http_conf;
 }
