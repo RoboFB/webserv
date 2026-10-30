@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Message.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 11:23:43 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/28 15:51:32 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/30 16:23:18 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,7 @@ std::string Message::serializeHeaders() const
 	for (const auto &header : headers_)
 	{
 		for (const std::string &value : header.second)
-			result += header.first + ": " + value + LINE;
+			result += prefix + header.first + ": " + value + LINE;
 	}
 	return result;
 }

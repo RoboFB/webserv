@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Message.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/28 15:51:40 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/30 15:56:21 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,8 @@
 #include <string>
 #include <map>
 #include <vector>
+
+#include "Header.hpp"
 
 /*	required:
 	- response header (create)
@@ -43,8 +45,6 @@
 */
 
 #define LINE "\r\n"
-
-using Headers = std::map<std::string, std::vector<std::string>>;
 
 class Message
 {
