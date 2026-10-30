@@ -1,17 +1,18 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Cgi.cpp                                            :+:      :+:    :+:   */
+/*   CgiHandler.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/27 14:45:38 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 13:20:56 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 14:23:11 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "CgiHandler.hpp"
 #include "logging.hpp"
+#include "Signals.hpp"
 
 #include <cstring>
 #include <sys/epoll.h>
@@ -42,6 +43,8 @@ CgiHandler::CgiHandler(const Server *server, const CloseFd &epoll_fd,
 	else if (pid == 0)
 	{
 		// child process
+		reset_signal_handling();
+
 		close(both_fds[0]);
 		dup2(both_fds[1], STDIN_FILENO);
 		dup2(both_fds[1], STDOUT_FILENO);

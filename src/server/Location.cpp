@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/25 13:33:13 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 13:09:36 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 19:57:59 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,21 +16,20 @@
 #include "ConfigParserStructs.hpp"
 
 Location::Location(const LocationConfigParser &from)
-	: location_path(from.location_path), error_codes(from.error_codes),
-	  cgi_interpers(from.cgi_interpers), indexs_paths(from.indexs_paths),
-	  error_page_path(from.error_page_path.value_or("./example")), // todo
-	  root_path(from.root_path.value_or(".")),
-	  return_path(from.return_path.value_or("./example")),
-	  client_max_body_size(
-		  from.client_max_body_size.value_or(BODY_SIZE_DEFAULT)), // todo
-	  return_code(from.return_code.value_or(888)), // todo
+	: location_path(from.location_path), indexs_paths(from.indexs_paths),
+	  cgi_interpers(from.cgi_interpers), error_pages(from.error_pages),
+	  root_path(), client_max_body_size(
+					   from.client_max_body_size.value_or(BODY_SIZE_DEFAULT)),
 	  autoindex(from.autoindex.value_or(false)), limit_except(from.limit_except)
 {
-	if (error_codes.empty())
-		error_codes.push_back(999); // todo
+	if (from.root_path == std::nullopt)
+		throw std::runtime_error("root path is not set for location: " +
+								 from.location_path);
+	root_path = from.root_path.value();
+
 	if (indexs_paths.empty())
-		indexs_paths.push_back("index.html"); // todo
+		indexs_paths.push_back("index.html");
 
 	if (limit_except == Methods::NONE)
-		limit_except = Methods::GET; // todo
+		limit_except = Methods::GET;
 }
