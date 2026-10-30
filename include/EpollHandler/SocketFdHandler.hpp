@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 13:22:13 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 13:12:34 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,9 +14,6 @@
 
 #include "CloseFd.hpp"
 #include "EpollHandler.hpp"
-#include "Connection.hpp"
-
-#include <memory>
 
 /*
 init:
@@ -30,18 +27,18 @@ needs to:
 deconstructs:
 	1. closes the socket file descriptor.
 */
-class SocketFd : public EpollHandler
+class SocketFdHandler : public EpollHandler
 {
 	public:
-		SocketFd(const SocketFd &) = delete;
-		SocketFd &operator=(const SocketFd &) = delete;
+		SocketFdHandler(const SocketFdHandler &) = delete;
+		SocketFdHandler &operator=(const SocketFdHandler &) = delete;
 
-		SocketFd(SocketFd &&other) = delete;
-		SocketFd &operator=(SocketFd &&) = delete;
+		SocketFdHandler(SocketFdHandler &&other) = delete;
+		SocketFdHandler &operator=(SocketFdHandler &&) = delete;
 
-		SocketFd(const struct addrinfo *one_addr, const Server *server,
-				 const CloseFd &epoll_fd);
-		~SocketFd() override = default;
+		SocketFdHandler(const struct addrinfo *one_addr, const Server *server,
+						const CloseFd &epoll_fd);
+		~SocketFdHandler() override = default;
 
 		void on_epoll_event(AllServers &servers, uint32_t events) override;
 		bool is_timeout() const override;

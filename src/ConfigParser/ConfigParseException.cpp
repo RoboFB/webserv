@@ -1,26 +1,22 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ConfigParseException.hpp                           :+:      :+:    :+:   */
+/*   ConfigParseException.cpp                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/16 15:10:40 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/07/30 15:19:28 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 13:07:01 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
+#include "ConfigParser.hpp"
 
-#include <stdexcept>
-
-struct Token;
-
-class ConfigParseException : public std::runtime_error
+ConfigParserException::ConfigParserException(const std::string &error_message,
+											 const Token &error_token)
+	: std::runtime_error(std::to_string(error_token.line) + ":" +
+						 std::to_string(error_token.column) + ": " +
+						 error_message + " at token: '" + error_token.word +
+						 "'")
 {
-    public:
-        ConfigParseException(const std::string& error_message, const Token& error_token);
-        ConfigParseException(const std::string& error_message)
-            : std::runtime_error(error_message)
-        {}
-};
+}

@@ -6,15 +6,15 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 17:32:38 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 13:17:34 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "SocketFd.hpp"
+#include "SocketFdHandler.hpp"
 #include "AllServer.hpp"
 #include "logging.hpp"
 
-#include "Connection.hpp"
+#include "ConnectionHandler.hpp"
 
 #include <netdb.h>
 #include <sys/epoll.h>
@@ -25,8 +25,8 @@
 #include <cerrno>
 
 // makes the socket calls socket(), bind()
-SocketFd::SocketFd(const struct addrinfo *one_addr, const Server *server,
-				   const CloseFd &epoll_fd)
+SocketFdHandler::SocketFdHandler(const struct addrinfo *one_addr,
+								 const Server *server, const CloseFd &epoll_fd)
 	: EpollHandler(server, -1, epoll_fd)
 {
 	this->init_socket(one_addr);
@@ -36,7 +36,7 @@ SocketFd::SocketFd(const struct addrinfo *one_addr, const Server *server,
 	this->add_to_epoll();
 }
 
-void SocketFd::init_socket(const struct addrinfo *one_addr)
+void SocketFdHandler::init_socket(const struct addrinfo *one_addr)
 {
 	fd_ = ::socket(one_addr->ai_family, one_addr->ai_socktype | SOCK_NONBLOCK,
 				   one_addr->ai_protocol);
@@ -45,7 +45,7 @@ void SocketFd::init_socket(const struct addrinfo *one_addr)
 								 std::strerror(errno));
 }
 
-void SocketFd::init_setsockopt(void)
+void SocketFdHandler::init_setsockopt(void)
 {
 	const int enable_reuse = true;
 	if (::setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, &enable_reuse,
@@ -54,7 +54,7 @@ void SocketFd::init_setsockopt(void)
 								 std::strerror(errno));
 }
 
-void SocketFd::init_bind(const struct addrinfo *one_addr)
+void SocketFdHandler::init_bind(const struct addrinfo *one_addr)
 {
 	if (::bind(fd_, one_addr->ai_addr, one_addr->ai_addrlen) < 0)
 	{
@@ -68,7 +68,7 @@ void SocketFd::init_bind(const struct addrinfo *one_addr)
 								 ": " + std::strerror(bind_errno));
 	}
 }
-void SocketFd::init_listen(void) const
+void SocketFdHandler::init_listen(void) const
 {
 	if (::listen(fd_, SOMAXCONN) < 0)
 	{
@@ -77,7 +77,7 @@ void SocketFd::init_listen(void) const
 	}
 }
 
-void SocketFd::accept(AllServers &servers) const
+void SocketFdHandler::accept(AllServers &servers) const
 {
 	struct sockaddr_storage client_addr;
 	socklen_t addr_len = sizeof(client_addr);
@@ -89,21 +89,21 @@ void SocketFd::accept(AllServers &servers) const
 		LOG(LOG_DEBUG, "accept: " + std::string(std::strerror(errno)));
 		return;
 	}
-	servers.add_handler(std::make_unique<Connection>(
+	servers.add_handler(std::make_unique<ConnectionHandler>(
 		server_, std::move(client_fd_), epoll_fd_));
 	return;
 }
 
-void SocketFd::on_epoll_event(AllServers &servers, uint32_t events)
+void SocketFdHandler::on_epoll_event(AllServers &servers, uint32_t events)
 {
 	if (!(events & EPOLL_EVENTS::EPOLLIN))
 		return;
 	accept(servers);
 }
 
-bool SocketFd::is_timeout() const
+bool SocketFdHandler::is_timeout() const
 {
 	return false;
 }
 
-void SocketFd::stop_listening(void) {}
+void SocketFdHandler::stop_listening(void) {}

@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 14:17:16 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 13:13:24 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 #include "Location.hpp"
 
 #include "AddrInfoPtr.hpp"
-#include "ConfigStructs.hpp"
+#include "ConfigParserStructs.hpp"
 #include "EpollHandler.hpp"
 
 #include <vector>
@@ -24,7 +24,7 @@ class Server
 {
 	public:
 		Server(Server &&) = default;
-		Server(ServerConfigPars &server_config);
+		Server(ServerConfigParser &server_config);
 
 		Server(const Server &) = delete;
 		Server &operator=(const Server &) = delete;

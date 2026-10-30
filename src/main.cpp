@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/29 14:58:02 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 14:34:41 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 13:07:50 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,8 +21,7 @@ int main(int argc, const char *argv[])
 	try
 	{
 		init_signal_handling();
-		MainConfigPars parsed_config(argc, argv);
-		AllServers all_servers(std::move(parsed_config));
+		AllServers all_servers = MainConfigParser(argc, argv);
 
 		while (g_stop_server.load() == false)
 		{

@@ -6,16 +6,16 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/25 13:33:13 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/28 18:05:24 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 13:09:36 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Location.hpp"
 #include "MagicValues.hpp"
 
-#include "ConfigStructs.hpp"
+#include "ConfigParserStructs.hpp"
 
-Location::Location(const LocationConfigPars &from)
+Location::Location(const LocationConfigParser &from)
 	: location_path(from.location_path), error_codes(from.error_codes),
 	  cgi_interpers(from.cgi_interpers), indexs_paths(from.indexs_paths),
 	  error_page_path(from.error_page_path.value_or("./example")), // todo

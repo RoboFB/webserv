@@ -6,11 +6,11 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/28 16:42:00 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 13:17:34 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Connection.hpp"
+#include "ConnectionHandler.hpp"
 #include "AllServer.hpp"
 #include "logging.hpp"
 #include "MagicValues.hpp"
@@ -20,15 +20,15 @@
 #include <cstring>
 #include <cerrno>
 
-Connection::Connection(const Server *server, CloseFd &&fd,
-					   const CloseFd &epoll_fd)
+ConnectionHandler::ConnectionHandler(const Server *server, CloseFd &&fd,
+									 const CloseFd &epoll_fd)
 	: EpollHandler(server, std::move(fd), epoll_fd), cgi_(nullptr),
 	  state_(State::READ_HEAD), last_activity_(std::chrono::steady_clock::now())
 {
 	add_to_epoll();
 }
 
-void Connection::receive()
+void ConnectionHandler::receive()
 {
 	static constexpr std::size_t buffer_size = 4096;
 	std::array<uint8_t, buffer_size> temporary_buffer = {};
@@ -64,7 +64,7 @@ void Connection::receive()
 	set_state(State::WRITE);
 }
 
-void Connection::send()
+void ConnectionHandler::send()
 {
 	if (response_.offset_ >= response_.buffer_.size())
 	{
@@ -92,7 +92,7 @@ void Connection::send()
 		set_state(State::FINISHED);
 }
 
-void Connection::on_epoll_event(AllServers &servers, uint32_t events)
+void ConnectionHandler::on_epoll_event(AllServers &servers, uint32_t events)
 {
 	(void)servers;
 	if (events & (EPOLLERR | EPOLLHUP))
@@ -119,7 +119,7 @@ void Connection::on_epoll_event(AllServers &servers, uint32_t events)
 	// read that finished the request
 }
 
-void Connection::set_state(State new_state)
+void ConnectionHandler::set_state(State new_state)
 {
 	last_activity_ = std::chrono::steady_clock::now();
 	state_ = new_state;
@@ -143,13 +143,13 @@ void Connection::set_state(State new_state)
 	}
 }
 
-bool Connection::is_timeout() const
+bool ConnectionHandler::is_timeout() const
 {
 	return std::chrono::steady_clock::now() - last_activity_ >
 		   std::chrono::seconds(CONNECTION_TIMEOUT_S);
 }
 
-void Connection::stop_listening(void)
+void ConnectionHandler::stop_listening(void)
 {
 	if (remove_me_)
 		return;

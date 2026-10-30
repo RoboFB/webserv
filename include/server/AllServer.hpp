@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 14:33:37 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 13:07:50 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 #include "CloseFd.hpp"
 #include "EpollHandler.hpp"
-#include "ConfigStructs.hpp"
+#include "ConfigParserStructs.hpp"
 #include "Server.hpp"
 
 #include <vector>
@@ -27,7 +27,7 @@ class AllServers
 		AllServers &operator=(const AllServers &) = delete;
 		AllServers &operator=(AllServers &&) = delete;
 
-		AllServers(MainConfigPars &&main_config);
+		AllServers(MainConfigParser &&main_config);
 		~AllServers(); // calls stop_all()
 
 		Server &at(size_t index);

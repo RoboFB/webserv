@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/25 13:34:03 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/28 19:06:32 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 12:58:32 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 #include <filesystem>
 #include <vector>
 
-struct LocationConfigPars;
+struct LocationConfigParser;
 
 class Location
 {
@@ -34,5 +34,5 @@ class Location
 		bool autoindex;
 		Methods limit_except;
 
-		Location(const LocationConfigPars &from);
+		Location(const LocationConfigParser &from);
 };
