@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/28 16:48:55 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 16:23:18 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -129,10 +129,7 @@ void handle_get(Response &response, const Location &location,
 	const std::string body = contents.str();
 
 	response.set_status(200);
-	response.addHeader("Content-Type", mime_type_for(file_path))
-		.addHeader("Content-Length", std::to_string(body.size()))
-		.addHeader("Connection", "close")
-		.setBody(body);
+	response.addHeader("Content-Type", mime_type_for(file_path)).setBody(body);
 	return;
 }
 
@@ -164,14 +161,12 @@ void handle_post(const std::string &data_str_body, Response &response,
 	if (error || !std::filesystem::is_directory(parent_status))
 		return response.convert_to_error(404);
 
-	std::ofstream file(resolved_path.path.string().c_str(),
-					   std::ios::binary | std::ios::trunc);
+	std::ofstream file(resolved_path.path, std::ios::binary | std::ios::trunc);
 
 	if (!file)
 		return response.convert_to_error(403);
 
-	file.write(data_str_body.data(),
-			   static_cast<std::streamsize>(data_str_body.size()));
+	file << data_str_body;
 
 	if (!file)
 		return response.convert_to_error(500);

@@ -6,11 +6,12 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/13 16:19:19 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 13:02:42 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/30 16:32:30 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ConfigParser.hpp"
+#include <charconv>
 
 // value & flag (uses bit and comparison)
 constexpr bool ConfigParser::has_flag(ConfigContext value, ConfigContext flag)
@@ -79,27 +80,20 @@ ConfigParser::find_directive_lookup(const Token &token, ConfigContext context)
 	throw ConfigParserException("unknown word, not found in list", token);
 }
 
-/*
-if number -> valid -> return number
-if number -> out of range -> -1
-if not number -> -2
-if not used all of the string -> -3
+bool ConfigParser::is_string_to_int(const std::string &string, int &result)
+{
+	const char *end = string.data() + string.size();
+	auto [ptr, ec] = std::from_chars(string.data(), end, result);
+	return ec == std::errc{} && ptr == end;
+}
 
-*/
+// Returns -1 if invalid, otherwise the number
 int ConfigParser::validate_port(const std::string &str)
 {
-	try
-	{
-		size_t index = 0;
-		int port = std::stoi(str, &index);
-		if (index != str.size())
-			return -3;
-		if (port < 0 || port > 65535)
-			return -1;
-		return port;
-	}
-	catch (const std::exception &e)
-	{
-		return -2;
-	}
+	int result = 0;
+	if (!is_string_to_int(str, result))
+		return -1;
+	if (result < 0 || result > 65535)
+		return -1;
+	return result;
 }

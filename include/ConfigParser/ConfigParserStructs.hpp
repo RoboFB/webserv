@@ -6,13 +6,14 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 18:36:32 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 13:07:50 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 19:24:47 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 #include "AddrInfoPtr.hpp"
+#include "ErrorPage.hpp"
 #include "Methods.hpp"
 #include "CGIConfig.hpp"
 
@@ -22,14 +23,13 @@
 
 struct DefaultConfigParser
 {
-		std::vector<int> error_codes; // todo
 		std::vector<std::filesystem::path> indexs_paths;
 		CGIConfigMap cgi_interpers;
-		std::optional<std::filesystem::path> error_page_path; // todo
+		ErrorPages error_pages; // todo
+		std::optional<std::pair<int, std::string>> redirect_page; // todo
+
 		std::optional<std::filesystem::path> root_path;
-		std::optional<std::filesystem::path> return_path; // todo
 		std::optional<size_t> client_max_body_size;
-		std::optional<int> return_code; // todo
 		std::optional<bool> autoindex;
 		Methods limit_except;
 

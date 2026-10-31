@@ -6,15 +6,17 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/25 13:34:03 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 12:58:32 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 19:47:07 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
+#include "ErrorPage.hpp"
 #include "Methods.hpp"
 #include "CGIConfig.hpp"
 #include <filesystem>
+#include <optional>
 #include <vector>
 
 struct LocationConfigParser;
@@ -22,15 +24,17 @@ struct LocationConfigParser;
 class Location
 {
 	public:
+		// location
 		std::string location_path;
-		std::vector<int> error_codes; // todo
-		CGIConfigMap cgi_interpers;
+
+		// from default waterfall
 		std::vector<std::filesystem::path> indexs_paths;
-		std::filesystem::path error_page_path; // todo
+		CGIConfigMap cgi_interpers;
+		ErrorPages error_pages;
+		std::optional<std::pair<int, std::string>> redirect_page;
+
 		std::filesystem::path root_path;
-		std::filesystem::path return_path; // todo
 		size_t client_max_body_size;
-		int return_code; // todo
 		bool autoindex;
 		Methods limit_except;
 

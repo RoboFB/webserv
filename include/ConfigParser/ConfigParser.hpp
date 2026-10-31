@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 13:07:50 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/30 19:46:58 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,6 +73,8 @@ void skip_next(std::vector<Token>::const_iterator &head_token,
 constexpr bool has_flag(ConfigContext value, ConfigContext flag);
 
 void is_at_end_of_file(std::vector<Token>::const_iterator &head_token);
+bool is_string_to_int(const std::string &string, int &result);
+
 int validate_port(const std::string &str);
 
 void append_addrinfo(AddrInfoPtr &addr_list, const std::string &address_str,
@@ -90,12 +92,11 @@ struct DirectiveLookup
 DirectiveLookup find_directive_lookup(const Token &token,
 									  ConfigContext context);
 
-void fill_main(TokenIterator &head_token, MainConfigParser &fill_config);
-void fill_http(TokenIterator &head_token, HttpConfigParser &fill_config);
-void fill_server(TokenIterator &head_token,
-				 std::vector<ServerConfigParser> &fill_config);
+void fill_main(TokenIterator &head_token, MainConfigParser &fill_main);
+void fill_http(TokenIterator &head_token, HttpConfigParser &fill_http);
+void fill_server(TokenIterator &head_token, ServerConfigParser &fill_config);
 void fill_location(TokenIterator &head_token,
-				   std::vector<LocationConfigParser> &fill_config);
+				   LocationConfigParser &fill_location);
 void fill_listen(TokenIterator &head_token, DefaultConfigParser &fill_config);
 // void fill_server_name(TokenIterator &head_token,
 // 					  DefaultConfigPars &fill_config);
@@ -108,7 +109,7 @@ void fill_client_max_body_size(TokenIterator &head_token,
 void fill_autoindex(TokenIterator &head_token,
 					DefaultConfigParser &fill_config);
 void fill_root(TokenIterator &head_token, DefaultConfigParser &fill_config);
-void fill_return(TokenIterator &head_token, DefaultConfigParser &fill_config);
+void fill_redirect(TokenIterator &head_token, DefaultConfigParser &fill_config);
 void fill_index(TokenIterator &head_token, DefaultConfigParser &fill_config);
 void fill_cgi(TokenIterator &head_token, DefaultConfigParser &fill_config);
 
@@ -147,7 +148,7 @@ static constexpr std::array<DirectiveLookup, 12> directive_lookup = {
 	DirectiveLookup{ConfigContext::DEFAULT, "index",
 					&ConfigParser::fill_index}, // fill_index_context,
 	DirectiveLookup{ConfigContext::DEFAULT, "return",
-					&ConfigParser::fill_return},
+					&ConfigParser::fill_redirect},
 	DirectiveLookup{ConfigContext::DEFAULT, "cgi", &ConfigParser::fill_cgi},
 };
 

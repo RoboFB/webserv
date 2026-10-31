@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/15 13:59:22 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 13:09:20 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 20:08:45 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -148,29 +148,29 @@ static void print_limit_except(std::ostream &os,
 		   << methods_to_string(config.limit_except) << ";\n";
 }
 
-static void print_error_page(std::ostream &os,
-							 const DefaultConfigParser &config, size_t indent)
-{
-	if (config.error_codes.empty() && !config.error_page_path)
-		return;
-	os << make_indent(indent) << "error_page";
-	for (int code : config.error_codes)
-		os << ' ' << code;
-	if (config.error_page_path)
-		os << ' ' << config.error_page_path->string();
-	os << ";\n";
-}
+// static void print_error_page(std::ostream &os,
+// 							 const DefaultConfigParser &config, size_t indent)
+// {
+// 	if (config.error_codes.empty() && !config.error_page_path)
+// 		return;
+// 	os << make_indent(indent) << "error_page";
+// 	for (int code : config.error_codes)
+// 		os << ' ' << code;
+// 	if (config.error_page_path)
+// 		os << ' ' << config.error_page_path->string();
+// 	os << ";\n";
+// }
 
-static void print_return(std::ostream &os, const DefaultConfigParser &config,
-						 size_t indent)
-{
-	if (!config.return_code && !config.return_path)
-		return;
-	os << make_indent(indent) << "return " << config.return_code.value_or(0);
-	if (config.return_path)
-		os << ' ' << config.return_path->string();
-	os << ";\n";
-}
+// static void print_return(std::ostream &os, const DefaultConfigParser &config,
+// 						 size_t indent)
+// {
+// 	if (!config.return_code && !config.return_path)
+// 		return;
+// 	os << make_indent(indent) << "return " << config.return_code.value_or(0);
+// 	if (config.return_path)
+// 		os << ' ' << config.return_path->string();
+// 	os << ";\n";
+// }
 
 // picks the print function by the directive's own name out of directive_lookup,
 // so the set of directive names lives in exactly one place (the parser's table)
@@ -189,10 +189,10 @@ static void print_directive_by_name(std::ostream &os,
 		print_client_max_body_size(os, config, indent);
 	else if (name == "limit_except")
 		print_limit_except(os, config, indent);
-	else if (name == "error_page")
-		print_error_page(os, config, indent);
-	else if (name == "return")
-		print_return(os, config, indent);
+	// else if (name == "error_page")
+	// 	print_error_page(os, config, indent);
+	// else if (name == "return")
+	// 	print_return(os, config, indent);
 }
 
 void ConfigParser::print_default_directives(std::ostream &os,

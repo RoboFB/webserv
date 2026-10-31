@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/19 16:51:33 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 13:10:04 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/29 20:13:30 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,16 +31,20 @@ static void h_inherit_field(const std::vector<T> &parent, std::vector<T> &child)
 
 static void h_inherit_field(const CGIConfigMap &parent, CGIConfigMap &child)
 {
-	// inherit single values
-	//  for (const auto &pair : parent)
-	//  {
-	//  	if (child.find(pair.first) == child.end())
-	//  		child[pair.first] = pair.second;
-	//  }
+	for (const auto &pair : parent)
+	{
+		if (child.find(pair.first) == child.end())
+			child[pair.first] = pair.second;
+	}
+}
 
-	// inherit only if child empty
-	if (child.empty() && !parent.empty())
-		child = parent;
+static void h_inherit_field(const ErrorPages &parent, ErrorPages &child)
+{
+	for (const auto &pair : parent)
+	{
+		if (child.find(pair.first) == child.end())
+			child[pair.first] = pair.second;
+	}
 }
 
 static void h_inherit_field(const Methods &parent, Methods &child)
@@ -52,16 +56,15 @@ static void h_inherit_field(const Methods &parent, Methods &child)
 static void h_inherit_default_to_default(const DefaultConfigParser &parent,
 										 DefaultConfigParser &child)
 {
-	h_inherit_field(parent.error_codes, child.error_codes);
-	h_inherit_field(parent.error_page_path, child.error_page_path);
+	h_inherit_field(parent.indexs_paths, child.indexs_paths);
+	h_inherit_field(parent.cgi_interpers, child.cgi_interpers);
+	h_inherit_field(parent.error_pages, child.error_pages);
+	h_inherit_field(parent.redirect_page, child.redirect_page);
+
+	h_inherit_field(parent.root_path, child.root_path);
 	h_inherit_field(parent.client_max_body_size, child.client_max_body_size);
 	h_inherit_field(parent.autoindex, child.autoindex);
-	h_inherit_field(parent.root_path, child.root_path);
-	h_inherit_field(parent.indexs_paths, child.indexs_paths);
-	h_inherit_field(parent.return_code, child.return_code);
-	h_inherit_field(parent.return_path, child.return_path);
 	h_inherit_field(parent.limit_except, child.limit_except);
-	h_inherit_field(parent.cgi_interpers, child.cgi_interpers);
 }
 
 // set also the defaults at the end

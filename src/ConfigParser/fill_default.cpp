@@ -6,7 +6,7 @@
 /*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:38:24 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 13:06:25 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/10/30 20:06:09 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -271,56 +271,60 @@ BIG BIG TODO:
 *******************************************************************************
 */
 
-// TODO: implement return directive
-void ConfigParser::fill_return(TokenIterator &head_token,
-							   DefaultConfigParser &fill_config)
-{
-	Token token = get_next_word(head_token);
-
-	fill_config.return_code = std::stoi(token.word);
-
-	token = get_next_token(
-		head_token); // get next token, should be a word or a semicolon
-
-	if (token.type == TokenType::WORD)
-	{
-		fill_config.return_path = token.word;
-		skip_next(head_token, TokenType::SEMICOLON);
-		return;
-	}
-	else if (token.type == TokenType::SEMICOLON)
-	{
-		return;
-	}
-	else
-		throw ConfigParserException("expected a word or a semicolon", token);
-
-	return;
-}
-
-// TODO: implement error_page directive
 void ConfigParser::fill_error_page(TokenIterator &head_token,
 								   DefaultConfigParser &fill_config)
 {
-	// LOG(LOG_DEBUG, "NOICE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	Token token = get_next_word(head_token);
 
-	Token current_token = get_next_word(head_token);
-	while (current_token.type == TokenType::WORD)
+	std::vector<int> tmp_error_codes = {};
+	while (true)
 	{
-		try
-		{
-			fill_config.error_codes.push_back(std::stoi(current_token.word));
-		}
-		catch (const std::exception &e)
-		{
-			fill_config.error_page_path = current_token.word;
-		}
-
-		current_token = get_next_word(head_token);
+		if (!is_string_to_int(token.word, tmp_error_codes.emplace_back()))
+			break;
+		if (tmp_error_codes.back() < 100 || tmp_error_codes.back() > 599)
+			throw ConfigParserException(
+				"invalid error code, expected a number between 100 and 599",
+				token);
+		token = get_next_word(head_token);
 	}
+	for (int code : tmp_error_codes)
+		fill_config.error_pages[code] = token.word;
 
 	skip_next(head_token, TokenType::SEMICOLON);
 	return;
+}
+
+// fill_redirect aka. return x path;
+void ConfigParser::fill_redirect(TokenIterator &head_token,
+								 DefaultConfigParser &fill_config)
+{
+	Token token = get_next_word(head_token);
+
+	std::pair<int, std::string> new_redirect;
+	if (!is_string_to_int(token.word, new_redirect.first) ||
+		new_redirect.first < 100 || new_redirect.first > 599)
+		throw ConfigParserException(
+			"invalid error code, expected a number between 100 and 599", token);
+
+	token = get_next_token(head_token);
+
+	if (token.type == TokenType::SEMICOLON)
+	{
+		fill_config.redirect_page = new_redirect;
+		return;
+	}
+	else if (token.type == TokenType::WORD)
+	{
+		new_redirect.second = token.word;
+		fill_config.redirect_page = new_redirect;
+		skip_next(head_token, TokenType::SEMICOLON);
+		return;
+	}
+	else
+	{
+		throw ConfigParserException("expected a word or semicolon", token);
+		return;
+	}
 }
 
 // void Config::fill_server_name(TokenIterator &head_token,
