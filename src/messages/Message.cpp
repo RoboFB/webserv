@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 11:23:43 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/01 21:32:05 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/02 00:39:06 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,11 @@ Message &Message::setBody(std::string body)
 {
 	body_ = std::move(body);
 	return *this;
+}
+
+const Header &Message::get_headers() const
+{
+	return headers_;
 }
 
 const std::string &Message::getBody() const

@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/02 00:13:48 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/02 00:38:59 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,7 +73,7 @@ void handle_request(const Request &request, Response &response,
 void handle_get(Response &response, const Location &location,
 				const std::string &request_path,
 				const std::string &request_target);
-void handle_post(const std::string &data_str_body, Response &response,
-				 const Location &location, const std::string &request_path);
+void handle_post(const Request &request, Response &response,
+				 const Location &location);
 void handle_delete(Response &response, const Location &location,
 				   const std::string &request_path);

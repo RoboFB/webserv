@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/25 13:33:13 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/01 21:48:51 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/02 00:39:09 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@ Location::Location(const LocationConfigParser &from)
 	: location_path(from.location_path), indexs_paths(from.indexs_paths),
 	  cgi_interpers(from.cgi_interpers), error_pages(from.error_pages),
 	  redirect_page(from.redirect_page),
-	  root_path(), client_max_body_size(
+	  root_path(), upload_store(from.upload_store), client_max_body_size(
 					   from.client_max_body_size.value_or(BODY_SIZE_DEFAULT)),
 	  autoindex(from.autoindex.value_or(false)), limit_except(from.limit_except)
 {

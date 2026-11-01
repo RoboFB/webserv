@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/01 22:27:32 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/02 00:38:58 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,7 +60,7 @@ class Message
 		virtual ~Message();
 		Message &addHeader(const std::string &name, const std::string &value);
 		Message &setBody(std::string body);
-		//const Headers &getHeaders() const;
+		const Header &get_headers() const;
 		const std::string &getBody() const;
 		virtual void serialize() = 0;
 };

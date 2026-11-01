@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   fill_default.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:38:24 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/30 20:06:09 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/02 00:39:04 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -126,6 +126,16 @@ void ConfigParser::fill_root(TokenIterator &head_token,
 
 	skip_next(head_token, TokenType::SEMICOLON);
 	return;
+}
+
+void ConfigParser::fill_upload_store(
+	TokenIterator &head_token,
+	DefaultConfigParser &fill_config)
+{
+	const Token token = get_next_word(head_token);
+
+	fill_config.upload_store = token.word;
+	skip_next(head_token, TokenType::SEMICOLON);
 }
 
 /*
