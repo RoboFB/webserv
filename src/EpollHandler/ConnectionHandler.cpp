@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Connection.cpp                                     :+:      :+:    :+:   */
+/*   ConnectionHandler.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 13:17:34 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/01 21:15:57 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,18 +66,18 @@ void ConnectionHandler::receive()
 
 void ConnectionHandler::send()
 {
-	if (response_.offset_ >= response_.buffer_.size())
+	if (response_.is_fully_sent())
 	{
 		set_state(State::FINISHED);
 		return;
 	}
+
 	const ssize_t bytes_sent =
-		::send(fd_, response_.buffer_.data() + response_.offset_,
-			   response_.buffer_.size() - response_.offset_, MSG_NOSIGNAL);
+		::send(fd_, response_.send_data(), response_.send_size(),
+			   MSG_NOSIGNAL);
+
 	if (bytes_sent < 0)
 	{
-		// if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
-		// 	return;
 		LOG(LOG_ERROR, "send: " + std::string(std::strerror(errno)));
 		set_state(State::FINISHED);
 		return;
@@ -87,8 +87,10 @@ void ConnectionHandler::send()
 		set_state(State::FINISHED);
 		return;
 	}
-	response_.offset_ += static_cast<std::size_t>(bytes_sent);
-	if (response_.offset_ == response_.buffer_.size())
+
+	response_.consume_sent(static_cast<std::size_t>(bytes_sent));
+
+	if (response_.is_fully_sent())
 		set_state(State::FINISHED);
 }
 

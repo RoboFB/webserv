@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   RequestParserBody.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/18 20:29:59 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/27 16:34:22 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/01 21:16:05 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,25 +120,25 @@ static BodyParsing parse_chunked_body(const std::vector<uint8_t> &buffer,
  */
 ParseStatus Request::parse_body()
 {
-	const Headers::const_iterator transfer = headers_.find("transfer-encoding");
-	const Headers::const_iterator length = headers_.find("content-length");
+	const HeaderValues *transfer = headers_.find("transfer-encoding");
+	const HeaderValues *length = headers_.find("content-length");
 	BodyParsing result;
 
-	if (transfer != headers_.end() && length != headers_.end())
+	if (transfer != nullptr && length != nullptr)
 		return ParseStatus::BAD;
-	if (transfer != headers_.end())
+	if (transfer != nullptr)
 	{
-		if (transfer->second.size() != 1 ||
-			ascii_lowercase(transfer->second[0]) != "chunked")
+		if (transfer->size() != 1 ||
+			ascii_lowercase(transfer->at(0)) != "chunked")
 			return ParseStatus::BAD;
 		result = parse_chunked_body(buffer_, offset_);
 	}
-	else if (length == headers_.end())
+	else if (length == nullptr)
 		result = BodyParsing(ParseStatus::COMPLETE, "", offset_);
-	else if (length->second.size() != 1)
+	else if (length->size() != 1)
 		return ParseStatus::BAD;
 	else
-		result = parse_content_length_body(buffer_, offset_, length->second[0]);
+		result = parse_content_length_body(buffer_, offset_, length->at(0));
 
 	if (result.status == ParseStatus::COMPLETE)
 	{

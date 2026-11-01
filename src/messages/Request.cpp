@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/21 13:55:07 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 14:45:02 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/01 21:16:03 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,9 +99,8 @@ bool Request::has_required_host() const
 {
 	if (version_ != "HTTP/1.1")
 		return true;
-	const auto host = headers_.find("host");
-	if (host == headers_.end())
+	const auto *host = headers_.find("host");
+	if (host == nullptr)
 		return false;
-	const std::vector<std::string> &values = host->second;
-	return values.size() == 1 && !values[0].empty();
+	return host->size() == 1 && !host->front().empty();
 }

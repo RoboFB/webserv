@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Message.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/28 15:51:40 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/01 21:15:52 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,8 @@
 #include <string>
 #include <map>
 #include <vector>
+
+#include "Header.hpp"
 
 /*	required:
 	- response header (create)
@@ -42,15 +44,11 @@
 	Request(request) -> parse and do stuff
 */
 
-#define LINE "\r\n"
-
-using Headers = std::map<std::string, std::vector<std::string>>;
-
 class Message
 {
 	protected:
 		std::string version_;
-		Headers headers_;
+		Header headers_;
 		std::string body_;
 		std::string serializeHeaders() const;
 
@@ -62,7 +60,7 @@ class Message
 		virtual ~Message();
 		Message &addHeader(const std::string &name, const std::string &value);
 		Message &setBody(const std::string &body);
-		const Headers &getHeaders() const;
+		//const Headers &getHeaders() const;
 		const std::string &getBody() const;
 		virtual void serialize() = 0;
 };

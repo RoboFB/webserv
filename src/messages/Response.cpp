@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Response.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/21 13:55:07 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/28 16:41:21 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/01 21:16:07 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,22 +66,59 @@ void Response::convert_to_error(int status)
 
 void Response::serialize()
 {
-	std::string head;
-	// if (reasons_.find(status_) != reasons_.end())
-	// {
-	// 	*this = make_error_response(status_);
-	// }
-	addHeader("Connection", "close");
-	addHeader("Content-Length", std::to_string(body_.size()));
+	headers_.set("Server", "webserv");
+	headers_.set("Connection", "close");
+	headers_.set("Content-Length", std::to_string(body_.size()));
 
-	head = version_ + " " + std::to_string(status_) + " " + getReason() + LINE +
-		   serializeHeaders() + LINE;
+	head_.clear();
+	head_.reserve(version_.size() + getReason().size() + 64);
 
-	offset_ = 0;
-	buffer_.clear();
-	buffer_.reserve(head.size() + body_.size());
-	buffer_.insert(buffer_.end(), head.begin(), head.end());
-	buffer_.insert(buffer_.end(), body_.begin(), body_.end());
+	head_ += version_;
+	head_ += " ";
+	head_ += std::to_string(status_);
+	head_ += " ";
+	head_ += getReason();
+	head_ += LINE;
+
+	headers_.serialize(head_);
+	head_ += LINE;
+
+	head_offset_ = 0;
+	body_offset_ = 0;
+}
+
+const char *Response::send_data() const
+{
+	if (head_offset_ < head_.size())
+		return head_.data() + head_offset_;
+	if (body_offset_ < body_.size())
+		return body_.data() + body_offset_;
+	return nullptr;
+}
+
+std::size_t Response::send_size() const
+{
+	if (head_offset_ < head_.size())
+		return head_.size() - head_offset_;
+	if (offset_ < body_.size())
+		return body_.size() - body_offset_;
+	return 0;
+}
+
+void Response::consume_sent(std::size_t bytes)
+{
+	if (head_offset_ < head_.size())
+	{
+		head_offset_ += bytes;
+		return;
+	}
+	body_offset_ += bytes;
+}
+
+bool Response::is_fully_sent() const
+{
+	return head_offset_ == head_.size() &&
+		   body_offset_ == body_.size();
 }
 
 Response &Response::addHeader(const std::string &name, const std::string &value)
