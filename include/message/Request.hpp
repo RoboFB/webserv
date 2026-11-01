@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/28 15:42:59 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/01 22:02:13 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,7 @@ class Request : public Message
 	public:
 		Request();
 		Request(Methods method, const std::string &target);
-		std::string getTarget() const;
+		const std::string &getTarget() const;
 		void serialize() override;
 
 		// ParseStatus Request::parse_request_head()
@@ -70,7 +70,8 @@ class Request : public Message
 void handle_request(const Request &request, Response &response,
 					const Server &server);
 void handle_get(Response &response, const Location &location,
-				const std::string &request_path);
+				const std::string &request_path,
+				const std::string &request_target);
 void handle_post(const std::string &data_str_body, Response &response,
 				 const Location &location, const std::string &request_path);
 void handle_delete(Response &response, const Location &location,

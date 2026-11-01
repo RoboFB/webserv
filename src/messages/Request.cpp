@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/21 13:55:07 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/01 21:16:03 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/01 22:02:43 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,11 @@ Request::Request() : Message(), method_(Methods::GET), target_("/") {}
 Request::Request(Methods method, const std::string &target)
 	: Message(), method_(method), target_(target)
 {
+}
+
+const std::string &Request::getTarget() const
+{
+	return target_;
 }
 
 URITarget Request::split_uri_target() const

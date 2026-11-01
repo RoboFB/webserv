@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/01 21:48:55 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/01 22:00:44 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,8 +80,20 @@ static std::string mime_type_for(const std::filesystem::path &path)
 		return "application/octet-stream";
 }
 
+static std::string add_trailing_slash(const std::string &request_target)
+{
+	const std::size_t query_start = request_target.find('?');
+
+	if (query_start == std::string::npos)
+		return request_target + "/";
+
+	return request_target.substr(0, query_start) + "/" +
+		   request_target.substr(query_start);
+}
+
 void handle_get(Response &response, const Location &location,
-				const std::string &request_path)
+				const std::string &request_path,
+				const std::string &request_target)
 {
 	const ResolvedPath resolved_path =
 		resolve_resource_path(location, request_path);
@@ -92,9 +104,11 @@ void handle_get(Response &response, const Location &location,
 	std::error_code error;
 	const std::filesystem::file_status status =
 		std::filesystem::status(resolved_path.path, error);
+
 	if (!std::filesystem::exists(status))
 	{
-		if (error == std::make_error_code(std::errc::no_such_file_or_directory))
+		if (error == std::make_error_code(
+				std::errc::no_such_file_or_directory))
 			return response.convert_to_error(404);
 
 		return response.convert_to_error(403);
@@ -107,6 +121,12 @@ void handle_get(Response &response, const Location &location,
 
 	if (std::filesystem::is_directory(status))
 	{
+		if (request_path.empty() || request_path.back() != '/')
+		{
+			return response.convert_to_redirect(
+				301, add_trailing_slash(request_target));
+		}
+
 		const std::optional<std::filesystem::path> index_file =
 			find_index_file(location, file_path);
 
@@ -140,7 +160,6 @@ void handle_get(Response &response, const Location &location,
 	response.set_status(200);
 	response.addHeader("Content-Type", mime_type_for(file_path))
 		.setBody(std::move(body));
-	return;
 }
 
 void handle_post(const std::string &data_str_body, Response &response,
@@ -212,8 +231,8 @@ void handle_delete(Response &response, const Location &location,
 void handle_request(const Request &request, Response &response,
 					const Server &server)
 {
-	const std::string &request_path = request.split_uri_target().path;
-	const Location *location = server.find_location(request_path);
+	const URITarget target = request.split_uri_target();
+	const Location *location = server.find_location(target.path);
 
 	if (location == NULL)
 		return response.convert_to_error(404);
@@ -231,12 +250,13 @@ void handle_request(const Request &request, Response &response,
 	switch (request.get_method())
 	{
 	case Methods::GET:
-		return handle_get(response, *location, request_path);
+		return handle_get(response, *location, target.path,
+						  request.getTarget());
 	case Methods::POST:
 		return handle_post(request.getBody(), response, *location,
-						   request_path);
+						   target.path);
 	case Methods::DELETE:
-		return handle_delete(response, *location, request_path);
+		return handle_delete(response, *location, target.path);
 	default:
 		return response.convert_to_error(501);
 	}
