@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/25 13:34:03 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 19:47:07 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/01 21:48:53 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 

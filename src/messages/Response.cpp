@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/21 13:55:07 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/01 21:16:07 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/01 21:48:54 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,6 +62,14 @@ void Response::convert_to_error(int status)
 	body_ = std::to_string(status) + " " + getReason() + "\n";
 	headers_.clear();
 	addHeader("Content-Type", "text/plain; charset=utf-8");
+}
+
+void Response::convert_to_redirect(int status, const std::string &location)
+{
+	set_status(status);
+	headers_.clear();
+	headers_.set("Location", location);
+	body_.clear();
 }
 
 void Response::serialize()

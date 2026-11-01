@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/01 21:15:55 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/01 21:48:53 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,6 +54,7 @@ class Response : public Message
 		void set_status(int status);
 		void convert_to_error(int status);
 		void convert_to_not_allowed(const Location &location);
+		void convert_to_redirect(int status, const std::string &location);
 
 		Response &addHeader(const std::string &name,
 							const std::string &value);

@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/01 21:32:11 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/01 21:48:55 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -217,6 +217,13 @@ void handle_request(const Request &request, Response &response,
 
 	if (location == NULL)
 		return response.convert_to_error(404);
+
+	if (location->redirect_page)
+	{
+		return response.convert_to_redirect(
+			location->redirect_page->first,
+			location->redirect_page->second);
+	}
 
 	if (!is_method(location->limit_except, request.get_method()))
 		return response.convert_to_not_allowed(*location);
