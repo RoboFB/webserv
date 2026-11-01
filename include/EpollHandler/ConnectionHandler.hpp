@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConnectionHandler.hpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 13:27:16 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/02 00:13:34 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,6 +47,8 @@ class ConnectionHandler : public EpollHandler
 
 	private:
 		void receive();
+		void process_head();
+		void process_body();
 		void make_response();
 		void send();
 		void queue_response();
@@ -54,6 +56,7 @@ class ConnectionHandler : public EpollHandler
 
 		Request request_;
 		const CgiHandler *cgi_;
+		const Location *location_;
 		Response response_;
 
 		enum State

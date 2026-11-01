@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/01 22:27:38 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/02 00:13:58 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -174,7 +174,10 @@ void handle_get(Response &response, const Location &location,
 		resolve_resource_path(location, request_path);
 
 	if (resolved_path.status != ResolveStatus::OK)
-		return response.convert_to_error(403);
+	{
+		response.convert_to_error(403, &location);
+		return;
+	}
 
 	std::error_code error;
 	const std::filesystem::file_status status =
@@ -184,13 +187,17 @@ void handle_get(Response &response, const Location &location,
 	{
 		if (error == std::make_error_code(
 				std::errc::no_such_file_or_directory))
-			return response.convert_to_error(404);
-
-		return response.convert_to_error(403);
+			response.convert_to_error(404, &location);
+		else
+			response.convert_to_error(403, &location);
+		return;
 	}
 
 	if (error)
-		return response.convert_to_error(403);
+	{
+		response.convert_to_error(403, &location);
+		return;
+	}
 
 	std::filesystem::path file_path = resolved_path.path;
 
@@ -198,44 +205,61 @@ void handle_get(Response &response, const Location &location,
 	{
 		if (request_path.empty() || request_path.back() != '/')
 		{
-			return response.convert_to_redirect(
+			response.convert_to_redirect(
 				301, add_trailing_slash(request_target));
+			return;
 		}
 
 		const std::optional<std::filesystem::path> index_file =
 			find_index_file(location, file_path);
 
-		if (!index_file)
+		if (index_file)
+			file_path = *index_file;
+		else
 		{
 			if (!location.autoindex)
-				return response.convert_to_error(403);
+			{
+				response.convert_to_error(403, &location);
+				return;
+			}
 
 			std::string body;
 
 			if (!autoindex(location, file_path, request_path, body))
-				return response.convert_to_error(500);
+			{
+				response.convert_to_error(403, &location);
+				return;
+			}
 
 			response.set_status(200);
 			response.addHeader("Content-Type", "text/html; charset=utf-8")
 				.setBody(std::move(body));
 			return;
 		}
-
-		file_path = *index_file;
 	}
 	else if (!std::filesystem::is_regular_file(status))
-		return response.convert_to_error(403);
+	{
+		response.convert_to_error(403, &location);
+		return;
+	}
 
 	error.clear();
 	const std::uintmax_t file_size =
 		std::filesystem::file_size(file_path, error);
 
 	if (error || file_size > std::string().max_size())
-		return response.convert_to_error(500);
+	{
+		response.convert_to_error(500, &location);
+		return;
+	}
 
 	std::ifstream file(file_path, std::ios::binary);
+
 	if (!file)
-		return response.convert_to_error(403);
+	{
+		response.convert_to_error(403, &location);
+		return;
+	}
 
 	std::string body(static_cast<std::size_t>(file_size), '\0');
 
@@ -243,7 +267,10 @@ void handle_get(Response &response, const Location &location,
 		file.read(body.data(), static_cast<std::streamsize>(body.size()));
 
 	if (!file)
-		return response.convert_to_error(500);
+	{
+		response.convert_to_error(500, &location);
+		return;
+	}
 
 	response.set_status(200);
 	response.addHeader("Content-Type", mime_type_for(file_path))
@@ -254,13 +281,19 @@ void handle_post(const std::string &data_str_body, Response &response,
 				 const Location &location, const std::string &request_path)
 {
 	if (data_str_body.size() > location.client_max_body_size)
-		return response.convert_to_error(413);
+	{
+		response.convert_to_error(413, &location);
+		return;
+	}
 
 	const ResolvedPath resolved_path =
 		resolve_resource_path(location, request_path);
 
 	if (resolved_path.status != ResolveStatus::OK)
-		return response.convert_to_error(403);
+	{
+		response.convert_to_error(403, &location);
+		return;
+	}
 
 	std::error_code error;
 	const std::filesystem::file_status existing_status =
@@ -269,26 +302,38 @@ void handle_post(const std::string &data_str_body, Response &response,
 	const bool existed = !error && std::filesystem::exists(existing_status);
 
 	if (existed && !std::filesystem::is_regular_file(existing_status))
-		return response.convert_to_error(403);
+	{
+		response.convert_to_error(403, &location);
+		return;
+	}
 
 	error.clear();
 	const std::filesystem::file_status parent_status =
 		std::filesystem::status(resolved_path.path.parent_path(), error);
 
 	if (error || !std::filesystem::is_directory(parent_status))
-		return response.convert_to_error(404);
+	{
+		response.convert_to_error(404, &location);
+		return;
+	}
 
 	std::ofstream file(resolved_path.path, std::ios::binary | std::ios::trunc);
 
 	if (!file)
-		return response.convert_to_error(403);
+	{
+		response.convert_to_error(403, &location);
+		return;
+	}
 
 	file << data_str_body;
 
 	if (!file)
-		return response.convert_to_error(500);
+	{
+		response.convert_to_error(500, &location);
+		return;
+	}
 
-	return response.set_status(existed ? 204 : 201);
+	response.set_status(existed ? 204 : 201);
 }
 
 void handle_delete(Response &response, const Location &location,
@@ -298,22 +343,34 @@ void handle_delete(Response &response, const Location &location,
 		resolve_resource_path(location, request_path);
 
 	if (resolved_path.status != ResolveStatus::OK)
-		return response.convert_to_error(403);
+	{
+		response.convert_to_error(403, &location);
+		return;
+	}
 
 	std::error_code error;
 	const std::filesystem::file_status status =
 		std::filesystem::status(resolved_path.path, error);
 
 	if (error || !std::filesystem::exists(status))
-		return response.convert_to_error(404);
+	{
+		response.convert_to_error(404, &location);
+		return;
+	}
 
 	if (!std::filesystem::is_regular_file(status))
-		return response.convert_to_error(403);
+	{
+		response.convert_to_error(403, &location);
+		return;
+	}
 
 	if (!std::filesystem::remove(resolved_path.path, error) || error)
-		return response.convert_to_error(500);
+	{
+		response.convert_to_error(500, &location);
+		return;
+	}
 
-	return response.set_status(204);
+	response.set_status(204);
 }
 
 void handle_request(const Request &request, Response &response,
@@ -323,29 +380,38 @@ void handle_request(const Request &request, Response &response,
 	const Location *location = server.find_location(target.path);
 
 	if (location == NULL)
-		return response.convert_to_error(404);
+	{
+		response.convert_to_error(404, location);
+		return;
+	}
 
 	if (location->redirect_page)
 	{
-		return response.convert_to_redirect(
+		response.convert_to_redirect(
 			location->redirect_page->first,
 			location->redirect_page->second);
+		return;
 	}
 
 	if (!is_method(location->limit_except, request.get_method()))
-		return response.convert_to_not_allowed(*location);
+	{
+		response.convert_to_not_allowed(*location);
+		return;
+	}
 
 	switch (request.get_method())
 	{
 	case Methods::GET:
-		return handle_get(response, *location, target.path,
-						  request.getTarget());
+		handle_get(response, *location, target.path, request.getTarget());
+		return;
 	case Methods::POST:
-		return handle_post(request.getBody(), response, *location,
-						   target.path);
+		handle_post(request.getBody(), response, *location, target.path);
+		return;
 	case Methods::DELETE:
-		return handle_delete(response, *location, target.path);
+		handle_delete(response, *location, target.path);
+		return;
 	default:
-		return response.convert_to_error(501);
+		response.convert_to_error(501, location);
+		return;
 	}
 }

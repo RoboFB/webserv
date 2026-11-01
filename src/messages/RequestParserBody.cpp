@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/18 20:29:59 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/01 21:16:05 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/02 00:13:39 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,13 +19,17 @@
 
 /*	Fixed length body
  */
-static BodyParsing parse_content_length_body(const std::vector<uint8_t> &buffer,
-											 std::size_t body_start,
-											 const std::string &length_text)
+static BodyParsing parse_content_length_body(
+	const std::vector<uint8_t> &buffer,
+	std::size_t body_start,
+	const std::string &length_text,
+	std::size_t max_body_size)
 {
 	std::size_t body_length = 0;
 	if (!parse_decimal_size(length_text, body_length))
 		return BodyParsing();
+	if (body_length > max_body_size)
+		return BodyParsing(ParseStatus::TOO_LARGE);
 	if (body_start > buffer.size() || body_length > buffer.size() - body_start)
 		return BodyParsing(ParseStatus::INCOMPLETE);
 
@@ -67,7 +71,7 @@ static bool parse_chunk_size(std::string_view line, std::size_t &chunk_size)
 /*	Chunked body, indeterminate length
  */
 static BodyParsing parse_chunked_body(const std::vector<uint8_t> &buffer,
-									  std::size_t body_start)
+									  std::size_t body_start, size_t max_body_size)
 {
 	BodyParsing result;
 	std::size_t cursor = body_start;
@@ -100,10 +104,14 @@ static BodyParsing parse_chunked_body(const std::vector<uint8_t> &buffer,
 			}
 		}
 
+		if (result.body.size() > max_body_size ||
+			chunk_size > max_body_size - result.body.size())
+		{
+			return BodyParsing(ParseStatus::TOO_LARGE);
+		}
 		if (cursor > buffer.size() || chunk_size > buffer.size() - cursor)
 			return BodyParsing(ParseStatus::INCOMPLETE);
-		if (chunk_size > result.body.max_size() - result.body.size())
-			return BodyParsing();
+
 		result.body.append(
 			reinterpret_cast<const char *>(buffer.data() + cursor), chunk_size);
 		cursor += chunk_size;
@@ -118,7 +126,7 @@ static BodyParsing parse_chunked_body(const std::vector<uint8_t> &buffer,
 
 /*	Read and fill in body, either chunked or predictable lenght
  */
-ParseStatus Request::parse_body()
+ParseStatus Request::parse_body(size_t max_body_size)
 {
 	const HeaderValues *transfer = headers_.find("transfer-encoding");
 	const HeaderValues *length = headers_.find("content-length");
@@ -131,14 +139,15 @@ ParseStatus Request::parse_body()
 		if (transfer->size() != 1 ||
 			ascii_lowercase(transfer->at(0)) != "chunked")
 			return ParseStatus::BAD;
-		result = parse_chunked_body(buffer_, offset_);
+		result = parse_chunked_body(buffer_, offset_, max_body_size);
 	}
 	else if (length == nullptr)
 		result = BodyParsing(ParseStatus::COMPLETE, "", offset_);
 	else if (length->size() != 1)
 		return ParseStatus::BAD;
 	else
-		result = parse_content_length_body(buffer_, offset_, length->at(0));
+		result = parse_content_length_body(
+			buffer_, offset_, length->at(0), max_body_size);
 
 	if (result.status == ParseStatus::COMPLETE)
 	{

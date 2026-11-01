@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/01 21:15:57 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/02 00:13:37 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,8 @@
 ConnectionHandler::ConnectionHandler(const Server *server, CloseFd &&fd,
 									 const CloseFd &epoll_fd)
 	: EpollHandler(server, std::move(fd), epoll_fd), cgi_(nullptr),
-	  state_(State::READ_HEAD), last_activity_(std::chrono::steady_clock::now())
+	location_(nullptr), state_(State::READ_HEAD),
+	last_activity_(std::chrono::steady_clock::now())
 {
 	add_to_epoll();
 }
@@ -32,17 +33,18 @@ void ConnectionHandler::receive()
 {
 	static constexpr std::size_t buffer_size = 4096;
 	std::array<uint8_t, buffer_size> temporary_buffer = {};
+
 	const ssize_t bytes_read =
 		::recv(fd_, temporary_buffer.data(), temporary_buffer.size(), 0);
+
 	if (bytes_read == 0)
 	{
 		set_state(State::FINISHED);
 		return;
 	}
+
 	if (bytes_read < 0)
 	{
-		// if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
-		// 	return;
 		LOG(LOG_ERROR, "recv: " + std::string(std::strerror(errno)));
 		set_state(State::FINISHED);
 		return;
@@ -50,16 +52,79 @@ void ConnectionHandler::receive()
 
 	request_.buffer_.insert(request_.buffer_.end(), temporary_buffer.begin(),
 							temporary_buffer.begin() + bytes_read);
-	const ParseStatus parsed = request_.request_parsing();
+
+	if (state_ == State::READ_HEAD)
+		process_head();
+
+	if (state_ == State::READ_BODY)
+		process_body();
+}
+
+void ConnectionHandler::process_head()
+{
+	const ParseStatus parsed = request_.parse_request_head();
+
 	if (parsed == ParseStatus::INCOMPLETE)
 		return;
+
 	if (parsed == ParseStatus::BAD)
 	{
 		response_.convert_to_error(400);
 		set_state(State::WRITE);
 		return;
 	}
+
+	const URITarget target = request_.split_uri_target();
+
+	location_ = server_->find_location(target.path);
+
+	if (location_ == nullptr)
+	{
+		response_.convert_to_error(404);
+		set_state(State::WRITE);
+		return;
+	}
+
+	if (location_->redirect_page)
+	{
+		response_.convert_to_redirect(
+			location_->redirect_page->first,
+			location_->redirect_page->second);
+		set_state(State::WRITE);
+		return;
+	}
+
+	if (!is_method(location_->limit_except, request_.get_method()))
+	{
+		response_.convert_to_not_allowed(*location_);
+		set_state(State::WRITE);
+		return;
+	}
+
+	set_state(State::READ_BODY);
+}
+
+void ConnectionHandler::process_body()
+{
+	const ParseStatus parsed = request_.parse_body(location_->client_max_body_size);
+
+	if (parsed == ParseStatus::INCOMPLETE)
+		return;
+	if (parsed == ParseStatus::TOO_LARGE)
+	{
+		response_.convert_to_error(413, location_);
+		set_state(State::WRITE);
+		return;
+	}
+	if (parsed == ParseStatus::BAD)
+	{
+		response_.convert_to_error(400, location_);
+		set_state(State::WRITE);
+		return;
+	}
+
 	request_.buffer_.clear();
+
 	handle_request(request_, response_, *server_);
 	set_state(State::WRITE);
 }
@@ -131,6 +196,7 @@ void ConnectionHandler::set_state(State new_state)
 		modify_epoll(EPOLL_EVENTS::EPOLLIN);
 		break;
 	case State::READ_BODY:
+		modify_epoll(EPOLL_EVENTS::EPOLLIN);
 		break;
 	case State::WAIT_CGI:
 		modify_epoll(EPOLL_EVENTS::EPOLLRDHUP);

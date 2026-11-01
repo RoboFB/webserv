@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/01 22:02:13 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/02 00:13:48 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ enum class ParseStatus
 {
 	INCOMPLETE,
 	BAD,
+	TOO_LARGE,
 	COMPLETE
 };
 
@@ -52,7 +53,7 @@ class Request : public Message
 		// ParseStatus Request::parse_request_head()
 
 		ParseStatus parse_request_head();
-		ParseStatus parse_body();
+		ParseStatus parse_body(size_t max_body_size);
 		ParseStatus request_parsing();
 
 		URITarget split_uri_target() const;
