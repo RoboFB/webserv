@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/01 22:00:44 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/01 22:27:38 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -91,6 +91,81 @@ static std::string add_trailing_slash(const std::string &request_target)
 		   request_target.substr(query_start);
 }
 
+static std::string html_escape(const std::string &text)
+{
+	std::string escaped;
+
+	for (char character : text)
+	{
+		if (character == '&')
+			escaped += "&amp;";
+		else if (character == '<')
+			escaped += "&lt;";
+		else if (character == '>')
+			escaped += "&gt;";
+		else if (character == '"')
+			escaped += "&quot;";
+		else
+			escaped += character;
+	}
+	return escaped;
+}
+
+static bool autoindex(const Location &location,
+						   const std::filesystem::path &directory,
+						   const std::string &request_path,
+						   std::string &body)
+{
+	std::error_code error;
+	std::filesystem::directory_iterator iterator(directory, error);
+
+	if (error)
+		return false;
+
+	body += "<!doctype html>\n";
+	body += "<html><head><meta charset=\"utf-8\">";
+	body += "<title>Index of ";
+	body += html_escape(request_path);
+	body += "</title></head><body>\n";
+	body += "<h1>Index of ";
+	body += html_escape(request_path);
+	body += "</h1><ul>\n";
+
+	const bool is_location_root =
+		request_path == "/" ||
+		request_path == location.location_path ||
+		request_path == location.location_path + "/";
+
+	if (!is_location_root)
+		body += "<li><a href=\"../\">../</a></li>\n";
+
+	while (iterator != std::filesystem::directory_iterator())
+	{
+		const std::string name = iterator->path().filename().string();
+		const bool is_directory = iterator->is_directory(error);
+
+		if (error)
+			return false;
+
+		body += "<li><a href=\"";
+		body += percent_encode(name);
+		if (is_directory)
+			body += "/";
+		body += "\">";
+		body += html_escape(name);
+		if (is_directory)
+			body += "/";
+		body += "</a></li>\n";
+
+		iterator.increment(error);
+		if (error)
+			return false;
+	}
+
+	body += "</ul></body></html>\n";
+	return true;
+}
+
 void handle_get(Response &response, const Location &location,
 				const std::string &request_path,
 				const std::string &request_target)
@@ -131,7 +206,20 @@ void handle_get(Response &response, const Location &location,
 			find_index_file(location, file_path);
 
 		if (!index_file)
-			return response.convert_to_error(403);
+		{
+			if (!location.autoindex)
+				return response.convert_to_error(403);
+
+			std::string body;
+
+			if (!autoindex(location, file_path, request_path, body))
+				return response.convert_to_error(500);
+
+			response.set_status(200);
+			response.addHeader("Content-Type", "text/html; charset=utf-8")
+				.setBody(std::move(body));
+			return;
+		}
 
 		file_path = *index_file;
 	}

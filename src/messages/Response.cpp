@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/21 13:55:07 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/01 21:48:54 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/01 22:27:42 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -108,7 +108,7 @@ std::size_t Response::send_size() const
 {
 	if (head_offset_ < head_.size())
 		return head_.size() - head_offset_;
-	if (offset_ < body_.size())
+	if (body_offset_ < body_.size())
 		return body_.size() - body_offset_;
 	return 0;
 }

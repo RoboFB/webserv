@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/01 21:32:17 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/01 22:27:32 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,4 +66,5 @@ class Message
 };
 
 int hex_value(char character);
+std::string percent_encode(const std::string &input);
 bool percent_decode(const std::string &input, std::string &output);
