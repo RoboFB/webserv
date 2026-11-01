@@ -6,11 +6,12 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 11:23:43 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/01 21:16:00 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/01 21:32:05 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Message.hpp"
+#include <utility>
 
 Message::Message(const std::string &version) : version_(version) {}
 
@@ -22,9 +23,9 @@ Message &Message::addHeader(const std::string &name, const std::string &value)
 	return *this;
 }
 
-Message &Message::setBody(const std::string &body)
+Message &Message::setBody(std::string body)
 {
-	body_ = body;
+	body_ = std::move(body);
 	return *this;
 }
 

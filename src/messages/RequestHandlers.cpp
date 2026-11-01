@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   RequestHandlers.cpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/29 16:23:18 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/01 21:32:11 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,8 +15,10 @@
 
 #include <optional>
 #include <fstream>
-#include <sstream>
+#include <cstdint>
+#include <utility>
 #include <system_error>
+#include <utility>
 
 static std::optional<std::filesystem::path>
 find_index_file(const Location &location,
@@ -116,20 +118,28 @@ void handle_get(Response &response, const Location &location,
 	else if (!std::filesystem::is_regular_file(status))
 		return response.convert_to_error(403);
 
+	error.clear();
+	const std::uintmax_t file_size =
+		std::filesystem::file_size(file_path, error);
+
+	if (error || file_size > std::string().max_size())
+		return response.convert_to_error(500);
+
 	std::ifstream file(file_path, std::ios::binary);
 	if (!file)
 		return response.convert_to_error(403);
 
-	std::ostringstream contents;
-	contents << file.rdbuf();
+	std::string body(static_cast<std::size_t>(file_size), '\0');
 
-	if (file.bad())
+	if (!body.empty())
+		file.read(body.data(), static_cast<std::streamsize>(body.size()));
+
+	if (!file)
 		return response.convert_to_error(500);
 
-	const std::string body = contents.str();
-
 	response.set_status(200);
-	response.addHeader("Content-Type", mime_type_for(file_path)).setBody(body);
+	response.addHeader("Content-Type", mime_type_for(file_path))
+		.setBody(std::move(body));
 	return;
 }
 
