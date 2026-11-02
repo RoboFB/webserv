@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   AllServer.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 19:51:56 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/02 01:14:44 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -87,13 +87,13 @@ void AllServers::wait_epoll(void)
 			continue;
 		}
 
-		const uint32_t &event = events_buffer_array[i].events;
-		if (event & EPOLL_EVENTS::EPOLLERR || event & EPOLL_EVENTS::EPOLLHUP)
-		{
-			LOG(LOG_ERROR, "epoll_wait: EPOLLERR or EPOLLHUP on fd ");
-			p_handel->stop_listening();
-			continue;
-		}
+		// const uint32_t &event = events_buffer_array[i].events;
+		// if (event & EPOLL_EVENTS::EPOLLERR || event & EPOLL_EVENTS::EPOLLHUP)
+		// {
+		// 	LOG(LOG_ERROR, "epoll_wait: EPOLLERR or EPOLLHUP on fd ");
+		// 	p_handel->stop_listening();
+		// 	continue;
+		// }
 		p_handel->on_epoll_event(*this, events_buffer_array[i].events);
 	}
 }

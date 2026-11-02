@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/02 00:38:59 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/02 00:48:04 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,7 +69,7 @@ class Request : public Message
 };
 
 void handle_request(const Request &request, Response &response,
-					const Server &server);
+                    const Location &location);
 void handle_get(Response &response, const Location &location,
 				const std::string &request_path,
 				const std::string &request_target);

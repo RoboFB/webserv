@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/02 00:13:37 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/02 12:36:07 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,10 @@
 #include "AllServer.hpp"
 #include "logging.hpp"
 #include "MagicValues.hpp"
+#include "Resolver.hpp"
 
+#include <memory>
+#include <system_error>
 #include <sys/epoll.h>
 #include <array>
 #include <cstring>
@@ -29,7 +32,7 @@ ConnectionHandler::ConnectionHandler(const Server *server, CloseFd &&fd,
 	add_to_epoll();
 }
 
-void ConnectionHandler::receive()
+void ConnectionHandler::receive(AllServers &servers)
 {
 	static constexpr std::size_t buffer_size = 4096;
 	std::array<uint8_t, buffer_size> temporary_buffer = {};
@@ -57,7 +60,7 @@ void ConnectionHandler::receive()
 		process_head();
 
 	if (state_ == State::READ_BODY)
-		process_body();
+		process_body(servers);
 }
 
 void ConnectionHandler::process_head()
@@ -104,29 +107,84 @@ void ConnectionHandler::process_head()
 	set_state(State::READ_BODY);
 }
 
-void ConnectionHandler::process_body()
+void ConnectionHandler::process_body(AllServers &servers)
 {
-	const ParseStatus parsed = request_.parse_body(location_->client_max_body_size);
+    const ParseStatus parsed =
+        request_.parse_body(location_->client_max_body_size);
 
-	if (parsed == ParseStatus::INCOMPLETE)
-		return;
-	if (parsed == ParseStatus::TOO_LARGE)
-	{
-		response_.convert_to_error(413, location_);
-		set_state(State::WRITE);
-		return;
-	}
-	if (parsed == ParseStatus::BAD)
-	{
-		response_.convert_to_error(400, location_);
-		set_state(State::WRITE);
-		return;
-	}
+    if (parsed == ParseStatus::INCOMPLETE)
+        return;
 
-	request_.buffer_.clear();
+    if (parsed == ParseStatus::TOO_LARGE)
+    {
+        response_.convert_to_error(413, location_);
+        set_state(State::WRITE);
+        return;
+    }
 
-	handle_request(request_, response_, *server_);
-	set_state(State::WRITE);
+    if (parsed == ParseStatus::BAD)
+    {
+        response_.convert_to_error(400, location_);
+        set_state(State::WRITE);
+        return;
+    }
+
+    request_.buffer_.clear();
+
+    const URITarget target = request_.split_uri_target();
+    const ResolvedPath resolved =
+        resolve_resource_path(*location_, target.path);
+
+    if ((request_.get_method() == Methods::GET ||
+         request_.get_method() == Methods::POST) &&
+        resolved.status == ResolveStatus::OK)
+    {
+        std::filesystem::path cgi_path = resolved.path;
+        std::error_code error;
+        std::filesystem::file_status status =
+            std::filesystem::status(cgi_path, error);
+
+        if (!error && std::filesystem::is_directory(status) &&
+            !target.path.empty() && target.path.back() == '/')
+        {
+            const std::optional<std::filesystem::path> index =
+                find_index_file(*location_, cgi_path);
+
+            if (index)
+            {
+                cgi_path = *index;
+                error.clear();
+                status = std::filesystem::status(cgi_path, error);
+            }
+        }
+
+        const CGIConfigMap::const_iterator interpreter =
+            location_->cgi_interpers.find(cgi_path.extension().string());
+
+        if (!error &&
+            std::filesystem::is_regular_file(status) &&
+            interpreter != location_->cgi_interpers.end())
+        {
+            std::unique_ptr<CgiHandler> cgi = std::make_unique<CgiHandler>(
+                server_, epoll_fd_, *this, response_, request_,
+                cgi_path, interpreter->second);
+
+            if (!cgi->is_started())
+            {
+                response_.convert_to_error(502, location_);
+                set_state(State::WRITE);
+                return;
+            }
+
+            cgi_ = cgi.get();
+            servers.add_handler(std::move(cgi));
+            set_state(State::WAIT_CGI);
+            return;
+        }
+    }
+
+    handle_request(request_, response_, *location_);
+    set_state(State::WRITE);
 }
 
 void ConnectionHandler::send()
@@ -161,18 +219,24 @@ void ConnectionHandler::send()
 
 void ConnectionHandler::on_epoll_event(AllServers &servers, uint32_t events)
 {
-	(void)servers;
-	if (events & (EPOLLERR | EPOLLHUP))
-		return set_state(State::FINISHED);
+	// if (events & (EPOLLERR | EPOLLHUP))
+	// 	return set_state(State::FINISHED);
+	if (events & EPOLLERR)
+	{
+		set_state(State::FINISHED);
+		return;
+	}
 
 	switch (state_)
 	{
 	case State::READ_HEAD:
 	case State::READ_BODY:
-		if (events & EPOLLIN)
-			receive();
+		if (events & (EPOLLIN | EPOLLRDHUP))
+			receive(servers);
 		break;
-	case State::WAIT_CGI: // wait for cgi to finish and then send response
+	case State::WAIT_CGI:
+		if (events & (EPOLLRDHUP | EPOLLHUP))
+			set_state(State::FINISHED);
 		break;
 	case State::WRITE:
 		if (events & EPOLLOUT)
@@ -221,6 +285,17 @@ void ConnectionHandler::stop_listening(void)
 {
 	if (remove_me_)
 		return;
+	if (cgi_ != nullptr)
+	{
+		cgi_->stop_listening();
+		cgi_ = nullptr;
+	}
 	remove_from_epoll();
 	remove_me_ = true;
+}
+
+void ConnectionHandler::cgi_finished()
+{
+    cgi_ = nullptr;
+    set_state(State::WRITE);
 }

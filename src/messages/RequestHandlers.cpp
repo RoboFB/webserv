@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/02 00:39:06 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/02 12:35:04 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -168,41 +168,6 @@ static bool parse_multipart_first_file(
 
 		cursor = next_boundary + 2;
 	}
-}
-
-static std::optional<std::filesystem::path>
-find_index_file(const Location &location,
-				const std::filesystem::path &directory)
-{
-	std::error_code error;
-	const std::filesystem::path canonical_root =
-		std::filesystem::weakly_canonical(location.root_path, error);
-	if (error)
-		return (std::nullopt);
-	for (const std::filesystem::path &index : location.indexs_paths)
-	{
-		if (index.is_absolute())
-			continue;
-		const std::filesystem::path candidate =
-			std::filesystem::weakly_canonical(directory / index, error);
-		if (error)
-		{
-			error.clear();
-			continue;
-		}
-		if (!is_path_within_root(candidate, canonical_root))
-			continue;
-		const std::filesystem::file_status status =
-			std::filesystem::status(candidate, error);
-		if (error)
-		{
-			error.clear();
-			continue;
-		}
-		if (std::filesystem::is_regular_file(status))
-			return (candidate);
-	}
-	return (std::nullopt);
 }
 
 static bool is_safe_upload_filename(const std::string &filename)
@@ -597,44 +562,23 @@ void handle_delete(Response &response, const Location &location,
 }
 
 void handle_request(const Request &request, Response &response,
-					const Server &server)
+                    const Location &location)
 {
-	const URITarget target = request.split_uri_target();
-	const Location *location = server.find_location(target.path);
+    const URITarget target = request.split_uri_target();
 
-	if (location == NULL)
-	{
-		response.convert_to_error(404, location);
-		return;
-	}
-
-	if (location->redirect_page)
-	{
-		response.convert_to_redirect(
-			location->redirect_page->first,
-			location->redirect_page->second);
-		return;
-	}
-
-	if (!is_method(location->limit_except, request.get_method()))
-	{
-		response.convert_to_not_allowed(*location);
-		return;
-	}
-
-	switch (request.get_method())
-	{
-	case Methods::GET:
-		handle_get(response, *location, target.path, request.getTarget());
-		return;
-	case Methods::POST:
-		handle_post(request, response, *location);
-		return;
-	case Methods::DELETE:
-		handle_delete(response, *location, target.path);
-		return;
-	default:
-		response.convert_to_error(501, location);
-		return;
-	}
+    switch (request.get_method())
+    {
+    case Methods::GET:
+        handle_get(response, location, target.path, request.getTarget());
+        return;
+    case Methods::POST:
+        handle_post(request, response, location);
+        return;
+    case Methods::DELETE:
+        handle_delete(response, location, target.path);
+        return;
+    default:
+        response.convert_to_error(501, &location);
+        return;
+    }
 }

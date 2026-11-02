@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/01 17:40:08 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/01 21:15:59 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/02 01:23:26 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,4 +74,14 @@ void Header::serialize(std::string &out) const
 void Header::clear()
 {
 	fields_.clear();
+}
+
+HeaderMap::const_iterator Header::begin() const
+{
+    return fields_.begin();
+}
+
+HeaderMap::const_iterator Header::end() const
+{
+    return fields_.end();
 }
