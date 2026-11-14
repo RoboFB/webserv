@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/27 14:45:38 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/02 12:36:28 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/14 23:13:32 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -323,32 +323,39 @@ void CgiHandler::stop_listening(void)
 
 void CgiHandler::finish_cgi_response()
 {
-    const std::size_t header_end = cgi_output_.find(LINE LINE);
-
-    if (header_end == std::string::npos || header_end == 0)
-    {
-        fail_cgi();
-        return;
-    }
-
     int status = 200;
     bool has_status = false;
     bool has_location = false;
     std::size_t cursor = 0;
 
-    while (cursor < header_end)
-    {
-        const std::size_t line_end = cgi_output_.find(LINE, cursor);
+while (true)
+	{
+		const std::size_t newline = cgi_output_.find('\n', cursor);
+		if (newline == std::string::npos)
+		{
+			fail_cgi();
+			return;
+		}
 
-        if (line_end == std::string::npos || line_end > header_end)
-        {
-            fail_cgi();
-            return;
-        }
+		const std::size_t line_start = cursor;
+		std::size_t line_end = newline;
+		if (line_end > line_start && cgi_output_[line_end - 1] == '\r')
+			--line_end;
+		cursor = newline + 1;
 
-        const std::optional<HeaderField> field =
-            parse_header_field(
-                cgi_output_.substr(cursor, line_end - cursor));
+		if (line_end == line_start)
+		{
+			if (line_start == 0)
+			{
+				fail_cgi();
+				return;
+			}
+			break;
+		}
+
+		const std::optional<HeaderField> field =
+			parse_header_field(
+				cgi_output_.substr(line_start, line_end - line_start));
 
         if (!field)
         {
@@ -384,14 +391,12 @@ void CgiHandler::finish_cgi_response()
             if (field->normalized_name == "location")
                 has_location = true;
         }
-
-        cursor = line_end + 2;
     }
 
     if (!has_status && has_location)
         status = 302;
 
-    cgi_output_.erase(0, header_end + 4);
+    cgi_output_.erase(0, cursor);
 
     response_.set_status(status);
     response_.setBody(std::move(cgi_output_));
