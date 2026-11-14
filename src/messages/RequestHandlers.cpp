@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/02 12:35:04 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/14 23:03:02 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,10 +89,9 @@ static std::optional<std::string> multipart_filename(
 
 	while (cursor < header_block.size())
 	{
-		const std::size_t line_end = header_block.find(LINE, cursor);
-
+		std::size_t line_end = header_block.find(LINE, cursor);
 		if (line_end == std::string::npos)
-			return std::nullopt;
+			line_end = header_block.size();
 
 		const std::optional<HeaderField> field =
 			parse_header_field(
@@ -108,6 +107,27 @@ static std::optional<std::string> multipart_filename(
 	}
 
 	return std::nullopt;
+}
+
+static std::size_t find_multipart_boundary(const std::string &body,
+    const std::string &marker, std::size_t start)
+{
+    const std::string delimiter = LINE + marker;
+    std::size_t position = body.find(delimiter, start);
+
+    while (position != std::string::npos)
+    {
+        const std::size_t suffix = position + delimiter.size();
+
+        if (body.compare(suffix, 2, LINE) == 0)
+            return position;
+        if (body.compare(suffix, 2, "--") == 0 &&
+            (suffix + 2 == body.size() ||
+             body.compare(suffix + 2, 2, LINE) == 0))
+            return position;
+        position = body.find(delimiter, suffix);
+    }
+    return std::string::npos;
 }
 
 static bool parse_multipart_first_file(
@@ -153,7 +173,7 @@ static bool parse_multipart_first_file(
 
 		const std::size_t data_start = header_end + 4;
 		const std::size_t next_boundary =
-			body.find(LINE + marker, data_start);
+			find_multipart_boundary(body, marker, data_start);
 
 		if (next_boundary == std::string::npos)
 			return false;
