@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/14 22:45:06 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 00:34:30 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,13 +81,19 @@ void AllServers::wait_epoll(void)
 
 	for (int i = 0; i < events_count; ++i)
 	{
-		EpollHandler *p_handel =
-			static_cast<EpollHandler *>(events_buffer_array[i].data.ptr);
-		if (p_handel == nullptr)
-		{
-			LOG(LOG_ERROR, "epoll_wait: data.ptr is nullptr");
+		const epoll_event &event = events_buffer_array[i];
+		const auto *target = static_cast<const EpollEventTarget *>(event.data.ptr);
+		if (target == nullptr || target->handler->is_remove_me())
 			continue;
-		}
+		target->handler->on_epoll_event(*this, event.events, target->endpoint);
+
+		// EpollHandler *p_handel =
+		// 	static_cast<EpollHandler *>(events_buffer_array[i].data.ptr);
+		// if (p_handel == nullptr)
+		// {
+		// 	LOG(LOG_ERROR, "epoll_wait: data.ptr is nullptr");
+		// 	continue;
+		// }
 
 		// const uint32_t &event = events_buffer_array[i].events;
 		// if (event & EPOLL_EVENTS::EPOLLERR || event & EPOLL_EVENTS::EPOLLHUP)
@@ -96,7 +102,8 @@ void AllServers::wait_epoll(void)
 		// 	p_handel->stop_listening();
 		// 	continue;
 		// }
-		p_handel->on_epoll_event(*this, events_buffer_array[i].events);
+
+		// p_handel->on_epoll_event(*this, events_buffer_array[i].events);
 	}
 }
 
@@ -104,8 +111,8 @@ void AllServers::check_timeouts(void)
 {
 	for (std::unique_ptr<EpollHandler> &connection_fd : all_fds_)
 	{
-		if (connection_fd->is_timeout())
-			connection_fd->stop_listening();
+		if (!connection_fd->is_remove_me() && connection_fd->is_timeout())
+			connection_fd->on_timeout();
 	}
 }
 

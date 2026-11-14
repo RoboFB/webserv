@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/02 01:10:59 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 00:34:10 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,8 +41,9 @@ class ConnectionHandler : public EpollHandler
 						  const CloseFd &epoll_fd);
 		~ConnectionHandler() override = default;
 
-		void on_epoll_event(AllServers &servers, uint32_t events) override;
+		void on_epoll_event(AllServers &servers, uint32_t events, EpollEndpoint endpoint) override;
 		bool is_timeout() const override;
+		void on_timeout() override;
 		void stop_listening() override;
 		void cgi_finished();
 

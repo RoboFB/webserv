@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/14 22:43:17 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 00:02:49 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -101,7 +101,7 @@ void SocketFdHandler::accept(AllServers &servers) const
 	return;
 }
 
-void SocketFdHandler::on_epoll_event(AllServers &servers, uint32_t events)
+void SocketFdHandler::on_epoll_event(AllServers &servers, uint32_t events, EpollEndpoint)
 {
 	if (!(events & EPOLL_EVENTS::EPOLLIN))
 		return;

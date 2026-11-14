@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/27 14:45:38 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/14 23:13:32 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 00:19:52 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,31 +92,34 @@ CgiHandler::CgiHandler(const Server *server, const CloseFd &epoll_fd,
         return;
     }
 
-    const pid_t pid = fork();
+    input_fd_ = CloseFd(std::move(input_fds[0]));
+	fd_ = CloseFd(std::move(output_fds[0]));
+	CloseFd child_input(std::move(input_fds[1]));
+	CloseFd child_output(std::move(output_fds[1]));
 
-    if (pid < 0)
-    {
-        close(input_fds[0]);
-        close(input_fds[1]);
-        close(output_fds[0]);
-        close(output_fds[1]);
-        LOG(LOG_ERROR, "fork: " + std::string(std::strerror(errno)));
-        return;
-    }
+	if (!register_endpoints())
+		return;
+
+	const pid_t pid = fork();
+	if (pid < 0)
+	{
+		LOG(LOG_ERROR, "fork: " + std::string(std::strerror(errno)));
+		return;
+	}
 
     if (pid == 0)
     {
         reset_signal_handling();
 
-        close(input_fds[0]);
-        close(output_fds[0]);
+        close(input_fd_);
+		close(fd_);
 
-        if (dup2(input_fds[1], STDIN_FILENO) < 0 ||
-            dup2(output_fds[1], STDOUT_FILENO) < 0)
-            _exit(127);
+		if (dup2(child_input, STDIN_FILENO) < 0 ||
+			dup2(child_output, STDOUT_FILENO) < 0)
+			_exit(127);
 
-        close(input_fds[1]);
-        close(output_fds[1]);
+		close(child_input);
+		close(child_output);
 
         const std::filesystem::path script_directory =
             script_path.parent_path();
@@ -185,22 +188,25 @@ CgiHandler::CgiHandler(const Server *server, const CloseFd &epoll_fd,
         _exit(127);
     }
 
-    close(input_fds[1]);
-    close(output_fds[1]);
-
     child_pid_ = pid;
-    input_fd_ = CloseFd(std::move(input_fds[0]));
-    fd_ = CloseFd(std::move(output_fds[0]));
+}
 
-    add_to_epoll();
+bool CgiHandler::register_endpoints()
+{
+    if (!add_to_epoll())
+        return false;
 
-    struct epoll_event input_event = {};
-    input_event.events = EPOLLOUT;
-    input_event.data.ptr = this;
+    epoll_event event = {};
+    event.events = EPOLLOUT;
+    event.data.ptr = &input_event_target_;
 
-    if (epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, input_fd_, &input_event) < 0)
-        LOG(LOG_ERROR, "epoll_ctl add CGI input: " +
-                       std::string(std::strerror(errno)));
+    if (::epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, input_fd_, &event) == 0)
+        return true;
+
+    LOG(LOG_ERROR, "epoll_ctl add CGI input: " +
+                   std::string(std::strerror(errno)));
+    remove_from_epoll();
+    return false;
 }
 
 void CgiHandler::close_cgi_input()
@@ -275,24 +281,21 @@ void CgiHandler::fail_cgi()
     stop_listening();
 }
 
-void CgiHandler::on_epoll_event(AllServers &servers, uint32_t events)
+void CgiHandler::on_epoll_event(AllServers &, uint32_t events, EpollEndpoint endpoint)
 {
-    (void)servers;
-
-    if (events & EPOLLERR)
+    if (endpoint == EpollEndpoint::CgiInput)
     {
-        fail_cgi();
+        if (events & (EPOLLERR | EPOLLHUP))
+            close_cgi_input();
+        else if (events & EPOLLOUT)
+            write_request_body();
         return;
     }
 
-    if (events & EPOLLIN)
+    if (events & (EPOLLIN | EPOLLHUP))
         read_cgi_output();
-
-    if (!remove_me_ && events & EPOLLOUT)
-        write_request_body();
-
-    if (!remove_me_ && events & (EPOLLRDHUP | EPOLLHUP))
-        read_cgi_output();
+    else if (events & EPOLLERR)
+        fail_cgi();
 }
 
 bool CgiHandler::is_timeout() const
@@ -328,7 +331,7 @@ void CgiHandler::finish_cgi_response()
     bool has_location = false;
     std::size_t cursor = 0;
 
-while (true)
+	while (true)
 	{
 		const std::size_t newline = cgi_output_.find('\n', cursor);
 		if (newline == std::string::npos)

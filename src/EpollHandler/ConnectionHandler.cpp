@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/14 22:50:23 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 00:34:56 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -219,7 +219,7 @@ void ConnectionHandler::send()
 		set_state(State::FINISHED);
 }
 
-void ConnectionHandler::on_epoll_event(AllServers &servers, uint32_t events)
+void ConnectionHandler::on_epoll_event(AllServers &servers, uint32_t events, EpollEndpoint)
 {
 	// if (events & (EPOLLERR | EPOLLHUP))
 	// 	return set_state(State::FINISHED);
@@ -237,7 +237,7 @@ void ConnectionHandler::on_epoll_event(AllServers &servers, uint32_t events)
 			receive(servers);
 		break;
 	case State::WAIT_CGI:
-		if (events & (EPOLLRDHUP | EPOLLHUP))
+		if (events & EPOLLHUP)
 			set_state(State::FINISHED);
 		break;
 	case State::WRITE:
@@ -265,7 +265,7 @@ void ConnectionHandler::set_state(State new_state)
 		modify_epoll(EPOLL_EVENTS::EPOLLIN);
 		break;
 	case State::WAIT_CGI:
-		modify_epoll(EPOLL_EVENTS::EPOLLRDHUP);
+		modify_epoll(0);
 		break;
 	case State::WRITE:
 		response_.serialize();
@@ -281,6 +281,19 @@ bool ConnectionHandler::is_timeout() const
 {
 	return std::chrono::steady_clock::now() - last_activity_ >
 		   std::chrono::seconds(CONNECTION_TIMEOUT_S);
+}
+
+void ConnectionHandler::on_timeout()
+{
+    if (state_ != State::WAIT_CGI)
+    {
+        set_state(State::FINISHED);
+        return;
+    }
+
+    cgi_->stop_listening();
+    response_.convert_to_error(504, location_);
+    cgi_finished();
 }
 
 void ConnectionHandler::stop_listening(void)

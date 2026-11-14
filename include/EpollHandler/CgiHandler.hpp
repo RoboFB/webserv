@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/27 14:46:20 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/02 12:33:30 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 00:18:55 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,7 @@ class CgiHandler : public EpollHandler
 
 		~CgiHandler() override = default;
 
-		void on_epoll_event(AllServers &servers, uint32_t events) override;
+		void on_epoll_event(AllServers &servers, uint32_t events, EpollEndpoint endpoint) override;
 		bool is_timeout() const override;
 		bool is_started() const;
 		void stop_listening(void) override;
@@ -52,6 +52,7 @@ class CgiHandler : public EpollHandler
 		void finish_cgi_response();
 		void close_cgi_input();
 		void fail_cgi();
+		bool register_endpoints();
 
 		ConnectionHandler &connection_;
 		Response &response_;
@@ -61,6 +62,7 @@ class CgiHandler : public EpollHandler
 		std::string cgi_output_;
 
 		CloseFd input_fd_;
+		EpollEventTarget input_event_target_{this, EpollEndpoint::CgiInput};
 
 		pid_t child_pid_;
 		bool child_input_closed_;
