@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/02 12:36:07 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/14 22:50:23 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,7 @@
 #include <array>
 #include <cstring>
 #include <cerrno>
+#include <algorithm>
 
 ConnectionHandler::ConnectionHandler(const Server *server, CloseFd &&fd,
 									 const CloseFd &epoll_fd)
@@ -52,7 +53,7 @@ void ConnectionHandler::receive(AllServers &servers)
 		set_state(State::FINISHED);
 		return;
 	}
-
+	last_activity_ = std::chrono::steady_clock::now();
 	request_.buffer_.insert(request_.buffer_.end(), temporary_buffer.begin(),
 							temporary_buffer.begin() + bytes_read);
 
@@ -195,9 +196,10 @@ void ConnectionHandler::send()
 		return;
 	}
 
+	constexpr std::size_t max_send_size = 64 * 1024;
+	const std::size_t send_size = std::min(response_.send_size(), max_send_size);
 	const ssize_t bytes_sent =
-		::send(fd_, response_.send_data(), response_.send_size(),
-			   MSG_NOSIGNAL);
+		::send(fd_, response_.send_data(), send_size, MSG_NOSIGNAL);
 
 	if (bytes_sent < 0)
 	{
@@ -210,7 +212,7 @@ void ConnectionHandler::send()
 		set_state(State::FINISHED);
 		return;
 	}
-
+	last_activity_ = std::chrono::steady_clock::now();
 	response_.consume_sent(static_cast<std::size_t>(bytes_sent));
 
 	if (response_.is_fully_sent())

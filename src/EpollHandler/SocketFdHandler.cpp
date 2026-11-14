@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   SocketFd.cpp                                       :+:      :+:    :+:   */
+/*   SocketFdHandler.cpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 13:17:34 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/14 22:43:17 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <cerrno>
+#include <fcntl.h>
 
 // makes the socket calls socket(), bind()
 SocketFdHandler::SocketFdHandler(const struct addrinfo *one_addr,
@@ -38,7 +39,7 @@ SocketFdHandler::SocketFdHandler(const struct addrinfo *one_addr,
 
 void SocketFdHandler::init_socket(const struct addrinfo *one_addr)
 {
-	fd_ = ::socket(one_addr->ai_family, one_addr->ai_socktype | SOCK_NONBLOCK,
+	fd_ = ::socket(one_addr->ai_family, one_addr->ai_socktype | SOCK_NONBLOCK | SOCK_CLOEXEC,
 				   one_addr->ai_protocol);
 	if (fd_ < 0)
 		throw std::runtime_error(std::string("socket: ") +
@@ -87,6 +88,12 @@ void SocketFdHandler::accept(AllServers &servers) const
 	if (client_fd_ < 0)
 	{
 		LOG(LOG_DEBUG, "accept: " + std::string(std::strerror(errno)));
+		return;
+	}
+	if (::fcntl(client_fd_, F_SETFL, O_NONBLOCK) == -1)
+	{
+		LOG(LOG_ERROR, "fcntl client socket: " +
+					std::string(std::strerror(errno)));
 		return;
 	}
 	servers.add_handler(std::make_unique<ConnectionHandler>(

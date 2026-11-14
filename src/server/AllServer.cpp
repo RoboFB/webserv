@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/02 01:14:44 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/14 22:45:06 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,8 @@
 #include <cstring>
 #include <array>
 #include <sys/socket.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 AllServers::AllServers(MainConfigParser &&main_config) : epoll_fd_(init_epoll())
 {
