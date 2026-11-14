@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/14 23:03:02 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/14 23:08:16 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -512,12 +512,19 @@ void handle_post(const Request &request, Response &response,
 	}
 
 	std::error_code error;
-	const bool existed =
-		std::filesystem::exists(*destination, error);
+	const std::filesystem::file_status status =
+		std::filesystem::symlink_status(*destination, error);
 
-	if (error)
+	if (error && error != std::errc::no_such_file_or_directory)
 	{
 		response.convert_to_error(500, &location);
+		return;
+	}
+
+	const bool existed = status.type() != std::filesystem::file_type::not_found;
+	if (existed && !std::filesystem::is_regular_file(status))
+	{
+		response.convert_to_error(403, &location);
 		return;
 	}
 
