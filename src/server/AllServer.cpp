@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/15 00:49:38 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 01:10:56 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -115,6 +115,13 @@ void AllServers::check_timeouts(void)
 		if (!connection_fd->is_remove_me() && connection_fd->is_timeout())
 			connection_fd->on_timeout();
 	}
+}
+
+void AllServers::close_fds_in_cgi_child() const
+{
+	::close(epoll_fd_);
+	for (const auto &handler : all_fds_)
+		handler->close_in_cgi_child();
 }
 
 void AllServers::stop_all(void)

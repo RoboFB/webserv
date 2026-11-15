@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/27 14:46:20 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/15 01:03:15 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 01:11:08 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,7 @@ class CgiHandler : public EpollHandler
 		CgiHandler &operator=(CgiHandler &&) = delete;
 
 		CgiHandler(const Server *server, const CloseFd &epoll_fd,
+					const AllServers &servers,
 				ConnectionHandler &connection, Response &response,
 				const Request &cgi_request,
 				const std::filesystem::path &script_path,
@@ -48,6 +49,7 @@ class CgiHandler : public EpollHandler
 		void stop_listening(void) override;
 
 		void poll_child() override;
+		void close_in_cgi_child() const override;
 		bool can_destroy() const override;
 
 	private:

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   AllServer.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 13:07:50 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/15 01:11:04 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,6 +38,7 @@ class AllServers
 
 		void check_timeouts(void);
 		void cleanup_all_fds(void);
+		void close_fds_in_cgi_child() const;
 
 		// const CloseFd &get_epoll_fd(void) const;
 

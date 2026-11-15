@@ -6,11 +6,12 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/27 14:45:38 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/15 01:01:37 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 01:11:01 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "CgiHandler.hpp"
+#include "AllServer.hpp"
 #include "logging.hpp"
 #include "Signals.hpp"
 #include "Methods.hpp"
@@ -50,6 +51,7 @@ static std::string cgi_http_header_name(const std::string &name)
 }
 
 CgiHandler::CgiHandler(const Server *server, const CloseFd &epoll_fd,
+                       const AllServers &servers,
                        ConnectionHandler &connection, Response &response,
                        const Request &cgi_request,
                        const std::filesystem::path &script_path,
@@ -113,6 +115,7 @@ CgiHandler::CgiHandler(const Server *server, const CloseFd &epoll_fd,
     if (pid == 0)
     {
         reset_signal_handling();
+        servers.close_fds_in_cgi_child();
 
         close(input_fd_);
 		close(fd_);
@@ -333,6 +336,13 @@ void CgiHandler::poll_child()
 
     if (is_remove_me() && deadline_expired())
         terminate_child();
+}
+
+void CgiHandler::close_in_cgi_child() const
+{
+    EpollHandler::close_in_cgi_child();
+    if (input_fd_ >= 0)
+        ::close(input_fd_);
 }
 
 bool CgiHandler::can_destroy() const

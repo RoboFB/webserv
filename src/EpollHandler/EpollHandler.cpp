@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/29 00:00:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/15 00:14:08 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 01:11:00 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "logging.hpp"
 #include <cstring>
 #include <sys/epoll.h>
+#include <unistd.h>
 
 EpollHandler::EpollHandler(const Server *server, CloseFd &&fd,
 						   const CloseFd &epoll_fd)
@@ -63,4 +64,10 @@ void EpollHandler::remove_from_epoll() const
 bool EpollHandler::is_remove_me(void) const
 {
 	return remove_me_;
+}
+
+void EpollHandler::close_in_cgi_child() const
+{
+	if (fd_ >= 0)
+		::close(fd_);
 }

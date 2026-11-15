@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/21 13:55:07 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/01 23:13:28 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 01:15:21 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -149,7 +149,14 @@ void Response::serialize()
 {
 	headers_.set("Server", "webserv");
 	headers_.set("Connection", "close");
-	headers_.set("Content-Length", std::to_string(body_.size()));
+	if (status_ == 204)
+	{
+		headers_.remove("Content-Length");
+		headers_.remove("Transfer-Encoding");
+		body_.clear();
+	}
+	else
+		headers_.set("Content-Length", std::to_string(body_.size()));
 
 	head_.clear();
 	head_.reserve(version_.size() + getReason().size() + 64);

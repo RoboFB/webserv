@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/29 00:00:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/15 00:45:33 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 01:11:12 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,6 +47,7 @@ class EpollHandler
 		virtual void stop_listening(void) = 0;
 
 		bool is_remove_me(void) const;
+		virtual void close_in_cgi_child() const;
 
 		virtual void poll_child() {}
 		virtual bool can_destroy() const { return is_remove_me(); }

@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/15 01:02:05 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 01:11:02 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -167,7 +167,7 @@ void ConnectionHandler::process_body(AllServers &servers)
             interpreter != location_->cgi_interpers.end())
         {
             std::unique_ptr<CgiHandler> cgi = std::make_unique<CgiHandler>(
-                server_, epoll_fd_, *this, response_, request_,
+                server_, epoll_fd_, servers, *this, response_, request_,
                 cgi_path, interpreter->second);
 
             if (!cgi->is_started())
@@ -280,7 +280,7 @@ void ConnectionHandler::set_state(State new_state)
 bool ConnectionHandler::is_timeout() const
 {
 	if (state_ == State::WAIT_CGI)
-    	return cgi_->deadline_expired();
+		return cgi_->deadline_expired();
 	return std::chrono::steady_clock::now() - last_activity_ >
 		   std::chrono::seconds(CONNECTION_TIMEOUT_S);
 }
