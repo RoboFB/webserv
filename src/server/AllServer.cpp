@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/15 00:34:30 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 00:49:38 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,6 +111,7 @@ void AllServers::check_timeouts(void)
 {
 	for (std::unique_ptr<EpollHandler> &connection_fd : all_fds_)
 	{
+		connection_fd->poll_child();
 		if (!connection_fd->is_remove_me() && connection_fd->is_timeout())
 			connection_fd->on_timeout();
 	}
@@ -128,7 +129,7 @@ void AllServers::stop_all(void)
 void AllServers::cleanup_all_fds(void)
 {
 	all_fds_.erase(std::remove_if(all_fds_.begin(), all_fds_.end(),
-								  std::mem_fn(&EpollHandler::is_remove_me)),
+								  std::mem_fn(&EpollHandler::can_destroy)),
 				   all_fds_.end());
 }
 

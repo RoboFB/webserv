@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/27 14:45:38 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/15 00:19:52 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 01:01:37 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,12 +17,15 @@
 #include "ConnectionHandler.hpp"
 #include "Response.hpp"
 #include "Syntax.hpp"
+#include "MagicValues.hpp"
 
 #include <array>
 #include <vector>
 #include <cstring>
+#include <cerrno>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <utility>
 #include <signal.h>
@@ -59,7 +62,7 @@ CgiHandler::CgiHandler(const Server *server, const CloseFd &epoll_fd,
       input_fd_(int(-1)),
       child_pid_(-1),
       child_input_closed_(false),
-      last_activity_(std::chrono::steady_clock::now())
+      started_at_(std::chrono::steady_clock::now())
 {
     int input_fds[2];
     int output_fds[2];
@@ -244,7 +247,6 @@ void CgiHandler::write_request_body()
     }
 
     request_body_offset_ += static_cast<std::size_t>(bytes_sent);
-    last_activity_ = std::chrono::steady_clock::now();
 
     if (request_body_offset_ == request_body_.size())
         close_cgi_input();
@@ -261,7 +263,6 @@ void CgiHandler::read_cgi_output()
     {
         cgi_output_.append(
             buffer.data(), static_cast<std::size_t>(bytes_read));
-        last_activity_ = std::chrono::steady_clock::now();
         return;
     }
 
@@ -303,25 +304,57 @@ bool CgiHandler::is_timeout() const
 	return false;
 }
 
-void CgiHandler::stop_listening(void)
+void CgiHandler::terminate_child()
 {
-    if (remove_me_)
+    if (child_pid_ <= 0 || kill_requested_)
         return;
 
-    if (child_pid_ > 0)
+    if (::kill(child_pid_, SIGKILL) == 0)
+        kill_requested_ = true;
+}
+
+bool CgiHandler::deadline_expired() const
+{
+    return std::chrono::steady_clock::now() - started_at_ >=
+           std::chrono::seconds(CGI_TIMEOUT_S);
+}
+
+void CgiHandler::poll_child()
+{
+    if (child_pid_ <= 0)
+        return;
+
+    const pid_t result = ::waitpid(child_pid_, nullptr, WNOHANG);
+    if (result == child_pid_ || (result < 0 && errno == ECHILD))
     {
-        kill(child_pid_, SIGKILL);
         child_pid_ = -1;
+        return;
     }
 
-    if (input_fd_ >= 0)
-    {
-        epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, input_fd_, nullptr);
-        input_fd_ = CloseFd(int(-1));
-    }
+    if (is_remove_me() && deadline_expired())
+        terminate_child();
+}
 
+bool CgiHandler::can_destroy() const
+{
+    return is_remove_me() && child_pid_ <= 0;
+}
+
+void CgiHandler::close_endpoints()
+{
+    if (is_remove_me())
+        return;
+
+    close_cgi_input();
     remove_from_epoll();
+    fd_ = CloseFd(int(-1));
     remove_me_ = true;
+}
+
+void CgiHandler::stop_listening()
+{
+    terminate_child();
+    close_endpoints();
 }
 
 void CgiHandler::finish_cgi_response()
@@ -404,9 +437,8 @@ void CgiHandler::finish_cgi_response()
     response_.set_status(status);
     response_.setBody(std::move(cgi_output_));
 
-	child_pid_ = -1;
-    connection_.cgi_finished();
-    stop_listening();
+	connection_.cgi_finished();
+	close_endpoints();
 }
 
 bool CgiHandler::is_started() const

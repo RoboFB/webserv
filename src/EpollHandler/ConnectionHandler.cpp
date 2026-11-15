@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/15 00:34:56 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 01:02:05 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -279,6 +279,8 @@ void ConnectionHandler::set_state(State new_state)
 
 bool ConnectionHandler::is_timeout() const
 {
+	if (state_ == State::WAIT_CGI)
+    	return cgi_->deadline_expired();
 	return std::chrono::steady_clock::now() - last_activity_ >
 		   std::chrono::seconds(CONNECTION_TIMEOUT_S);
 }

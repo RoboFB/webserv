@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/27 12:09:58 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/02 01:19:21 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/15 00:59:18 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,7 @@ void init_signal_handling()
 {
 	std::signal(SIGPIPE, handle_sig_pipe);
 	std::signal(SIGINT, handle_sig_int);
-	std::signal(SIGCHLD, SIG_IGN);
+	std::signal(SIGCHLD, SIG_DFL);
 }
 
 void reset_signal_handling()
