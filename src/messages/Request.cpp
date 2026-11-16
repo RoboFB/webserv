@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/21 13:55:07 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/01 22:02:43 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/16 10:23:26 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,11 +54,6 @@ bool Request::is_version_valid() const
 	return version_ == "HTTP/1.0" || version_ == "HTTP/1.1";
 }
 
-bool Request::is_method_valid() const
-{
-	return method_ != Methods::NONE;
-}
-
 bool Request::is_target_valid() const
 {
 	return !target_.empty() && target_[0] == '/';
@@ -72,10 +67,13 @@ bool Request::parse_request_line(const std::string &line)
 		line.find(' ', second_space + 1) != std::string::npos)
 		return false;
 
-	method_ = string_to_methods(line.substr(0, first_space));
+	const std::string method = line.substr(0, first_space);
+	if (!is_valid_field_name(method))
+		return false;
+	method_ = string_to_methods(method);
 	target_ = line.substr(first_space + 1, second_space - first_space - 1);
 	version_ = line.substr(second_space + 1);
-	return is_method_valid() && is_target_valid() && is_version_valid();
+	return is_target_valid() && is_version_valid();
 }
 
 bool Request::parse_headers(const std::string &block, std::size_t cursor)

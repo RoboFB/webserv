@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/02 00:48:04 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/16 10:23:18 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,7 +42,6 @@ class Request : public Message
 
 		bool is_version_valid() const;
 		bool is_target_valid() const;
-		bool is_method_valid() const;
 
 	public:
 		Request();

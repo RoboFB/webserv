@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/15 01:11:02 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/16 10:18:21 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,6 +74,13 @@ void ConnectionHandler::process_head()
 	if (parsed == ParseStatus::BAD)
 	{
 		response_.convert_to_error(400);
+		set_state(State::WRITE);
+		return;
+	}
+
+	if (request_.get_method() == Methods::NONE)
+	{
+		response_.convert_to_error(501);
 		set_state(State::WRITE);
 		return;
 	}
