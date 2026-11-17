@@ -6,7 +6,7 @@
 #    By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/03/10 10:21:00 by rgohrig           #+#    #+#              #
-#    Updated: 2026/11/17 15:36:42 by rgohrig          ###   ########.fr        #
+#    Updated: 2026/11/17 15:47:39 by rgohrig          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -26,14 +26,21 @@ MAKEFLAGS +=		--no-print-directory
 
 COMPILER :=			c++
 PROFILE_FLAGS :=	-pg -g
-FAST_FLAGS :=		-O2 #-march=native -O3 -flto # O2 should be enough
+FAST_FLAGS :=		-O2
 LINKER_FLAGS :=
 COMPILE_FLAGS :=	-MMD -MP # MMD & MD for dependencies
 
 CFLAGS :=			-Wall -Werror -Wextra -std=c++17 $(FAST_FLAGS) $(LINKER_FLAGS) $(COMPILE_FLAGS)
 
 DIR_SRC :=			src
-SRC :=				$(shell find $(DIR_SRC) -type f -name '*.cpp' | sed 's|^$(DIR_SRC)/||')
+SRC :=				utils/CloseFd.cpp utils/logging.cpp utils/Signals.cpp testing.cpp server/AllServer.cpp \
+					server/Location.cpp server/Server.cpp ConfigParser/ConfigParseException.cpp \
+					ConfigParser/check_args.cpp ConfigParser/fill_context.cpp ConfigParser/fill_default.cpp \
+					ConfigParser/helper_parsing.cpp ConfigParser/inherit.cpp ConfigParser/lexer.cpp \
+					EpollHandler/ConnectionHandler.cpp EpollHandler/EpollHandler.cpp EpollHandler/SocketFdHandler.cpp \
+					EpollHandler/CgiHandler.cpp http/Methods.cpp http/Syntax.cpp main.cpp messages/Header.cpp messages/Message.cpp \
+					messages/Request.cpp messages/RequestHandlers.cpp messages/RequestParser.cpp messages/RequestParserBody.cpp \
+					messages/RequestParserHead.cpp messages/Response.cpp messages/decode.cpp routing/Resolver.cpp
 
 DIR_OBJ :=			obj
 OBJ :=				$(SRC:%.cpp=$(DIR_OBJ)/%.o)
@@ -58,7 +65,7 @@ DEPENDENCIES := 	$(OBJ:.o=.d) $(DEBUG_OBJ:.o=.d)
 # ----------------------------- NORMAL -----------------------------------------
 
 # default Rule
-all: compile_commands $(NAME)
+all: $(NAME)
 
 $(DIR_OBJ):
 	@mkdir -p $(DIR_OBJ)
@@ -89,7 +96,6 @@ fclean: clean debug_fclean
 	@rm -f $(NAME)
 	@echo 🧹🧹🧹 cleaned $(NAME)
 
-# sequential on purpose: with -j, "re: fclean all" would clean and build at once
 re:
 	@$(MAKE) fclean
 	@$(MAKE) all
@@ -100,7 +106,7 @@ re:
 
 both: all debug_all
 
-debug_all: compile_commands $(DEBUG_NAME)
+debug_all: $(DEBUG_NAME)
 
 # Compilation
 $(DIR_OBJ)/%_debug.o: $(DIR_SRC)/%.cpp | $(DIR_OBJ)
@@ -127,15 +133,6 @@ debug_stop:
 
 .PHONY: both debug_all debug_fclean debug debug_run debug_stop
 
-# ----------------------------- Profile ----------------------------------------
-
-profile: CFLAGS += $(PROFILE_FLAGS)
-# profile: CFLAGS := $(filter-out $(FAST_FLAGS),$(CFLAGS))
-profile:
-	@$(COMPILER) $(CFLAGS) $(HEADERS) -o $(NAME) $(addprefix $(DIR_SRC)/,$(SRC)) $(LIBS)
-	@echo "\n   📊📊📊 PROFILE $(NAME)   ($(CFLAGS))\n"
-
-
 
 # ----------------------------- Clangd -----------------------------------------
 
@@ -144,4 +141,4 @@ compile_commands:
 
 # ----------------------------- Phony ------------------------------------------
 
-.PHONY: profile compile_commands
+.PHONY: compile_commands
