@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/27 14:45:38 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/17 15:04:25 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/17 15:18:16 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -264,10 +264,9 @@ void CgiHandler::read_cgi_output()
 
 	if (bytes_read > 0)
 	{
-		constexpr std::size_t max_cgi_output = 8 * 1024 * 1024;
 		const std::size_t chunk_size = static_cast<std::size_t>(bytes_read);
 
-		if (chunk_size > max_cgi_output - cgi_output_.size())
+		if (chunk_size > CGI_MAX_OUT - cgi_output_.size())
 		{
 			fail_cgi();
 			return;
