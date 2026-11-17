@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Resolver.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/18 22:52:07 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/20 18:26:31 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/02 12:34:27 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include "Location.hpp"
 #include <filesystem>
 #include <string>
+#include <optional>
 
 enum class ResolveStatus
 {
@@ -34,3 +35,7 @@ bool is_path_within_root(const std::filesystem::path &candidate,
 
 ResolvedPath resolve_resource_path(const Location &location,
 								   const std::string &request_path);
+
+std::optional<std::filesystem::path>
+find_index_file(const Location &location,
+                const std::filesystem::path &directory);

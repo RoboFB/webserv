@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConnectionHandler.hpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 13:27:16 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/15 00:34:10 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,19 +41,24 @@ class ConnectionHandler : public EpollHandler
 						  const CloseFd &epoll_fd);
 		~ConnectionHandler() override = default;
 
-		void on_epoll_event(AllServers &servers, uint32_t events) override;
+		void on_epoll_event(AllServers &servers, uint32_t events, EpollEndpoint endpoint) override;
 		bool is_timeout() const override;
+		void on_timeout() override;
 		void stop_listening() override;
+		void cgi_finished();
 
 	private:
-		void receive();
+		void receive(AllServers &servers);
+		void process_head();
+		void process_body(AllServers &servers);
 		void make_response();
 		void send();
 		void queue_response();
 		void finish();
 
 		Request request_;
-		const CgiHandler *cgi_;
+		CgiHandler *cgi_;
+		const Location *location_;
 		Response response_;
 
 		enum State

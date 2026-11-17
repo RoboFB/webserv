@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/25 13:34:03 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 19:47:07 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/02 00:39:01 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,7 @@ class Location
 		std::optional<std::pair<int, std::string>> redirect_page;
 
 		std::filesystem::path root_path;
+		std::optional<std::filesystem::path> upload_store;
 		size_t client_max_body_size;
 		bool autoindex;
 		Methods limit_except;

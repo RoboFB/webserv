@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/08 14:53:44 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/30 19:46:58 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/02 00:38:56 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -113,11 +113,13 @@ void fill_redirect(TokenIterator &head_token, DefaultConfigParser &fill_config);
 void fill_index(TokenIterator &head_token, DefaultConfigParser &fill_config);
 void fill_cgi(TokenIterator &head_token, DefaultConfigParser &fill_config);
 
+void fill_upload_store(TokenIterator &head_token, DefaultConfigParser &fill_config);
+
 // walks directive_lookup below for the directive names, so they're
 // written once, not duplicated in printig.cpp
 void print_default_directives(std::ostream &os,
 							  const DefaultConfigParser &config, size_t indent);
-static constexpr std::array<DirectiveLookup, 12> directive_lookup = {
+static constexpr std::array<DirectiveLookup, 13> directive_lookup = {
 	// sub_conf directives
 	DirectiveLookup{ConfigContext::MAIN, "http", nullptr}, // fill_main_context,
 	DirectiveLookup{ConfigContext::HTTP, "server",
@@ -145,6 +147,8 @@ static constexpr std::array<DirectiveLookup, 12> directive_lookup = {
 					&ConfigParser::fill_autoindex}, // fill_autoindex_context,
 	DirectiveLookup{ConfigContext::DEFAULT, "root",
 					&ConfigParser::fill_root}, // fill_root_context,
+	DirectiveLookup{ConfigContext::DEFAULT, "upload_store",
+				&ConfigParser::fill_upload_store}, // fill_upload_context,
 	DirectiveLookup{ConfigContext::DEFAULT, "index",
 					&ConfigParser::fill_index}, // fill_index_context,
 	DirectiveLookup{ConfigContext::DEFAULT, "return",

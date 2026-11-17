@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   AllServer.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 15:57:52 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 19:51:56 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/15 01:10:56 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,8 @@
 #include <cstring>
 #include <array>
 #include <sys/socket.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 AllServers::AllServers(MainConfigParser &&main_config) : epoll_fd_(init_epoll())
 {
@@ -79,22 +81,29 @@ void AllServers::wait_epoll(void)
 
 	for (int i = 0; i < events_count; ++i)
 	{
-		EpollHandler *p_handel =
-			static_cast<EpollHandler *>(events_buffer_array[i].data.ptr);
-		if (p_handel == nullptr)
-		{
-			LOG(LOG_ERROR, "epoll_wait: data.ptr is nullptr");
+		const epoll_event &event = events_buffer_array[i];
+		const auto *target = static_cast<const EpollEventTarget *>(event.data.ptr);
+		if (target == nullptr || target->handler->is_remove_me())
 			continue;
-		}
+		target->handler->on_epoll_event(*this, event.events, target->endpoint);
 
-		const uint32_t &event = events_buffer_array[i].events;
-		if (event & EPOLL_EVENTS::EPOLLERR || event & EPOLL_EVENTS::EPOLLHUP)
-		{
-			LOG(LOG_ERROR, "epoll_wait: EPOLLERR or EPOLLHUP on fd ");
-			p_handel->stop_listening();
-			continue;
-		}
-		p_handel->on_epoll_event(*this, events_buffer_array[i].events);
+		// EpollHandler *p_handel =
+		// 	static_cast<EpollHandler *>(events_buffer_array[i].data.ptr);
+		// if (p_handel == nullptr)
+		// {
+		// 	LOG(LOG_ERROR, "epoll_wait: data.ptr is nullptr");
+		// 	continue;
+		// }
+
+		// const uint32_t &event = events_buffer_array[i].events;
+		// if (event & EPOLL_EVENTS::EPOLLERR || event & EPOLL_EVENTS::EPOLLHUP)
+		// {
+		// 	LOG(LOG_ERROR, "epoll_wait: EPOLLERR or EPOLLHUP on fd ");
+		// 	p_handel->stop_listening();
+		// 	continue;
+		// }
+
+		// p_handel->on_epoll_event(*this, events_buffer_array[i].events);
 	}
 }
 
@@ -102,9 +111,17 @@ void AllServers::check_timeouts(void)
 {
 	for (std::unique_ptr<EpollHandler> &connection_fd : all_fds_)
 	{
-		if (connection_fd->is_timeout())
-			connection_fd->stop_listening();
+		connection_fd->poll_child();
+		if (!connection_fd->is_remove_me() && connection_fd->is_timeout())
+			connection_fd->on_timeout();
 	}
+}
+
+void AllServers::close_fds_in_cgi_child() const
+{
+	::close(epoll_fd_);
+	for (const auto &handler : all_fds_)
+		handler->close_in_cgi_child();
 }
 
 void AllServers::stop_all(void)
@@ -119,7 +136,7 @@ void AllServers::stop_all(void)
 void AllServers::cleanup_all_fds(void)
 {
 	all_fds_.erase(std::remove_if(all_fds_.begin(), all_fds_.end(),
-								  std::mem_fn(&EpollHandler::is_remove_me)),
+								  std::mem_fn(&EpollHandler::can_destroy)),
 				   all_fds_.end());
 }
 

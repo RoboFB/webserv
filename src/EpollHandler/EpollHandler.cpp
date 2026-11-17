@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   EpollHandler.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/29 00:00:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 17:31:32 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/15 01:11:00 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "logging.hpp"
 #include <cstring>
 #include <sys/epoll.h>
+#include <unistd.h>
 
 EpollHandler::EpollHandler(const Server *server, CloseFd &&fd,
 						   const CloseFd &epoll_fd)
@@ -23,16 +24,18 @@ EpollHandler::EpollHandler(const Server *server, CloseFd &&fd,
 }
 
 // set it with EPOLL_CTL_ADD and EPOLLIN
-void EpollHandler::add_to_epoll()
+bool EpollHandler::add_to_epoll()
 {
 	struct epoll_event event;
 	event.events = EPOLL_EVENTS::EPOLLIN;
-	event.data.ptr = this;
+	event.data.ptr = &event_target_;
 
 	if (::epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, fd_, &event) < 0)
 	{
 		LOG(LOG_ERROR, "epoll_ctl add: " + std::string(std::strerror(errno)));
+		return false;
 	}
+	return true;
 }
 
 // switch this fd's registered interest (e.g. EPOLLIN -> EPOLLOUT) once
@@ -41,7 +44,7 @@ void EpollHandler::modify_epoll(uint32_t events)
 {
 	struct epoll_event event;
 	event.events = events;
-	event.data.ptr = this;
+	event.data.ptr = &event_target_;
 
 	if (::epoll_ctl(epoll_fd_, EPOLL_CTL_MOD, fd_, &event) < 0)
 	{
@@ -61,4 +64,10 @@ void EpollHandler::remove_from_epoll() const
 bool EpollHandler::is_remove_me(void) const
 {
 	return remove_me_;
+}
+
+void EpollHandler::close_in_cgi_child() const
+{
+	if (fd_ >= 0)
+		::close(fd_);
 }

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Syntax.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/19 00:08:31 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/30 16:16:26 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/16 10:20:41 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 #include <cctype>
 #include <limits>
 
-static bool is_valid_field_name(const std::string &name)
+bool is_valid_field_name(const std::string &name)
 {
 	static const std::string allowed_special_characters = "!#$%&'*+-.^_`|~";
 

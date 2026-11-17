@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   SocketFd.cpp                                       :+:      :+:    :+:   */
+/*   SocketFdHandler.cpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 13:17:34 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/17 14:06:01 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <cerrno>
+#include <fcntl.h>
 
 // makes the socket calls socket(), bind()
 SocketFdHandler::SocketFdHandler(const struct addrinfo *one_addr,
@@ -38,7 +39,7 @@ SocketFdHandler::SocketFdHandler(const struct addrinfo *one_addr,
 
 void SocketFdHandler::init_socket(const struct addrinfo *one_addr)
 {
-	fd_ = ::socket(one_addr->ai_family, one_addr->ai_socktype | SOCK_NONBLOCK,
+	fd_ = ::socket(one_addr->ai_family, one_addr->ai_socktype | SOCK_NONBLOCK | SOCK_CLOEXEC,
 				   one_addr->ai_protocol);
 	if (fd_ < 0)
 		throw std::runtime_error(std::string("socket: ") +
@@ -64,8 +65,7 @@ void SocketFdHandler::init_bind(const struct addrinfo *one_addr)
 		::getnameinfo(one_addr->ai_addr, one_addr->ai_addrlen, host,
 					  sizeof(host), port, sizeof(port),
 					  NI_NUMERICHOST | NI_NUMERICSERV);
-		throw std::runtime_error("bind " + std::string(host) + ":" + port +
-								 ": " + std::strerror(bind_errno));
+		throw std::runtime_error(std::string("bind on location: ") + std::strerror(bind_errno));
 	}
 }
 void SocketFdHandler::init_listen(void) const
@@ -89,12 +89,18 @@ void SocketFdHandler::accept(AllServers &servers) const
 		LOG(LOG_DEBUG, "accept: " + std::string(std::strerror(errno)));
 		return;
 	}
+	if (::fcntl(client_fd_, F_SETFL, O_NONBLOCK) == -1)
+	{
+		LOG(LOG_ERROR, "fcntl client socket: " +
+					std::string(std::strerror(errno)));
+		return;
+	}
 	servers.add_handler(std::make_unique<ConnectionHandler>(
 		server_, std::move(client_fd_), epoll_fd_));
 	return;
 }
 
-void SocketFdHandler::on_epoll_event(AllServers &servers, uint32_t events)
+void SocketFdHandler::on_epoll_event(AllServers &servers, uint32_t events, EpollEndpoint)
 {
 	if (!(events & EPOLL_EVENTS::EPOLLIN))
 		return;

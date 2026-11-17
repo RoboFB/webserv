@@ -1,0 +1,33 @@
+*, *::before, *::after {
+	box-sizing: border-box;
+}
+
+body, h1, h2, h3, p, pre, dl, dd, ul {
+	margin: 0;
+}
+
+body {
+	min-block-size: 100svh;
+}
+
+a {
+	color: inherit;
+}
+
+input, textarea {
+	font: inherit;
+}
+
+button, input::file-selector-button {
+	font: inherit;
+	min-block-size: 2rem;
+}
+
+:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 3px;
+}
+
+[hidden] {
+	display: none !important;
+}

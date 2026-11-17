@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   RequestParserHead.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/18 21:28:57 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/27 16:20:51 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/02 00:13:43 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,5 +50,6 @@ ParseStatus Request::parse_request_head()
 		return ParseStatus::BAD;
 	}
 	offset_ = head_length;
+	head_done_ = true;
 	return ParseStatus::COMPLETE;
 }

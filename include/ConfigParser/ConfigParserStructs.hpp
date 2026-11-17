@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParserStructs.hpp                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 18:36:32 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/29 19:24:47 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/02 00:38:57 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,9 +26,10 @@ struct DefaultConfigParser
 		std::vector<std::filesystem::path> indexs_paths;
 		CGIConfigMap cgi_interpers;
 		ErrorPages error_pages; // todo
-		std::optional<std::pair<int, std::string>> redirect_page; // todo
+		std::optional<std::pair<int, std::string>> redirect_page;
 
 		std::optional<std::filesystem::path> root_path;
+		std::optional<std::filesystem::path> upload_store;
 		std::optional<size_t> client_max_body_size;
 		std::optional<bool> autoindex;
 		Methods limit_except;

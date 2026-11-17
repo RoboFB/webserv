@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Signals.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/27 12:09:58 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/27 14:14:25 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/15 00:59:18 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,10 +33,12 @@ void init_signal_handling()
 {
 	std::signal(SIGPIPE, handle_sig_pipe);
 	std::signal(SIGINT, handle_sig_int);
+	std::signal(SIGCHLD, SIG_DFL);
 }
 
 void reset_signal_handling()
 {
 	std::signal(SIGPIPE, SIG_DFL);
 	std::signal(SIGINT, SIG_DFL);
+	std::signal(SIGCHLD, SIG_DFL);
 }

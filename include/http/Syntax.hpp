@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Syntax.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/19 00:09:05 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/29 13:37:54 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/16 10:21:07 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,8 @@ struct HeaderField
 		std::string normalized_name;
 		std::string value;
 };
+
+bool is_valid_field_name(const std::string &name);
 
 std::string ascii_lowercase(const std::string &input);
 

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 12:51:42 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/28 15:42:59 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/16 10:23:18 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ enum class ParseStatus
 {
 	INCOMPLETE,
 	BAD,
+	TOO_LARGE,
 	COMPLETE
 };
 
@@ -41,18 +42,17 @@ class Request : public Message
 
 		bool is_version_valid() const;
 		bool is_target_valid() const;
-		bool is_method_valid() const;
 
 	public:
 		Request();
 		Request(Methods method, const std::string &target);
-		std::string getTarget() const;
+		const std::string &getTarget() const;
 		void serialize() override;
 
 		// ParseStatus Request::parse_request_head()
 
 		ParseStatus parse_request_head();
-		ParseStatus parse_body();
+		ParseStatus parse_body(size_t max_body_size);
 		ParseStatus request_parsing();
 
 		URITarget split_uri_target() const;
@@ -68,10 +68,11 @@ class Request : public Message
 };
 
 void handle_request(const Request &request, Response &response,
-					const Server &server);
+                    const Location &location);
 void handle_get(Response &response, const Location &location,
-				const std::string &request_path);
-void handle_post(const std::string &data_str_body, Response &response,
-				 const Location &location, const std::string &request_path);
+				const std::string &request_path,
+				const std::string &request_target);
+void handle_post(const Request &request, Response &response,
+				 const Location &location);
 void handle_delete(Response &response, const Location &location,
 				   const std::string &request_path);

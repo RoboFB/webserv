@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   fill_default.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/31 18:38:24 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/10/30 20:06:09 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/02 12:37:08 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -126,6 +126,16 @@ void ConfigParser::fill_root(TokenIterator &head_token,
 
 	skip_next(head_token, TokenType::SEMICOLON);
 	return;
+}
+
+void ConfigParser::fill_upload_store(
+	TokenIterator &head_token,
+	DefaultConfigParser &fill_config)
+{
+	const Token token = get_next_word(head_token);
+
+	fill_config.upload_store = token.word;
+	skip_next(head_token, TokenType::SEMICOLON);
 }
 
 /*
@@ -248,19 +258,24 @@ void ConfigParser::fill_limit_except(TokenIterator &head_token,
 default: empty
 */
 void ConfigParser::fill_cgi(TokenIterator &head_token,
-							DefaultConfigParser &fill_config)
+                            DefaultConfigParser &fill_config)
 {
-	Token token_extension = get_next_word(head_token);
+    const Token token_extension = get_next_word(head_token);
 
-	if (token_extension.word != ".py" && token_extension.word != ".php")
-		throw ConfigParserException(
-			"invalid cgi extension, expected '.py' or '.php'", token_extension);
+    if (token_extension.word.size() < 2 ||
+        token_extension.word.front() != '.' ||
+        token_extension.word.find_first_of("/\\") != std::string::npos)
+    {
+        throw ConfigParserException(
+            "invalid cgi extension, expected an extension such as '.cgi'",
+            token_extension);
+    }
 
-	Token token_path = get_next_word(head_token);
-	fill_config.cgi_interpers[token_extension.word] = token_path.word;
+    const Token token_path = get_next_word(head_token);
 
-	skip_next(head_token, TokenType::SEMICOLON);
-	return;
+    fill_config.cgi_interpers[token_extension.word] = token_path.word;
+
+    skip_next(head_token, TokenType::SEMICOLON);
 }
 
 /*

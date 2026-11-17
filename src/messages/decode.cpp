@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   decode.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/18 20:01:03 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/20 19:22:25 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/01 22:27:36 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,32 @@ int hex_value(char character)
 	if (character >= 'A' && character <= 'F')
 		return character - 'A' + 10;
 	return -1;
+}
+
+std::string percent_encode(const std::string &input)
+{
+	static const char hex[] = "0123456789ABCDEF";
+	std::string output;
+
+	for (unsigned char character : input)
+	{
+		const bool is_unreserved =
+			(character >= 'a' && character <= 'z') ||
+			(character >= 'A' && character <= 'Z') ||
+			(character >= '0' && character <= '9') ||
+			character == '-' || character == '.' ||
+			character == '_' || character == '~';
+
+		if (is_unreserved)
+			output += static_cast<char>(character);
+		else
+		{
+			output += '%';
+			output += hex[character >> 4];
+			output += hex[character & 0x0f];
+		}
+	}
+	return output;
 }
 
 bool percent_decode(const std::string &input, std::string &output)

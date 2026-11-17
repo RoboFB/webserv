@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/18 22:51:52 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/18 23:29:03 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/02 12:34:43 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -138,4 +138,48 @@ ResolvedPath resolve_resource_path(
 	result.status = ResolveStatus::OK;
 	result.path = *candidate;
 	return result;
+}
+
+std::optional<std::filesystem::path>
+find_index_file(const Location &location,
+                const std::filesystem::path &directory)
+{
+    std::error_code error;
+    const std::filesystem::path canonical_root =
+        std::filesystem::weakly_canonical(location.root_path, error);
+
+    if (error)
+        return std::nullopt;
+
+    for (const std::filesystem::path &index : location.indexs_paths)
+    {
+        if (index.is_absolute())
+            continue;
+
+        const std::filesystem::path candidate =
+            std::filesystem::weakly_canonical(directory / index, error);
+
+        if (error)
+        {
+            error.clear();
+            continue;
+        }
+
+        if (!is_path_within_root(candidate, canonical_root))
+            continue;
+
+        const std::filesystem::file_status status =
+            std::filesystem::status(candidate, error);
+
+        if (error)
+        {
+            error.clear();
+            continue;
+        }
+
+        if (std::filesystem::is_regular_file(status))
+            return candidate;
+    }
+
+    return std::nullopt;
 }

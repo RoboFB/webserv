@@ -3,14 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   Message.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
+/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 11:23:43 by modiepge          #+#    #+#             */
-/*   Updated: 2026/10/28 15:51:32 by rgohrig          ###   ########.fr       */
+/*   Updated: 2026/11/02 00:39:06 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Message.hpp"
+#include <utility>
 
 Message::Message(const std::string &version) : version_(version) {}
 
@@ -18,20 +19,19 @@ Message::~Message() {}
 
 Message &Message::addHeader(const std::string &name, const std::string &value)
 {
-	headers_[name].push_back(value);
+	headers_.add(name, value);
 	return *this;
 }
 
-const std::map<std::string, std::vector<std::string>> &
-Message::getHeaders() const
+Message &Message::setBody(std::string body)
+{
+	body_ = std::move(body);
+	return *this;
+}
+
+const Header &Message::get_headers() const
 {
 	return headers_;
-}
-
-Message &Message::setBody(const std::string &body)
-{
-	this->body_ = body;
-	return *this;
 }
 
 const std::string &Message::getBody() const
@@ -43,10 +43,6 @@ std::string Message::serializeHeaders() const
 {
 	std::string result;
 
-	for (const auto &header : headers_)
-	{
-		for (const std::string &value : header.second)
-			result += header.first + ": " + value + LINE;
-	}
+	headers_.serialize(result);
 	return result;
 }
