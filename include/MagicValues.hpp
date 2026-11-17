@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/20 16:11:39 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/15 00:59:42 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/17 15:17:30 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,4 +25,5 @@
 #define MAX_EVENTS 10
 #define EPOLL_TIMEOUT_MS 1000 // -1 = infinite wait todo: set to better value
 #define CONNECTION_TIMEOUT_S 10 // 10 seconds
-#define CGI_TIMEOUT_S 30
+#define CGI_TIMEOUT_S 5
+#define CGI_MAX_OUT (8 * BODY_SIZE_M)
