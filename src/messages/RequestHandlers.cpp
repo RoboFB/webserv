@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/14 23:08:16 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/17 13:02:36 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -315,7 +315,7 @@ static bool autoindex(const Location &location,
 	body += "</title></head><body>\n";
 	body += "<h1>Index of ";
 	body += html_escape(request_path);
-	body += "</h1><ul>\n";
+	body += "</h1><hr><ul>\n";
 
 	const bool is_location_root =
 		request_path == "/" ||
@@ -348,7 +348,7 @@ static bool autoindex(const Location &location,
 			return false;
 	}
 
-	body += "</ul></body></html>\n";
+	body += "</ul><hr></body></html>\n";
 	return true;
 }
 

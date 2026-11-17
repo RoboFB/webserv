@@ -2,12 +2,110 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<meta name="viewport" content="width=<h1>, initial-scale=1.0">
-	<title>Document</title>
-	<link rel="stylesheet" href="assets/style.css">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>HELLO WEBSERV?!</title>
+	<link rel="stylesheet" href="/assets/reset.css">
+	<link rel="stylesheet" href="/assets/main.css">
+	<script src="/assets/js/demo.js" defer></script>
 </head>
 <body>
-	<h1>Is this working yet?</h1>
-	<img src="assets/img/test.png" alt="">
+	<header>
+		<h1 class="site-brand">HELLO WEBSERV?!</h1>
+		<nav aria-label="Demo mode">
+			<ul>
+				<li><a href="/" aria-current="page">static</a></li>
+				<li><a href="/cgi/">cgi</a></li>
+			</ul>
+		</nav>
+	</header>
+	<main>
+		<section>
+			<h2>Short Demos</h2>
+			<nav>
+				<ul>
+					<li><a href="/assets">autoindex</a></li>
+					<li><a href="/redirect">redirect</a></li>
+					<li><a href="/nope">error</a></li>
+					<li><a href="/cgi/">cgi</a></li>
+					<li><a href="/cgi/index.py">cgi.py</a></li>
+					<li><a href="/cgi/#cookies">cookies and sessions</a></li>
+					<li><a id="alt-site">alt</a></li>
+				</ul>
+			</nav>
+		</section>
+		<section>
+			<form id="upload">
+				<h2>File upload</h2>
+				<label for="file">File</label>
+				<div class="control-row">
+					<input id="file" type="file" required>
+					<button type="submit">upload</button>
+				</div>
+			</form>
+			<p id="upload-list-status" role="status" hidden></p>
+			<div id="uploaded-files"></div>
+			<template id="uploaded-file">
+				<figure>
+					<img alt="" loading="lazy" hidden>
+					<figcaption></figcaption>
+					<div class="control-row">
+						<a target="_blank" rel="noopener">open</a>
+						<button type="button" data-action="replace">replace</button>
+						<button type="button" data-action="delete">delete</button>
+					</div>
+					<input type="file" hidden>
+				</figure>
+			</template>
+		</section>
+		<section>
+			<form action="/cgi/" method="post">
+				<h2>POST to CGI</h2>
+				<label class="field">message <input name="message" value="HELLO WORLD!"></label>
+				<button type="submit">send</button>
+			</form>
+		</section>
+		<section>
+			<h2>HTTP errors</h2>
+			<button id="test-405" type="button">POST to GET-only route</button>
+			<button id="test-501" type="button">send unknown method</button>
+			<button id="test-413" type="button">test body limit (413)</button>
+		</section>
+		<section>
+			<h2>request</h2>
+			<form id="request-builder">
+				<div class="request-line">
+					<label class="field">Method
+						<input name="method" list="request-methods" value="GET" required spellcheck="false">
+						<datalist id="request-methods">
+							<option value="GET">
+							<option value="POST">
+							<option value="DELETE">
+							<option value="RANDOM">
+						</datalist>
+					</label>
+					<label class="field">target
+						<input name="target" value="/cgi/index.php" required spellcheck="false">
+					</label>
+				</div>
+				<label class="field">headers
+					<textarea name="headers" rows="2" placeholder="X-Demo: hello" spellcheck="false"></textarea>
+				</label>
+				<label class="field">body
+					<textarea name="body" rows="3" placeholder="HELLO WORLD?!" disabled></textarea>
+				</label>
+				<div><button type="submit">send</button></div>
+				<output id="request-status" role="status"></output>
+			</form>
+		</section>
+		<dialog id="response-window" aria-label="HTTP request and response">
+			<pre id="request-text" tabindex="0" aria-label="Request"></pre>
+			<hr>
+			<pre id="response-text" tabindex="0" aria-label="Response"></pre>
+			<form method="dialog"><button autofocus>Close</button></form>
+		</dialog>
+	</main>
+	<footer>
+		<p>This project has been created as part of the 42 curriculum by rgohrig and modiepge.</p>
+	</footer>
 </body>
 </html>
