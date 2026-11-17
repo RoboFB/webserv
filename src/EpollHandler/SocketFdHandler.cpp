@@ -6,7 +6,7 @@
 /*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:14:55 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/15 00:02:49 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/17 14:06:01 by modiepge         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,8 +65,7 @@ void SocketFdHandler::init_bind(const struct addrinfo *one_addr)
 		::getnameinfo(one_addr->ai_addr, one_addr->ai_addrlen, host,
 					  sizeof(host), port, sizeof(port),
 					  NI_NUMERICHOST | NI_NUMERICSERV);
-		throw std::runtime_error("bind " + std::string(host) + ":" + port +
-								 ": " + std::strerror(bind_errno));
+		throw std::runtime_error(std::string("bind on location: ") + std::strerror(bind_errno));
 	}
 }
 void SocketFdHandler::init_listen(void) const
