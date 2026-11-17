@@ -73,6 +73,6 @@ void handle_get(Response &response, const Location &location,
 				const std::string &request_path,
 				const std::string &request_target);
 void handle_post(const Request &request, Response &response,
-				 const Location &location);
+				 const Location &location, const std::string &request_path);
 void handle_delete(Response &response, const Location &location,
 				   const std::string &request_path);

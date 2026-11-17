@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   RequestHandlers.cpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
+/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 00:50:28 by modiepge          #+#    #+#             */
-/*   Updated: 2026/11/17 13:02:36 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/17 15:29:00 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,31 +21,29 @@
 #include <system_error>
 #include <utility>
 
-static std::optional<std::string> find_parameter(
-	const std::string &value,
-	const std::string &wanted_name)
+static std::optional<std::string> find_parameter(const std::string &value,
+												 const std::string &wanted_name)
 {
 	std::size_t cursor = 0;
 
 	while (cursor < value.size())
 	{
 		const std::size_t end = value.find(';', cursor);
-		const std::string parameter = trim_whitespace(
-			value.substr(cursor, end - cursor));
+		const std::string parameter =
+			trim_whitespace(value.substr(cursor, end - cursor));
 		const std::size_t equal = parameter.find('=');
 
 		if (equal != std::string::npos)
 		{
-			const std::string name = ascii_lowercase(
-				trim_whitespace(parameter.substr(0, equal)));
+			const std::string name =
+				ascii_lowercase(trim_whitespace(parameter.substr(0, equal)));
 
 			if (name == wanted_name)
 			{
-				std::string result = trim_whitespace(
-					parameter.substr(equal + 1));
+				std::string result =
+					trim_whitespace(parameter.substr(equal + 1));
 
-				if (result.size() >= 2 &&
-					result.front() == '"' &&
+				if (result.size() >= 2 && result.front() == '"' &&
 					result.back() == '"')
 				{
 					result = result.substr(1, result.size() - 2);
@@ -65,12 +63,12 @@ static std::optional<std::string> find_parameter(
 	return std::nullopt;
 }
 
-static std::optional<std::string> multipart_boundary(
-	const std::string &content_type)
+static std::optional<std::string>
+multipart_boundary(const std::string &content_type)
 {
 	const std::size_t separator = content_type.find(';');
-	const std::string media_type = ascii_lowercase(
-		trim_whitespace(content_type.substr(0, separator)));
+	const std::string media_type =
+		ascii_lowercase(trim_whitespace(content_type.substr(0, separator)));
 
 	if (media_type != "multipart/form-data")
 		return std::nullopt;
@@ -78,12 +76,11 @@ static std::optional<std::string> multipart_boundary(
 	if (separator == std::string::npos)
 		return std::nullopt;
 
-	return find_parameter(
-		content_type.substr(separator + 1), "boundary");
+	return find_parameter(content_type.substr(separator + 1), "boundary");
 }
 
-static std::optional<std::string> multipart_filename(
-	const std::string &header_block)
+static std::optional<std::string>
+multipart_filename(const std::string &header_block)
 {
 	std::size_t cursor = 0;
 
@@ -94,8 +91,7 @@ static std::optional<std::string> multipart_filename(
 			line_end = header_block.size();
 
 		const std::optional<HeaderField> field =
-			parse_header_field(
-				header_block.substr(cursor, line_end - cursor));
+			parse_header_field(header_block.substr(cursor, line_end - cursor));
 
 		if (!field)
 			return std::nullopt;
@@ -110,32 +106,32 @@ static std::optional<std::string> multipart_filename(
 }
 
 static std::size_t find_multipart_boundary(const std::string &body,
-    const std::string &marker, std::size_t start)
+										   const std::string &marker,
+										   std::size_t start)
 {
-    const std::string delimiter = LINE + marker;
-    std::size_t position = body.find(delimiter, start);
+	const std::string delimiter = LINE + marker;
+	std::size_t position = body.find(delimiter, start);
 
-    while (position != std::string::npos)
-    {
-        const std::size_t suffix = position + delimiter.size();
+	while (position != std::string::npos)
+	{
+		const std::size_t suffix = position + delimiter.size();
 
-        if (body.compare(suffix, 2, LINE) == 0)
-            return position;
-        if (body.compare(suffix, 2, "--") == 0 &&
-            (suffix + 2 == body.size() ||
-             body.compare(suffix + 2, 2, LINE) == 0))
-            return position;
-        position = body.find(delimiter, suffix);
-    }
-    return std::string::npos;
+		if (body.compare(suffix, 2, LINE) == 0)
+			return position;
+		if (body.compare(suffix, 2, "--") == 0 &&
+			(suffix + 2 == body.size() ||
+			 body.compare(suffix + 2, 2, LINE) == 0))
+			return position;
+		position = body.find(delimiter, suffix);
+	}
+	return std::string::npos;
 }
 
-static bool parse_multipart_first_file(
-	const std::string &content_type,
-	const std::string &body,
-	std::string &filename,
-	std::size_t &file_offset,
-	std::size_t &file_size)
+static bool parse_multipart_first_file(const std::string &content_type,
+									   const std::string &body,
+									   std::string &filename,
+									   std::size_t &file_offset,
+									   std::size_t &file_size)
 {
 	const std::optional<std::string> boundary =
 		multipart_boundary(content_type);
@@ -161,15 +157,13 @@ static bool parse_multipart_first_file(
 
 		cursor += 2;
 
-		const std::size_t header_end =
-			body.find(LINE LINE, cursor);
+		const std::size_t header_end = body.find(LINE LINE, cursor);
 
 		if (header_end == std::string::npos)
 			return false;
 
 		const std::optional<std::string> part_filename =
-			multipart_filename(
-				body.substr(cursor, header_end - cursor));
+			multipart_filename(body.substr(cursor, header_end - cursor));
 
 		const std::size_t data_start = header_end + 4;
 		const std::size_t next_boundary =
@@ -192,17 +186,14 @@ static bool parse_multipart_first_file(
 
 static bool is_safe_upload_filename(const std::string &filename)
 {
-	return !filename.empty() &&
-		   filename != "." &&
-		   filename != ".." &&
+	return !filename.empty() && filename != "." && filename != ".." &&
 		   filename.find('/') == std::string::npos &&
 		   filename.find('\\') == std::string::npos &&
 		   filename.find('\0') == std::string::npos;
 }
 
-static std::optional<std::filesystem::path> upload_destination(
-	const Location &location,
-	const std::string &filename)
+static std::optional<std::filesystem::path>
+upload_destination(const Location &location, const std::string &filename)
 {
 	if (!location.upload_store || !is_safe_upload_filename(filename))
 		return std::nullopt;
@@ -232,8 +223,7 @@ static std::optional<std::filesystem::path> upload_destination(
 		return std::nullopt;
 
 	const std::filesystem::path destination =
-		std::filesystem::weakly_canonical(
-			canonical_store / filename, error);
+		std::filesystem::weakly_canonical(canonical_store / filename, error);
 
 	if (error || !is_path_within_root(destination, canonical_store))
 		return std::nullopt;
@@ -298,9 +288,8 @@ static std::string html_escape(const std::string &text)
 }
 
 static bool autoindex(const Location &location,
-						   const std::filesystem::path &directory,
-						   const std::string &request_path,
-						   std::string &body)
+					  const std::filesystem::path &directory,
+					  const std::string &request_path, std::string &body)
 {
 	std::error_code error;
 	std::filesystem::directory_iterator iterator(directory, error);
@@ -317,10 +306,9 @@ static bool autoindex(const Location &location,
 	body += html_escape(request_path);
 	body += "</h1><hr><ul>\n";
 
-	const bool is_location_root =
-		request_path == "/" ||
-		request_path == location.location_path ||
-		request_path == location.location_path + "/";
+	const bool is_location_root = request_path == "/" ||
+								  request_path == location.location_path ||
+								  request_path == location.location_path + "/";
 
 	if (!is_location_root)
 		body += "<li><a href=\"../\">../</a></li>\n";
@@ -371,8 +359,7 @@ void handle_get(Response &response, const Location &location,
 
 	if (!std::filesystem::exists(status))
 	{
-		if (error == std::make_error_code(
-				std::errc::no_such_file_or_directory))
+		if (error == std::make_error_code(std::errc::no_such_file_or_directory))
 			response.convert_to_error(404, &location);
 		else
 			response.convert_to_error(403, &location);
@@ -391,8 +378,8 @@ void handle_get(Response &response, const Location &location,
 	{
 		if (request_path.empty() || request_path.back() != '/')
 		{
-			response.convert_to_redirect(
-				301, add_trailing_slash(request_target));
+			response.convert_to_redirect(301,
+										 add_trailing_slash(request_target));
 			return;
 		}
 
@@ -464,7 +451,7 @@ void handle_get(Response &response, const Location &location,
 }
 
 void handle_post(const Request &request, Response &response,
-				 const Location &location)
+				 const Location &location, const std::string &request_path)
 {
 	const std::string &body = request.getBody();
 
@@ -477,26 +464,24 @@ void handle_post(const Request &request, Response &response,
 	const HeaderValues *content_type =
 		request.get_headers().find("content-type");
 
-	if (content_type == nullptr || content_type->size() != 1)
-	{
-		response.convert_to_error(400, &location);
-		return;
-	}
-
 	std::string filename;
 	std::size_t file_offset = 0;
-	std::size_t file_size = 0;
+	std::size_t file_size = body.size();
 
-	if (!parse_multipart_first_file(
-			content_type->at(0), body, filename,
-			file_offset, file_size))
+	if (content_type != nullptr && content_type->size() == 1 &&
+		multipart_boundary(content_type->at(0)))
 	{
-		response.convert_to_error(400, &location);
-		return;
+		if (!parse_multipart_first_file(content_type->at(0), body, filename,
+										file_offset, file_size))
+		{
+			response.convert_to_error(400, &location);
+			return;
+		}
 	}
+	else // raw body: store it under the request path's file name
+		filename = std::filesystem::path(request_path).filename().string();
 
-	if (file_offset > body.size() ||
-		file_size > body.size() - file_offset)
+	if (file_offset > body.size() || file_size > body.size() - file_offset)
 	{
 		response.convert_to_error(400, &location);
 		return;
@@ -589,23 +574,23 @@ void handle_delete(Response &response, const Location &location,
 }
 
 void handle_request(const Request &request, Response &response,
-                    const Location &location)
+					const Location &location)
 {
-    const URITarget target = request.split_uri_target();
+	const URITarget target = request.split_uri_target();
 
-    switch (request.get_method())
-    {
-    case Methods::GET:
-        handle_get(response, location, target.path, request.getTarget());
-        return;
-    case Methods::POST:
-        handle_post(request, response, location);
-        return;
-    case Methods::DELETE:
-        handle_delete(response, location, target.path);
-        return;
-    default:
-        response.convert_to_error(501, &location);
-        return;
-    }
+	switch (request.get_method())
+	{
+	case Methods::GET:
+		handle_get(response, location, target.path, request.getTarget());
+		return;
+	case Methods::POST:
+		handle_post(request, response, location, target.path);
+		return;
+	case Methods::DELETE:
+		handle_delete(response, location, target.path);
+		return;
+	default:
+		response.convert_to_error(501, &location);
+		return;
+	}
 }

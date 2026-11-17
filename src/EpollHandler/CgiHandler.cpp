@@ -154,6 +154,8 @@ CgiHandler::CgiHandler(const Server *server, const CloseFd &epoll_fd,
         environment.push_back(
             "CONTENT_LENGTH=" + std::to_string(cgi_request.getBody().size()));
         environment.push_back("SCRIPT_NAME=" + target.path);
+        environment.push_back("PATH_INFO=" + target.path);
+        environment.push_back("REQUEST_URI=" + cgi_request.getTarget());
         environment.push_back("SCRIPT_FILENAME=" + script_path.string());
 
         if (content_type != nullptr && content_type->size() == 1)
