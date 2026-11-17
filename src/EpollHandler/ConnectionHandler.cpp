@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConnectionHandler.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: modiepge <modiepge@student.42heilbronn.de> +#+  +:+       +#+        */
+/*   By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 20:15:00 by rgohrig           #+#    #+#             */
-/*   Updated: 2026/11/16 10:18:21 by modiepge         ###   ########.fr       */
+/*   Updated: 2026/11/17 15:28:49 by rgohrig          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,8 +27,8 @@
 ConnectionHandler::ConnectionHandler(const Server *server, CloseFd &&fd,
 									 const CloseFd &epoll_fd)
 	: EpollHandler(server, std::move(fd), epoll_fd), cgi_(nullptr),
-	location_(nullptr), state_(State::READ_HEAD),
-	last_activity_(std::chrono::steady_clock::now())
+	  location_(nullptr), state_(State::READ_HEAD),
+	  last_activity_(std::chrono::steady_clock::now())
 {
 	add_to_epoll();
 }
@@ -98,9 +98,8 @@ void ConnectionHandler::process_head()
 
 	if (location_->redirect_page)
 	{
-		response_.convert_to_redirect(
-			location_->redirect_page->first,
-			location_->redirect_page->second);
+		response_.convert_to_redirect(location_->redirect_page->first,
+									  location_->redirect_page->second);
 		set_state(State::WRITE);
 		return;
 	}
@@ -117,82 +116,81 @@ void ConnectionHandler::process_head()
 
 void ConnectionHandler::process_body(AllServers &servers)
 {
-    const ParseStatus parsed =
-        request_.parse_body(location_->client_max_body_size);
+	const ParseStatus parsed =
+		request_.parse_body(location_->client_max_body_size);
 
-    if (parsed == ParseStatus::INCOMPLETE)
-        return;
+	if (parsed == ParseStatus::INCOMPLETE)
+		return;
 
-    if (parsed == ParseStatus::TOO_LARGE)
-    {
-        response_.convert_to_error(413, location_);
-        set_state(State::WRITE);
-        return;
-    }
+	if (parsed == ParseStatus::TOO_LARGE)
+	{
+		response_.convert_to_error(413, location_);
+		set_state(State::WRITE);
+		return;
+	}
 
-    if (parsed == ParseStatus::BAD)
-    {
-        response_.convert_to_error(400, location_);
-        set_state(State::WRITE);
-        return;
-    }
+	if (parsed == ParseStatus::BAD)
+	{
+		response_.convert_to_error(400, location_);
+		set_state(State::WRITE);
+		return;
+	}
 
-    request_.buffer_.clear();
+	request_.buffer_.clear();
 
-    const URITarget target = request_.split_uri_target();
-    const ResolvedPath resolved =
-        resolve_resource_path(*location_, target.path);
+	const URITarget target = request_.split_uri_target();
+	const ResolvedPath resolved =
+		resolve_resource_path(*location_, target.path);
 
-    if ((request_.get_method() == Methods::GET ||
-         request_.get_method() == Methods::POST) &&
-        resolved.status == ResolveStatus::OK)
-    {
-        std::filesystem::path cgi_path = resolved.path;
-        std::error_code error;
-        std::filesystem::file_status status =
-            std::filesystem::status(cgi_path, error);
+	if ((request_.get_method() == Methods::GET ||
+		 request_.get_method() == Methods::POST) &&
+		resolved.status == ResolveStatus::OK)
+	{
+		std::filesystem::path cgi_path = resolved.path;
+		std::error_code error;
+		std::filesystem::file_status status =
+			std::filesystem::status(cgi_path, error);
 
-        if (!error && std::filesystem::is_directory(status) &&
-            !target.path.empty() && target.path.back() == '/')
-        {
-            const std::optional<std::filesystem::path> index =
-                find_index_file(*location_, cgi_path);
+		if (!error && std::filesystem::is_directory(status) &&
+			!target.path.empty() && target.path.back() == '/')
+		{
+			const std::optional<std::filesystem::path> index =
+				find_index_file(*location_, cgi_path);
 
-            if (index)
-            {
-                cgi_path = *index;
-                error.clear();
-                status = std::filesystem::status(cgi_path, error);
-            }
-        }
+			if (index)
+			{
+				cgi_path = *index;
+				error.clear();
+				status = std::filesystem::status(cgi_path, error);
+			}
+		}
 
-        const CGIConfigMap::const_iterator interpreter =
-            location_->cgi_interpers.find(cgi_path.extension().string());
+		const CGIConfigMap::const_iterator interpreter =
+			location_->cgi_interpers.find(cgi_path.extension().string());
 
-        if (!error &&
-            std::filesystem::is_regular_file(status) &&
-            interpreter != location_->cgi_interpers.end())
-        {
-            std::unique_ptr<CgiHandler> cgi = std::make_unique<CgiHandler>(
-                server_, epoll_fd_, servers, *this, response_, request_,
-                cgi_path, interpreter->second);
+		if (!error && std::filesystem::is_regular_file(status) &&
+			interpreter != location_->cgi_interpers.end())
+		{
+			std::unique_ptr<CgiHandler> cgi = std::make_unique<CgiHandler>(
+				server_, epoll_fd_, servers, *this, response_, request_,
+				cgi_path, interpreter->second);
 
-            if (!cgi->is_started())
-            {
-                response_.convert_to_error(502, location_);
-                set_state(State::WRITE);
-                return;
-            }
+			if (!cgi->is_started())
+			{
+				response_.convert_to_error(502, location_);
+				set_state(State::WRITE);
+				return;
+			}
 
-            cgi_ = cgi.get();
-            servers.add_handler(std::move(cgi));
-            set_state(State::WAIT_CGI);
-            return;
-        }
-    }
+			cgi_ = cgi.get();
+			servers.add_handler(std::move(cgi));
+			set_state(State::WAIT_CGI);
+			return;
+		}
+	}
 
-    handle_request(request_, response_, *location_);
-    set_state(State::WRITE);
+	handle_request(request_, response_, *location_);
+	set_state(State::WRITE);
 }
 
 void ConnectionHandler::send()
@@ -204,7 +202,8 @@ void ConnectionHandler::send()
 	}
 
 	constexpr std::size_t max_send_size = 64 * 1024;
-	const std::size_t send_size = std::min(response_.send_size(), max_send_size);
+	const std::size_t send_size =
+		std::min(response_.send_size(), max_send_size);
 	const ssize_t bytes_sent =
 		::send(fd_, response_.send_data(), send_size, MSG_NOSIGNAL);
 
@@ -226,7 +225,8 @@ void ConnectionHandler::send()
 		set_state(State::FINISHED);
 }
 
-void ConnectionHandler::on_epoll_event(AllServers &servers, uint32_t events, EpollEndpoint)
+void ConnectionHandler::on_epoll_event(AllServers &servers, uint32_t events,
+									   EpollEndpoint)
 {
 	// if (events & (EPOLLERR | EPOLLHUP))
 	// 	return set_state(State::FINISHED);
@@ -294,15 +294,15 @@ bool ConnectionHandler::is_timeout() const
 
 void ConnectionHandler::on_timeout()
 {
-    if (state_ != State::WAIT_CGI)
-    {
-        set_state(State::FINISHED);
-        return;
-    }
+	if (state_ != State::WAIT_CGI)
+	{
+		set_state(State::FINISHED);
+		return;
+	}
 
-    cgi_->stop_listening();
-    response_.convert_to_error(504, location_);
-    cgi_finished();
+	cgi_->stop_listening();
+	response_.convert_to_error(504, location_);
+	cgi_finished();
 }
 
 void ConnectionHandler::stop_listening(void)
@@ -320,6 +320,6 @@ void ConnectionHandler::stop_listening(void)
 
 void ConnectionHandler::cgi_finished()
 {
-    cgi_ = nullptr;
-    set_state(State::WRITE);
+	cgi_ = nullptr;
+	set_state(State::WRITE);
 }

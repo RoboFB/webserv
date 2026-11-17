@@ -68,26 +68,28 @@ static bool parse_chunk_size(std::string_view line, std::size_t &chunk_size)
 	return parsed.ec == std::errc() && parsed.ptr == last;
 }
 
-/*	Chunked body, indeterminate length
+/*	Chunked body, indeterminate length.
+	Incremental: decoded chunks are appended to `body` and `consumed` is
+	advanced past each complete chunk, so the next call resumes there
+	instead of re-decoding the whole buffer (O(n^2) on large uploads).
  */
-static BodyParsing parse_chunked_body(const std::vector<uint8_t> &buffer,
-									  std::size_t body_start, size_t max_body_size)
+static ParseStatus parse_chunked_body(const std::vector<uint8_t> &buffer,
+									  std::size_t &consumed, std::string &body,
+									  size_t max_body_size)
 {
-	BodyParsing result;
-	std::size_t cursor = body_start;
-
 	while (true)
 	{
+		std::size_t cursor = consumed;
 		const std::size_t size_line_end = find_line_end(buffer, cursor);
 		if (size_line_end == std::string::npos)
-			return BodyParsing(ParseStatus::INCOMPLETE);
+			return ParseStatus::INCOMPLETE;
 
 		const std::string_view size_line(
 			reinterpret_cast<const char *>(buffer.data() + cursor),
 			size_line_end - cursor);
 		std::size_t chunk_size = 0;
 		if (!parse_chunk_size(size_line, chunk_size))
-			return BodyParsing();
+			return ParseStatus::BAD;
 
 		cursor = size_line_end + 2;
 		if (chunk_size == 0)
@@ -96,31 +98,30 @@ static BodyParsing parse_chunked_body(const std::vector<uint8_t> &buffer,
 			{
 				const std::size_t trailer_end = find_line_end(buffer, cursor);
 				if (trailer_end == std::string::npos)
-					return BodyParsing(ParseStatus::INCOMPLETE);
-				if (trailer_end == cursor)
-					return BodyParsing(ParseStatus::COMPLETE, result.body,
-									   trailer_end + 2);
+					return ParseStatus::INCOMPLETE;
+				if (trailer_end == cursor) // empty line ends the trailers
+				{
+					consumed = trailer_end + 2;
+					return ParseStatus::COMPLETE;
+				}
 				cursor = trailer_end + 2;
 			}
 		}
 
-		if (result.body.size() > max_body_size ||
-			chunk_size > max_body_size - result.body.size())
-		{
-			return BodyParsing(ParseStatus::TOO_LARGE);
-		}
+		if (body.size() > max_body_size ||
+			chunk_size > max_body_size - body.size())
+			return ParseStatus::TOO_LARGE;
 		if (cursor > buffer.size() || chunk_size > buffer.size() - cursor)
-			return BodyParsing(ParseStatus::INCOMPLETE);
+			return ParseStatus::INCOMPLETE;
+		if (buffer.size() - cursor - chunk_size < 2)
+			return ParseStatus::INCOMPLETE;
+		if (buffer[cursor + chunk_size] != '\r' ||
+			buffer[cursor + chunk_size + 1] != '\n')
+			return ParseStatus::BAD;
 
-		result.body.append(
+		body.append(
 			reinterpret_cast<const char *>(buffer.data() + cursor), chunk_size);
-		cursor += chunk_size;
-
-		if (buffer.size() - cursor < 2)
-			return BodyParsing(ParseStatus::INCOMPLETE);
-		if (buffer[cursor] != '\r' || buffer[cursor + 1] != '\n')
-			return BodyParsing();
-		cursor += 2;
+		consumed = cursor + chunk_size + 2;
 	}
 }
 
@@ -139,7 +140,8 @@ ParseStatus Request::parse_body(size_t max_body_size)
 		if (transfer->size() != 1 ||
 			ascii_lowercase(transfer->at(0)) != "chunked")
 			return ParseStatus::BAD;
-		result = parse_chunked_body(buffer_, offset_, max_body_size);
+		// advances offset_ and fills body_ in place, resuming across calls
+		return parse_chunked_body(buffer_, offset_, body_, max_body_size);
 	}
 	else if (length == nullptr)
 		result = BodyParsing(ParseStatus::COMPLETE, "", offset_);

@@ -6,7 +6,7 @@
 #    By: rgohrig <rgohrig@student.42heilbronn.de>   +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/03/10 10:21:00 by rgohrig           #+#    #+#              #
-#    Updated: 2026/10/29 13:19:55 by rgohrig          ###   ########.fr        #
+#    Updated: 2026/11/17 15:36:42 by rgohrig          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -80,16 +80,6 @@ $(NAME): $(OBJ)
 
 -include $(DEPENDENCIES)
 
-# ----------------------------- Run --------------------------------------------
-
-run: stop all
-	@./$(NAME)
-
-stop:
-	@pkill -x $(NAME) > /dev/null 2>&1 && echo "🛑 stopped $(NAME)" || true
-
-# ----------------------------- Clean ------------------------------------------
-
 
 clean:
 	@rm -rf $(DIR_OBJ)
@@ -104,7 +94,7 @@ re:
 	@$(MAKE) fclean
 	@$(MAKE) all
 
-.PHONY: all run stop clean fclean re
+.PHONY: all clean fclean re
 
 # ----------------------------- Debug ------------------------------------------
 
